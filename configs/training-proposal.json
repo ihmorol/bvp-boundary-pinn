@@ -1,0 +1,79 @@
+{
+  "status": "proposed_not_validated",
+  "physical_case": "physical-case-pending.json",
+  "model": {
+    "input": "eta",
+    "output_fields": ["f", "g", "theta", "phi", "chi"],
+    "hidden_layers": [64, 64, 64, 64],
+    "activation": "tanh",
+    "output_activation": "linear",
+    "dtype": "float64",
+    "initialization": "xavier_uniform_weights_zero_bias",
+    "coordinate_normalization": "x = 2*eta/L - 1 inside differentiable model",
+    "dropout": false,
+    "batch_normalization": false
+  },
+  "sampling": {
+    "trial_interior_points": 1024,
+    "full_domain_fraction": 0.5,
+    "wall_fraction": 0.5,
+    "wall_region": "Trial a few multiples of min(kappa,b); final extent from reference and residual checks",
+    "boundary_points": [0, "L"],
+    "monitoring": "Independent fixed dense grid",
+    "final_evaluation": "Fresh dense grid plus seeded random coordinates",
+    "objective_note": "Wall-biased unweighted sampling deliberately changes loss emphasis; use explicit quadrature if uniform integral is intended."
+  },
+  "reference": {
+    "method": "scipy.integrate.solve_bvp",
+    "state_dimension": 12,
+    "trial_domain_lengths": [10, 15, 20],
+    "trial_initial_mesh_nodes": 200,
+    "trial_tolerances": [0.00001, 0.0000001],
+    "requirements": "All physical coefficients supplied; regular highest-derivative matrix; multiple guesses and domain/mesh checks",
+    "used_as_training_labels": false
+  },
+  "loss": {
+    "equation_components": 5,
+    "boundary_components": 12,
+    "boundary_method": "soft_penalties_all_conditions",
+    "equation_scales": null,
+    "boundary_scales": null,
+    "initial_equation_weights": [1, 1, 1, 1, 1],
+    "initial_boundary_weights": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "scale_note": "Choose and document fixed positive characteristic scales once physical values are complete; never divide by current residual."
+  },
+  "adam": {
+    "trial_initial_learning_rate": 0.001,
+    "trial_final_learning_rate": 0.0001,
+    "trial_max_steps": 20000,
+    "weight_decay": 0,
+    "switch_rule": "Inspect finite component errors and independent progress; declared budget is not convergence."
+  },
+  "lbfgs": {
+    "line_search": "strong_wolfe",
+    "trial_history_size": 50,
+    "max_iterations": null,
+    "max_function_evaluations": null,
+    "tolerances": null,
+    "objective_frozen": ["physical_parameters", "L", "points", "scales", "loss_weights"],
+    "note": "Decide budget/tolerances from pilot and installed API; rebuilding graph inside closure is required."
+  },
+  "pilot_seeds": [0, 1, 2],
+  "acceptance": {
+    "status": "proposed_goals_not_supervisor_requirements",
+    "trial_max_scaled_boundary_error": 0.0001,
+    "trial_relative_or_scale_normalized_field_l2": 0.001,
+    "equation_residual_thresholds": null,
+    "wall_quantity_thresholds": null,
+    "domain_sensitivity_thresholds": null,
+    "reference_uncertainty": "Must be materially below any claimed PINN solution error."
+  },
+  "safety": {
+    "reject_missing_physical_parameters": true,
+    "reject_nonfinite_residual_or_gradient": true,
+    "arbitrary_epsilon_denominators": false,
+    "train_physical_parameters": false,
+    "lorenz_causal_rollout": false,
+    "claim_success_from_total_training_loss": false
+  }
+}

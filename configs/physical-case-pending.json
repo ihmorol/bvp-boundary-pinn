@@ -1,0 +1,53 @@
+{
+  "case_id": "near_boundary_rounded_v1",
+  "status": "blocked_missing_parameters",
+  "equation_policy": "Use supervisor-confirmed Eqs. 14–19 as written; no physical model corrections.",
+  "selection_policy": "Small rounded positive values near zero where allowed; discrete listed values preserved; do not round fixed supplied Pr; select fw=-0.5 within the listed interval.",
+  "physical_parameters": {
+    "Delta": 0.1,
+    "B": 0.1,
+    "Da": 0.1,
+    "kappa": 0.1,
+    "delta_star": 0.0,
+    "theta_w": 0.1,
+    "lambda_m": null,
+    "beta_m": 0.1,
+    "epsilon": null,
+    "b": 0.1,
+    "Pr": 6.8,
+    "Le": 1.0,
+    "N1": 0.1,
+    "Bi": 0.1,
+    "Rd": 0.1,
+    "Nr": null,
+    "Nt": null,
+    "Nb": null,
+    "Lb": null,
+    "Pe": null,
+    "ell": 0.1,
+    "fw": -0.5
+  },
+  "missing_parameters": ["lambda_m", "epsilon", "Nr", "Nt", "Nb", "Lb", "Pe"],
+  "selection_notes": {
+    "Pr": "Sheet gives 6.8; retain exactly, despite preference for rounded choices.",
+    "delta_star": "Sheet lists 0, 1, 2, ...; choose 0 for the starting case. Separate sweeps can test 1 and 2.",
+    "theta_w": "0.1 satisfies the stated positive range. It is not asserted to be a verified physical regime. Test temperature reconstruction and effective thermal coefficient once remaining parameters arrive.",
+    "fw": "-0.5 is a rounded nonzero choice towards the lower endpoint -1; not a supplied fixed number. Later compare +0.5 and 0 without inventing suction/blowing sign conventions.",
+    "lambda_m": "The symbol is identifiable but its handwritten relation has no reliably readable bound. Await supervisor; do not invent a value.",
+    "epsilon": "Handwriting appears to say epsilon=1 >=0, but fixed value versus range remains unclear. A follow-up question received no answer; leave null.",
+    "kappa": "Handwritten K is mapped to curvature kappa used in the equations; mapping is documented as transcription, not a second parameter."
+  },
+  "excluded_or_unresolved_sheet_symbols": {
+    "Pm": "User confirmed the two Pm-looking lines concern magnetic Prandtl number. Does not appear in the specified Eqs. 14–19; do not replace Pe or Lb with Pm.",
+    "M": "Crossed-out/red line ending M >=0 is unresolved by user's answer. Do not equate it with beta_m.",
+    "crossed_out_Nr_or_Nb": "Crossed-out notation is not a numeric instruction; Nr and Nb remain missing."
+  },
+  "auxiliary_debug_case": {
+    "status": "also_blocked_missing_parameters",
+    "purpose": "Optional less-singular numerical starting case only; not a replacement for the near-boundary target.",
+    "overrides": {"kappa": 1.0, "b": 1.0, "Da": 1.0, "theta_w": 1.5},
+    "all_other_parameters": "Inherit target values, including null fields. Missing physical coefficients are never filled automatically."
+  },
+  "source": "sources/parameter-sheet/parameter-values.pdf",
+  "user_decisions_date": "2026-11-12"
+}

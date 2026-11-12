@@ -1,0 +1,43 @@
+{
+  "recorded_date": "2026-11-12",
+  "private_sources_not_published": true,
+  "files": [
+    {
+      "path": "sources/parameter-sheet/parameter-values.pdf",
+      "source": "/home/emon-morol/Documents/parameter values_0001.pdf",
+      "provenance": "User supplied scanned parameter sheet",
+      "bytes": 149821,
+      "sha256": "2547883f0630ffb8ebaedadc8b3c5a1607eb5b3daf1992554d61f56ef74e0afc"
+    },
+    {
+      "path": "sources/equation-excerpt/problem_3Nov_2026.docx",
+      "source": "/home/emon-morol/Documents/fydp/problem_3Nov_2026.docx",
+      "provenance": "User supplied equation excerpt",
+      "bytes": 57500,
+      "sha256": "c0ea57ad43e0303964045aa6a3a79975fb3f932af0ac91be5b125ed0d9a713ef"
+    },
+    {
+      "path": "sources/project-draft/project3Nov_2026.docx",
+      "source": "/home/emon-morol/Documents/fydp/project3Nov_2026.docx",
+      "provenance": "User supplied project draft",
+      "bytes": 368819,
+      "sha256": "e9caca1674cc74b68ccb02966d775533684dd7d58785854b71287259ad7ca9b4"
+    },
+    {
+      "path": "sources/literature/micropolar-2026/article.pdf",
+      "source": "https://mdpi-res.com/d_attachment/modelling/modelling-07-00145/article_deploy/modelling-07-00145.pdf",
+      "provenance": "Previously downloaded full article; copied from the separate literature folder",
+      "bytes": 1219355,
+      "sha256": "4e315ba89bc378746edd48ee3b0a8b7bf1c9fb1876a66da6aa35b3382bef584e"
+    },
+    {
+      "path": "sources/literature/squeezing-2026/article.pdf",
+      "source": "https://iscis-journal.org/index.php/iscis/article/download/17/29",
+      "provenance": "Previously downloaded full article; copied from the separate literature folder",
+      "bytes": 8654452,
+      "sha256": "15d2b1a29b913296ba641b7efd98811213abbd61dcdefe6b9b36480d8b610e87"
+    }
+  ],
+  "storage_note": "Supervisor documents and papers are uploaded only to the private GitHub repository ihmorol/bvp-boundary-pinn. Do not make that repository public while sources/ contains supervisor documents.",
+  "public_release_allowed": false
+}
