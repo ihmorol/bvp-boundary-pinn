@@ -22,6 +22,8 @@ Local research repository for the FYDP five-function boundary problem: solve Eqs
 | configs/training-proposal.json | Proposed training settings, not validated choices |
 | tools/ | Record checks and the guide builder |
 | src/bvp_pinn/ | Code will live here; nothing implemented yet |
+| prior-work/ | FYDP paper context and the previous Lorenz PINN code, read-only reference |
+| docs/archive/ | Superseded documents kept for history |
 | sources/ | Supervisor sheet, drafts and checked papers, with SHA-256 hashes |
 | strategy-guide.html | Generated readable guide; rebuild with tools/build_guide.py |
 

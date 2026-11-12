@@ -11,6 +11,8 @@ Newest first. One entry per working session. Keep it short and factual.
 - Found a conflict: the sheet allows fw = -0.5, but the printed fw = Cw/(1-Cw) would give a negative wall concentration. fw stays provisional.
 - Found a second conflict: with delta_star = 0, the printed relations on page 7 give B = 1, not our chosen 0.1. Needs a supervisor decision on whether we follow the relations or pick each value inside its range.
 - Wrote the strategy, the test plan and the flowcharts. Set up the repo rules, the status log and the supervisor questions.
+- Copied the FYDP paper context (CONTEXT.md, its agent rules, chapter 2 text and the architecture figure) and the previous Lorenz PINN code into prior-work/ as read-only reference. Added the two remaining saved papers to sources/literature/, with hashes.
+- Moved the superseded 2026-11-10 methodology into docs/archive/ with a note about its Eq. 14 transcription issue.
 - No solver code, no training and no reference simulation has run yet.
 
 ## Next

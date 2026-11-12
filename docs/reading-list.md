@@ -128,6 +128,10 @@ Baoli Hao et al., *Stability in Training PINNs for Stiff PDEs: Why Initial Condi
 - Finding: initial-condition enforcement can stabilize their stiff time-dependent PDE benchmarks.
 - Limit: this does not prove the same for our steady nonlinear two-ended BVP. Do not import time marching.
 
+## Earlier saved reading list
+
+Four coupled-BVP papers were saved in the first literature pass on 2026-11-06, with provenance notes in sources/literature/READING_LIST-prior.md. R1 and R2 above come from that set. The lap-joint code supplement and the coupled-beams paper complete it.
+
 ## Parameter-value research is not authorization to fill missing values
 
 Shi et al., *Modelling and numerical computation for flow of micropolar fluid towards an exponential curved surface: a Keller box method*, Scientific Reports 11, 16351, 2021; DOI https://doi.org/10.1038/s41598-021-95859-x, gives related curvature and microrotation ranges. A subagent inspected table values, but its parameter symbols and equations differ from ours.

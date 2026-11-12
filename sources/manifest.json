@@ -36,6 +36,27 @@
       "provenance": "Previously downloaded full article; copied from the separate literature folder",
       "bytes": 8654452,
       "sha256": "15d2b1a29b913296ba641b7efd98811213abbd61dcdefe6b9b36480d8b610e87"
+    },
+    {
+      "path": "sources/literature/lap-joint-2021/lap_joint_PINN_2021_supplement_code.pdf",
+      "source": "https://static-content.springer.com/esm/art%3A10.1631%2Fjzus.A2000403/MediaObjects/11582_2021_371_MOESM1_ESM.pdf",
+      "provenance": "Previously downloaded publisher code supplement for the lap-joint coupled fourth-order PINN paper (DOI 10.1631/jzus.A2000403); copied from the separate literature folder on 2026-11-12",
+      "bytes": 396387,
+      "sha256": "0800922afa90fb493a85b8fd127dc80138646a73c7cba585f1cfdeed01d8326b"
+    },
+    {
+      "path": "sources/literature/beams-2024/complex_beam_systems_PINN_arxiv_2303.01055.pdf",
+      "source": "https://arxiv.org/abs/2303.01055",
+      "provenance": "Previously downloaded arXiv manuscript on coupled fourth-order beam PINNs; copied from the separate literature folder on 2026-11-12",
+      "bytes": 24402669,
+      "sha256": "8cc056f908f17afe283bfd5dad1938c124d7da6933da7afcbb056a662f4862fc"
+    },
+    {
+      "path": "sources/literature/READING_LIST-prior.md",
+      "source": "local: Documents/fydp/bvp-pinn-literature-2026-11-06/READING_LIST.md",
+      "provenance": "Reading notes for the four saved coupled-BVP papers from the first literature pass; copied on 2026-11-12",
+      "bytes": 11583,
+      "sha256": "522459a6c12a032e516e44a1379f0419b819f6543fbebc1c8f1b45cc46b21751"
     }
   ],
   "storage_note": "Supervisor documents and papers are uploaded only to the private GitHub repository ihmorol/bvp-boundary-pinn. Do not make that repository public while sources/ contains supervisor documents.",
