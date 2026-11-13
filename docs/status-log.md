@@ -2,6 +2,28 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-13 (session: per-paper deep analysis)
+
+- Ran one analysis agent per downloaded paper, two at a time, over all 25 papers with local PDFs in sources/literature/. Each agent read the full PDF and wrote analysis.md inside that paper's folder, with a fixed section order: record, problem, method, author-reported results, adopt, do not import, quotes, relevance.
+- All 25 analysis files pass the writing rules: no banned words, no em dashes, page or section reference on each claim, author numbers framed as author-reported.
+- Created docs/paper-analysis-tracker.md with the status and one-line takeaway per paper. Created docs/literature-synthesis.md as the cross-paper guide: must-know facts, decisions per strategy section for arms B3 to B6 and the AL arm, implementation checklist, writing guide, do-not-import list, internal paper errors, and open choices to log.
+- Key cross-paper findings recorded in the synthesis: unbalanced boundary gradients are the core failure mode; fixed scales must come before optimizer choice; small loss does not imply small error (Acta Numerica); plain L-BFGS was the worst quasi-Newton in its only comparison, so a full-memory BFGS arm is planned; no verified paper covers our five-field (4,2,2,2,2) system.
+- Logged internal paper errors found during analysis (micropolar dissipation term inconsistency, cylinder paper solver naming and missing definitions, squeezing best-run headline, swapped figure citations in the overfitting preprint, PINNacle cell disagreements). No parameter values were taken from any paper; the seven missing coefficients stay null.
+- Ran a verification pass over the synthesis: all 32 repeated numbers match their analysis files, and the load-bearing ones (optimizer table, PINNacle reweighting cells, annealing rule eq. 40 to 42, NTK weight rule eqs. 7.13 to 7.15, FI-PINN defaults, AL penalty grid, BC comparison rates, beams failure case, Falkner-Skan wall error, overfitting residual figure) were re-checked against the PDFs by text extraction and page images. One count was corrected: PINNacle Table 3 shows NaN on 7 of 22 tasks for L-BFGS, not 8; fixed in the analysis file, the tracker and the synthesis.
+- Added short TL;DR records: every analysis.md now opens with a 3 to 4 line TL;DR (what it is, gives us, avoid, relevance). Added docs/papers-tldr.md, the two-minute overview of all 25 papers, and docs/reading-shortlist.md, the tiered list of which papers deserve a full human read.
+- No solver code and no training has run. tools/check_records.py passes.
+
+## 2026-11-12 (second session: literature pass 2)
+
+- Ran a second literature pass with four parallel searches: closest physical precedents, training methodology, boundary and sampling methods, benchmarks and surveys.
+- Re-verified every candidate in-session against the arXiv API or the Crossref DOI registry before it entered docs/reading-list.md. Entries that could not be verified were dropped, not cited.
+- Added entries R12 to R48 to docs/reading-list.md with a role map that ties each paper to a project phase or comparison arm (introduction, loss and weights, boundary and sampling choices, honest benchmarking).
+- Corrected three records: the often-cited Shin-Darbon-Karniadakis "RAR paper" is actually their convergence paper (arXiv:2004.01806); the Grossmann et al. comparison is against the finite element method, not finite differences; PINNacle is NeurIPS 2024 Datasets and Benchmarks, not 2023.
+- Downloaded 21 open-access PDFs (arXiv versions plus publisher open-access copies) into sources/literature/, one directory per paper, with SHA-256 hashes recorded in sources/manifest.json. Entries without a readable full text are marked metadata-only in the reading list.
+- Recorded access limits: ScienceDirect, AIP, Nature and PMC PDF endpoints returned bot walls or CAPTCHAs to scripted download attempts. No paywalled content was circumvented.
+- No physical parameter values were taken from any paper. The seven missing coefficients stay null and the first case stays blocked. No solver code and no training has run.
+- Extended the protected-title list in tools/check_records.py with the PINNacle paper title so the checker does not flag a real title.
+
 ## 2026-11-12
 
 - Created this repository locally. Copied the supervisor sheet, the equation draft and the project draft into sources/, with SHA-256 hashes in sources/manifest.json.
