@@ -66,6 +66,7 @@ BANNED_WORDS = [
 PROTECTED_PHRASES = [
     # Exact paper titles; the writing rule never rewrites a real title.
     "A comprehensive study of non-adaptive and residual-based adaptive sampling for physics-informed neural networks",
+    "PINNacle: A Comprehensive Benchmark of Physics-Informed Neural Networks for Solving PDEs",
 ]
 for path in [ROOT / "README.md", ROOT / "AGENTS.md", *sorted((ROOT / "docs").glob("*.md"))]:
     text = path.read_text()

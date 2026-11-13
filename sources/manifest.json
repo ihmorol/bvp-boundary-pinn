@@ -3,13 +3,6 @@
   "private_sources_not_published": true,
   "files": [
     {
-      "path": "sources/parameter-sheet/parameter-values.pdf",
-      "source": "/home/emon-morol/Documents/parameter values_0001.pdf",
-      "provenance": "User supplied scanned parameter sheet",
-      "bytes": 149821,
-      "sha256": "2547883f0630ffb8ebaedadc8b3c5a1607eb5b3daf1992554d61f56ef74e0afc"
-    },
-    {
       "path": "sources/equation-excerpt/problem_3Nov_2026.docx",
       "source": "/home/emon-morol/Documents/fydp/problem_3Nov_2026.docx",
       "provenance": "User supplied equation excerpt",
@@ -17,32 +10,39 @@
       "sha256": "c0ea57ad43e0303964045aa6a3a79975fb3f932af0ac91be5b125ed0d9a713ef"
     },
     {
-      "path": "sources/project-draft/project3Nov_2026.docx",
-      "source": "/home/emon-morol/Documents/fydp/project3Nov_2026.docx",
-      "provenance": "User supplied project draft",
-      "bytes": 368819,
-      "sha256": "e9caca1674cc74b68ccb02966d775533684dd7d58785854b71287259ad7ca9b4"
+      "path": "sources/literature/READING_LIST-prior.md",
+      "source": "local: Documents/fydp/bvp-pinn-literature-2026-11-06/READING_LIST.md",
+      "provenance": "Reading notes for the four saved coupled-BVP papers from the first literature pass; copied on 2026-11-12",
+      "bytes": 11583,
+      "sha256": "522459a6c12a032e516e44a1379f0419b819f6543fbebc1c8f1b45cc46b21751"
     },
     {
-      "path": "sources/literature/micropolar-2026/article.pdf",
-      "source": "https://mdpi-res.com/d_attachment/modelling/modelling-07-00145/article_deploy/modelling-07-00145.pdf",
-      "provenance": "Previously downloaded full article; copied from the separate literature folder",
-      "bytes": 1219355,
-      "sha256": "4e315ba89bc378746edd48ee3b0a8b7bf1c9fb1876a66da6aa35b3382bef584e"
+      "path": "sources/literature/acta-numerica-survey-2024/numerical_analysis_pinn_survey_10.1017_s0962492923000089.pdf",
+      "source": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/A059C6E13478F0F7C70EC7C976716F9F/S0962492923000089a.pdf/numerical-analysis-of-physics-informed-neural-networks-and-related-models-in-physics-informed-machine-learning.pdf",
+      "provenance": "Publisher CC BY PDF of De Ryck and Mishra, Acta Numerica 33:633-713, 2024 (DOI 10.1017/s0962492923000089). Downloaded 2026-11-12.",
+      "bytes": 7127147,
+      "sha256": "a88ed676067af87a3ef7e0797328de9709daa7437a4bbe1bd74cf1828556277b"
     },
     {
-      "path": "sources/literature/squeezing-2026/article.pdf",
-      "source": "https://iscis-journal.org/index.php/iscis/article/download/17/29",
-      "provenance": "Previously downloaded full article; copied from the separate literature folder",
-      "bytes": 8654452,
-      "sha256": "15d2b1a29b913296ba641b7efd98811213abbd61dcdefe6b9b36480d8b610e87"
+      "path": "sources/literature/al-pinn-2023/augmented_lagrangian_PINN_arxiv_2205.01059.pdf",
+      "source": "https://arxiv.org/pdf/2205.01059",
+      "provenance": "arXiv preprint of Son, Cho and Hwang, Neurocomputing 548:126424, 2023 (DOI 10.1016/j.neucom.2023.126424). Downloaded 2026-11-12; augmented Lagrangian treatment of boundary constraints.",
+      "bytes": 6597169,
+      "sha256": "b5985ae326feb077b37150b4a42ef49a4566fa7868ace85cff2a0193202b5a35"
     },
     {
-      "path": "sources/literature/lap-joint-2021/lap_joint_PINN_2021_supplement_code.pdf",
-      "source": "https://static-content.springer.com/esm/art%3A10.1631%2Fjzus.A2000403/MediaObjects/11582_2021_371_MOESM1_ESM.pdf",
-      "provenance": "Previously downloaded publisher code supplement for the lap-joint coupled fourth-order PINN paper (DOI 10.1631/jzus.A2000403); copied from the separate literature folder on 2026-11-12",
-      "bytes": 396387,
-      "sha256": "0800922afa90fb493a85b8fd127dc80138646a73c7cba585f1cfdeed01d8326b"
+      "path": "sources/literature/bc-3d-comparison-2025/bc_enforcement_comparative_arxiv_2512.14941.pdf",
+      "source": "https://arxiv.org/pdf/2512.14941",
+      "provenance": "arXiv preprint 2512.14941 (Rowan, Hampleman, Maute and Doostan, December 2025). No journal record verified yet; treat as a preprint. Downloaded 2026-11-12 for the boundary enforcement comparison survey.",
+      "bytes": 2499752,
+      "sha256": "ec84ddbef8eea96885f204ad945b83e6d391b3a2b58836dcd415212be37f1147"
+    },
+    {
+      "path": "sources/literature/bc-comparison-2023/dirichlet_bc_enforcement_PINN_arxiv_2210.14795.pdf",
+      "source": "https://arxiv.org/pdf/2210.14795",
+      "provenance": "arXiv preprint of Berrone, Canuto, Pintore and Sukumar, Heliyon 9(8) e18820, 2023 (DOI 10.1016/j.heliyon.2023.e18820). Downloaded 2026-11-12 for the soft-penalty versus exact boundary imposition comparison.",
+      "bytes": 6054767,
+      "sha256": "df994fe33046bde18f59be222804e4190b4cac82b3861991a9e80484f3f94c12"
     },
     {
       "path": "sources/literature/beams-2024/complex_beam_systems_PINN_arxiv_2303.01055.pdf",
@@ -52,11 +52,158 @@
       "sha256": "8cc056f908f17afe283bfd5dad1938c124d7da6933da7afcbb056a662f4862fc"
     },
     {
-      "path": "sources/literature/READING_LIST-prior.md",
-      "source": "local: Documents/fydp/bvp-pinn-literature-2026-11-06/READING_LIST.md",
-      "provenance": "Reading notes for the four saved coupled-BVP papers from the first literature pass; copied on 2026-11-12",
-      "bytes": 11583,
-      "sha256": "522459a6c12a032e516e44a1379f0419b819f6543fbebc1c8f1b45cc46b21751"
+      "path": "sources/literature/cylinder-nano-2026/stretching_cylinder_pinn_discover_nano_10.1186_s11671-026-04962-3.pdf",
+      "source": "https://link.springer.com/content/pdf/10.1186/s11671-026-04962-3.pdf",
+      "provenance": "Publisher open-access PDF of Khan, Khan and Ahammad et al., Discover Nano 21:502, 2026 (DOI 10.1186/s11671-026-04962-3). Downloaded 2026-11-12 via the Springer page.",
+      "bytes": 5296915,
+      "sha256": "219a9381700af7f2e8e56f9b2635491daa62c7b68912737ba057eee40d9ea5c6"
+    },
+    {
+      "path": "sources/literature/failure-modes-2021/failure_modes_neurips2021_arxiv_2109.01050.pdf",
+      "source": "https://arxiv.org/pdf/2109.01050",
+      "provenance": "arXiv record 2109.01050 of Krishnapriyan, Gholami, Zhe, Kirby and Mahoney, NeurIPS 2021 (arXiv journal-ref field). Downloaded 2026-11-12.",
+      "bytes": 2192012,
+      "sha256": "677417a271d24f3927090dfc3a1f5430baeb8d9d2943652d06639cd4db7fc30a"
+    },
+    {
+      "path": "sources/literature/falkner-skan-hard-bc-2026/falkner_skan_hard_constrained_arxiv_2609.23493.pdf",
+      "source": "https://arxiv.org/pdf/2609.23493",
+      "provenance": "arXiv preprint 2609.23493 (Endalew and Zhang, September 2026). No journal record verified yet; treat as a preprint. Downloaded 2026-11-12; closest structural BVP match with hard wall conditions and regional residual balancing.",
+      "bytes": 2429500,
+      "sha256": "8f3f899b43b118289a6e3cf5d651e5199f20d08de22ade37402f2bec186840f5"
+    },
+    {
+      "path": "sources/literature/fi-pinn-sampling-2023/failure_informed_sampling_arxiv_2210.00279.pdf",
+      "source": "https://arxiv.org/pdf/2210.00279",
+      "provenance": "arXiv preprint of Gao, Yan and Zhou, SIAM Journal on Scientific Computing 45(4) A1971-A1994, 2023 (DOI 10.1137/22M1527763). Downloaded 2026-11-12 for the adaptive sampling comparison arm.",
+      "bytes": 9232173,
+      "sha256": "e7a897814bd389ffc6b5a3472934875953b826286db39e104533b70ff7f61561"
+    },
+    {
+      "path": "sources/literature/gradient-pathologies-2021/gradient_flow_pathologies_arxiv_2001.04536.pdf",
+      "source": "https://arxiv.org/pdf/2001.04536",
+      "provenance": "arXiv preprint of Wang, Teng and Perdikaris, SIAM Journal on Scientific Computing 43(5) A3055-A3081, 2021 (DOI 10.1137/20M1318043). Downloaded 2026-11-12; the arXiv title omits the word Flow that the SIAM title has.",
+      "bytes": 7367775,
+      "sha256": "937e4f3610d52f283e124492ec836740dba6cdb0390ff3919a583d25be2b3881"
+    },
+    {
+      "path": "sources/literature/hpinn-hard-constraints-2021/hpinn_hard_constraints_arxiv_2102.04626.pdf",
+      "source": "https://arxiv.org/pdf/2102.04626",
+      "provenance": "arXiv preprint of Lu, Pestourie, Yao, Wang, Verdugo and Johnson, SIAM Journal on Scientific Computing 43(6) B1105-B1132, 2021 (DOI 10.1137/21M1397908). Downloaded 2026-11-12.",
+      "bytes": 5118750,
+      "sha256": "ad807ad926a6ac5bc5564e7fc4c47683c8703d188215c090a73b38aaee969a2e"
+    },
+    {
+      "path": "sources/literature/lap-joint-2021/lap_joint_PINN_2021_supplement_code.pdf",
+      "source": "https://static-content.springer.com/esm/art%3A10.1631%2Fjzus.A2000403/MediaObjects/11582_2021_371_MOESM1_ESM.pdf",
+      "provenance": "Previously downloaded publisher code supplement for the lap-joint coupled fourth-order PINN paper (DOI 10.1631/jzus.A2000403); copied from the separate literature folder on 2026-11-12",
+      "bytes": 396387,
+      "sha256": "0800922afa90fb493a85b8fd127dc80138646a73c7cba585f1cfdeed01d8326b"
+    },
+    {
+      "path": "sources/literature/micropolar-2026/article.pdf",
+      "source": "https://mdpi-res.com/d_attachment/modelling/modelling-07-00145/article_deploy/modelling-07-00145.pdf",
+      "provenance": "Previously downloaded full article; copied from the separate literature folder",
+      "bytes": 1219355,
+      "sha256": "4e315ba89bc378746edd48ee3b0a8b7bf1c9fb1876a66da6aa35b3382bef584e"
+    },
+    {
+      "path": "sources/literature/ntk-failure-2022/pinn_ntk_failure_arxiv_2007.14527.pdf",
+      "source": "https://arxiv.org/pdf/2007.14527",
+      "provenance": "arXiv preprint of Wang, Yu and Perdikaris, Journal of Computational Physics 449:110768, 2022 (DOI 10.1016/j.jcp.2021.110768). Downloaded 2026-11-12.",
+      "bytes": 5728917,
+      "sha256": "d705ee59d92d888ee0f017e30c7b10ae538f2273408597bfbe8c0ba2f670c398"
+    },
+    {
+      "path": "sources/literature/ntk-sketching-2025/ntk_weights_sketching_arxiv_2511.15530.pdf",
+      "source": "https://arxiv.org/pdf/2511.15530",
+      "provenance": "arXiv preprint 2511.15530 (Hirsch and Pichi, November 2025). No journal record verified yet; treat as a preprint. Downloaded 2026-11-12.",
+      "bytes": 1988212,
+      "sha256": "8807fd885399ed9fac54741970355d604455243a303b30bf42904d171855a7b7"
+    },
+    {
+      "path": "sources/literature/optimizer-optimizing-2025/optimizing_the_optimizer_arxiv_2501.16371.pdf",
+      "source": "https://arxiv.org/pdf/2501.16371",
+      "provenance": "arXiv preprint 2501.16371 (Kiyani, Shukla, Urban, Darbon and Karniadakis), v6 February 2026. No journal record verified yet; treat as a preprint. Downloaded 2026-11-12 for the Adam and L-BFGS design choices.",
+      "bytes": 20557167,
+      "sha256": "b35a7af1704c5404efe749b6c1f0b0f24b41b7948722ba05f628a2bde28bb27a"
+    },
+    {
+      "path": "sources/literature/overfitting-failure-2026/pinn_failure_overfitting_arxiv_2605.30910.pdf",
+      "source": "https://arxiv.org/pdf/2605.30910",
+      "provenance": "arXiv preprint 2605.30910 (Andersen and Matsubara, May 2026). No journal record verified yet; treat as a preprint. Downloaded 2026-11-12 as the counterpoint view of PINN failure.",
+      "bytes": 1810313,
+      "sha256": "dbab4860a31920b5a6c3675906fbf4941100b63f6b1362b12e74eea97ae54f11"
+    },
+    {
+      "path": "sources/literature/pinn-foundations-2019/pinn_part1_arxiv_1711.10561.pdf",
+      "source": "https://arxiv.org/pdf/1711.10561",
+      "provenance": "arXiv Part I preprint (1711.10561) by Raissi, Perdikaris and Karniadakis; open-access companion of the founding JCP 378:686-707, 2019 paper (DOI 10.1016/j.jcp.2018.10.045). The arXiv title differs from the journal title. Downloaded 2026-11-12.",
+      "bytes": 579573,
+      "sha256": "2a8db6776a110a4f36bd1e36af79cf31a2e74baa5af8f7ee3d9286a75fdc400d"
+    },
+    {
+      "path": "sources/literature/pinn-pitfalls-report-2022/pinn_pitfalls_frustration_scipy2022_10.25080_majora-212e5952-005.pdf",
+      "source": "https://proceedings.scipy.org/articles/majora-212e5952-005.pdf",
+      "provenance": "Proceedings PDF of Chuang and Barba, SciPy 2022 (DOI 10.25080/majora-212e5952-005). Downloaded 2026-11-12 for the honest cost and failure comparison stance.",
+      "bytes": 866486,
+      "sha256": "ede898a4d127ef82d9430b1a08c8cbb6749f4618070fc55ec2670394b9c78b63"
+    },
+    {
+      "path": "sources/literature/pinn-vs-fem-2024/pinn_vs_fem_arxiv_2302.04107.pdf",
+      "source": "https://arxiv.org/pdf/2302.04107",
+      "provenance": "arXiv preprint of Grossmann, Komorowska, Latz and Schoenlieb, IMA Journal of Applied Mathematics 89(1) 143-174, 2024. Published CC BY version also on PMC (PMC11197852). Downloaded 2026-11-12 for the honest solver comparison framing.",
+      "bytes": 3397069,
+      "sha256": "cb123e7936e5ae55bb63702d1cff30d69e940972450822afbea659ef28234a9a"
+    },
+    {
+      "path": "sources/literature/pinnacle-benchmark-2024/pinnacle_benchmark_neurips2024_arxiv_2306.08827.pdf",
+      "source": "https://arxiv.org/pdf/2306.08827",
+      "provenance": "arXiv preprint 2306.08827 of Hao, Yao, Su et al., PINNacle, NeurIPS 2024 Datasets and Benchmarks track (proceedings entry verified by the search agent). Downloaded 2026-11-12 for evaluation practice.",
+      "bytes": 30608630,
+      "sha256": "69de485e67c6e85b12057300a06004edfd7b0b0ed3bc05550a0bf266af99cf6b"
+    },
+    {
+      "path": "sources/literature/residual-decay-weights-2025/balanced_residual_decay_weights_arxiv_2407.01613.pdf",
+      "source": "https://arxiv.org/pdf/2407.01613",
+      "provenance": "arXiv preprint of Chen, Howard and Stinis, Journal of Computational Physics 542:114226, 2025 (arXiv journal-ref field). Downloaded 2026-11-12 for the adaptive loss weight comparison arm.",
+      "bytes": 3617451,
+      "sha256": "d25f757c6673435eed7ccb7b9ec321d8d7c11c50e1ba3cf0c8959be3c21455a1"
+    },
+    {
+      "path": "sources/literature/sciml-survey-2022/sciml_pinn_survey_arxiv_2201.05624.pdf",
+      "source": "https://arxiv.org/pdf/2201.05624",
+      "provenance": "arXiv preprint of Cuomo, Schiano Di Cola, Giampaolo, Rozza, Raissi and Piccialli, Journal of Scientific Computing 92:88, 2022 (DOI 10.1007/s10915-022-01939-z). Downloaded 2026-11-12 as the open-access version of the survey.",
+      "bytes": 1976124,
+      "sha256": "a32e1bfb31012801d8b7e12cbec52a8d14444c563d3571becfe0bf83114d02b9"
+    },
+    {
+      "path": "sources/literature/self-adaptive-2023/self_adaptive_soft_attention_arxiv_2009.04544.pdf",
+      "source": "https://arxiv.org/pdf/2009.04544",
+      "provenance": "arXiv preprint of McClenny and Braga-Neto, Journal of Computational Physics 474:111722, 2023 (DOI 10.1016/j.jcp.2022.111722). Downloaded 2026-11-12.",
+      "bytes": 2293815,
+      "sha256": "789cb3ce10a008172feaee272515900e605b217cc7fe67ce87524da7030d2ea7"
+    },
+    {
+      "path": "sources/literature/squeezing-2026/article.pdf",
+      "source": "https://iscis-journal.org/index.php/iscis/article/download/17/29",
+      "provenance": "Previously downloaded full article; copied from the separate literature folder",
+      "bytes": 8654452,
+      "sha256": "15d2b1a29b913296ba641b7efd98811213abbd61dcdefe6b9b36480d8b610e87"
+    },
+    {
+      "path": "sources/parameter-sheet/parameter-values.pdf",
+      "source": "/home/emon-morol/Documents/parameter values_0001.pdf",
+      "provenance": "User supplied scanned parameter sheet",
+      "bytes": 149821,
+      "sha256": "2547883f0630ffb8ebaedadc8b3c5a1607eb5b3daf1992554d61f56ef74e0afc"
+    },
+    {
+      "path": "sources/project-draft/project3Nov_2026.docx",
+      "source": "/home/emon-morol/Documents/fydp/project3Nov_2026.docx",
+      "provenance": "User supplied project draft",
+      "bytes": 368819,
+      "sha256": "e9caca1674cc74b68ccb02966d775533684dd7d58785854b71287259ad7ca9b4"
     }
   ],
   "storage_note": "Supervisor documents and papers are uploaded only to the private GitHub repository ihmorol/bvp-boundary-pinn. Do not make that repository public while sources/ contains supervisor documents.",
