@@ -13,6 +13,14 @@ Newest first. One entry per working session. Keep it short and factual.
 - Added short TL;DR records: every analysis.md now opens with a 3 to 4 line TL;DR (what it is, gives us, avoid, relevance). Added docs/papers-tldr.md, the two-minute overview of all 25 papers, and docs/reading-shortlist.md, the tiered list of which papers deserve a full human read.
 - No solver code and no training has run. tools/check_records.py passes.
 
+## 2026-11-13 (session: parameter audit)
+
+- Checked configs/physical-case-pending.json against docs/parameters.md: 22 physical coefficients, 15 entered values and 7 null values. Of the entered values, Pr = 6.8 is supplied as fixed; the other 14 are proposed choices.
+- Reviewed the recorded limits and the pending B, fw, epsilon and Lb definition questions. No value is established as best by a solver or training run. Left both configs unchanged.
+- Counted 8 unset numerical or training fields in configs/training-proposal.json. These are separate from the missing physical values. No solver, reference simulation or training was run.
+- Ran `python3 -I tools/check_records.py`: passed the record checks and reported the physical case as blocked by the 7 missing values.
+- Mapped all 22 parameters to Eqs. 14 to 19 and the 12 boundary conditions. Every parameter is used at least once; no extra physical parameter is needed. R16, R17, R18 and B5 cannot be evaluated while any of the 7 missing values is null.
+
 ## 2026-11-12 (second session: literature pass 2)
 
 - Ran a second literature pass with four parallel searches: closest physical precedents, training methodology, boundary and sampling methods, benchmarks and surveys.
