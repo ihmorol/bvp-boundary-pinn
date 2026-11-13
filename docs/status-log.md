@@ -2,6 +2,11 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-14
+
+- Committed the 2026-11-13 parameter audit entry that was left uncommitted in a linked worktree, placed it under the per-paper analysis entry for the same day, and labeled it "session: parameter audit". The worktree change was a status log edit only; no file differed in content from what is now committed.
+- Checked the rest of the repo for pending work: all 26 PDFs in sources/literature/ are tracked, no other branch, stash or untracked file exists, and only tools/__pycache__/ is ignored. No runs; tools/check_records.py passed.
+
 ## 2026-11-13 (session: per-paper deep analysis)
 
 - Ran one analysis agent per downloaded paper, two at a time, over all 25 papers with local PDFs in sources/literature/. Each agent read the full PDF and wrote analysis.md inside that paper's folder, with a fixed section order: record, problem, method, author-reported results, adopt, do not import, quotes, relevance.
