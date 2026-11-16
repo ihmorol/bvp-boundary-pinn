@@ -11,6 +11,14 @@ REQUIRED = {
     "beta_m", "epsilon", "b", "Pr", "Le", "N1", "Bi", "Rd", "Nr",
     "Nt", "Nb", "Lb", "Pe", "ell", "fw",
 }
+# Sorted, compact JSON of the supervisor values recorded on 2026-11-16.
+SUPERVISOR_VALUES_SHA256 = "8a798b4a19c8ceff9870cff7ebc217a5141533b2eb6950b8a93acdb130d025b5"
+
+
+def is_finite_number(value):
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
+
+
 case = json.loads((ROOT / "configs/physical-case-pending.json").read_text())
 training = json.loads((ROOT / "configs/training-proposal.json").read_text())
 p = case["physical_parameters"]
@@ -21,21 +29,59 @@ missing = sorted(k for k, v in p.items() if v is None)
 if sorted(case["missing_parameters"]) != missing:
     errors.append("The missing-parameter list does not match null values.")
 for key, value in p.items():
-    if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)):
+    if value is not None and not is_finite_number(value):
         errors.append(f"{key} is not a finite numeric value.")
+
+confirmation = case.get("supervisor_confirmation", {})
+received = confirmation.get("received_values", {})
+explicit_mappings = {
+    "bm": "beta_m", "dt": "delta_star", "Dt": "Delta",
+    "L": "lambda_m", "tw": "theta_w", "M": "1/Da",
+}
+notation_aliases = {"k": "kappa", "l": "ell", "ep": "epsilon"}
+unmapped = {"H", "Prm"}
+if case.get("locked") is not True:
+    errors.append("The supervisor case must stay locked.")
+if confirmation.get("received_date") != "2026-11-16" or case.get("user_decisions_date") != "2026-11-16":
+    errors.append("The lock must refer to the supervisor values received on 2026-11-16.")
+expected_status = "blocked_missing_parameters" if missing else "parameters_complete_validation_pending"
+if case.get("status") != expected_status:
+    errors.append("The case status does not match parameter completeness and pending validation.")
+if confirmation.get("explicit_mappings") != explicit_mappings or confirmation.get("notation_aliases") != notation_aliases:
+    errors.append("The received symbol mappings do not match the dated parameter record.")
+if set(confirmation.get("unmapped_symbols", {})) != unmapped:
+    errors.append("H and Prm must stay recorded outside the equation coefficients.")
+if not all(is_finite_number(value) for value in received.values()):
+    errors.append("Every received supervisor value must be a finite number, including the known zero dt.")
+else:
+    encoded = json.dumps(received, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    if hashlib.sha256(encoded.encode()).hexdigest() != SUPERVISOR_VALUES_SHA256:
+        errors.append("The locked supervisor values changed. A new set needs explicit confirmation and a dated record.")
+aliases = {**explicit_mappings, **notation_aliases}
+for symbol, value in received.items():
+    if not is_finite_number(value):
+        continue
+    if symbol == "M":
+        if value <= 0 or p.get("Da") != 1 / value:
+            errors.append("Da must equal 1/M from the supervisor record; M=5 gives Da=0.2.")
+    elif symbol not in unmapped:
+        key = aliases.get(symbol, symbol)
+        if p.get(key) != value:
+            errors.append(f"{key} does not match the supervisor value for {symbol}.")
+
 for key in ["Da", "kappa", "b", "Pr", "Le", "Nb", "Lb"]:
-    if p.get(key) is not None and p[key] <= 0:
+    if is_finite_number(p.get(key)) and p[key] <= 0:
         errors.append(f"{key} must be positive for the regular baseline.")
 for key in ["Delta", "B", "beta_m", "N1", "Bi", "Rd"]:
-    if p.get(key) is not None and p[key] < 0:
+    if is_finite_number(p.get(key)) and p[key] < 0:
         errors.append(f"{key} violates the recorded nonnegative/positive source condition.")
-if p["theta_w"] is not None and (p["theta_w"] <= 0 or p["theta_w"] == 1):
+if is_finite_number(p.get("theta_w")) and (p["theta_w"] <= 0 or p["theta_w"] == 1):
     errors.append("theta_w must be positive and avoid the original formula's unit-ratio division.")
-if p["Pr"] != 6.8 or p["Le"] not in [1, 2, 3, 4] or p["delta_star"] not in [0, 1, 2]:
-    errors.append("Fixed/listed source choices were changed outside this pending pilot specification.")
-if p["ell"] is not None and not 0 <= p["ell"] <= 1:
+if p.get("Le") not in [1, 2, 3, 4] or p.get("delta_star") not in [0, 1, 2]:
+    errors.append("Le or delta_star is outside the recorded starting-case choices.")
+if is_finite_number(p.get("ell")) and not 0 <= p["ell"] <= 1:
     errors.append("ell is outside the recorded interval.")
-if p["fw"] is not None and not -1 <= p["fw"] <= 1:
+if is_finite_number(p.get("fw")) and not -1 <= p["fw"] <= 1:
     errors.append("fw is outside the recorded interval.")
 if training["loss"]["equation_components"] != 5 or training["loss"]["boundary_components"] != 12:
     errors.append("The loss component counts are incorrect.")
@@ -89,6 +135,10 @@ if errors:
     print("RECORD CHECK FAILED")
     print("\n".join(errors))
     sys.exit(1)
-print("RECORD CHECK PASSED: names, values, source choices, weights, links and available source hashes.")
-print("PHYSICAL CASE BLOCKED: missing " + ", ".join(missing))
-print("Numerical settings and acceptance scales remain proposals. No solver or training test was run.")
+print("RECORD CHECK PASSED: names, values, supervisor lock, mappings, weights, links and available source hashes.")
+if missing:
+    print("PHYSICAL CASE BLOCKED: missing " + ", ".join(missing))
+else:
+    print("PHYSICAL PARAMETERS COMPLETE: 22 equation coefficients from the locked supervisor record, with Da derived from M.")
+print("Numerical settings and acceptance scales remain proposals. Definition questions remain open.")
+print("SOFTWARE VALIDATION PENDING: no solver, reference simulation or training test was run.")
