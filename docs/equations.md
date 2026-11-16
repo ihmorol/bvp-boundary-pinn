@@ -2,6 +2,8 @@
 
 Working target: the supervisor-confirmed Eqs. 14–19 in [the source draft](../sources/project-draft/project3Nov_2026.docx). We are solving the given numerical specification. We are not correcting its physical model by copying a related paper.
 
+A reading version of these equations with the locked numbers substituted is [the substituted sheet](simplified-equations.md). It is derived from this sheet and does not replace it.
+
 There are five physical outputs: f, g, theta, phi, chi. Primes mean derivatives with respect to eta, not NN weights. The NN weights are named `w` in the strategy so they are not confused with the physical output theta.
 
 ## Short names used below

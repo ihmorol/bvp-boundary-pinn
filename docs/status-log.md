@@ -2,6 +2,40 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-16 (session: substituted reading sheet and commit of the day's work)
+
+- Wrote docs/simplified-equations.md: Eqs. 14 to 19 and the Eq. 19 boundary errors restated with the locked values substituted, as a reading aid. equations.md stays authoritative and links the sheet. delta_star=0 removes all unsteady terms; kappa=b=0.2 merges h into q; Eqs. 16 and 17 are shown multiplied by 8.8, which does not change their zero sets.
+- Corrected the wall radiation constant during the term-by-term check: B4 gives 0.998 = 1 - 0.002 from 1.25*0.0016, not the 0.9984 printed in the earlier chat draft. The sheet records the fix.
+- Linked the sheet from README and equations.md and rebuilt strategy-guide.html.
+- Analyzed every previously uncommitted change and matched it to the three recorded sessions of this day: the supervisor parameter lock, the fifty-task methodology diagram and the Lorenz-style architecture diagram. No unexplained edits were found. The unreferenced methodology-flowchart-a4.pdf export was included with the methodology group.
+- Ran tools/check_records.py, tools/check_methodology.py, tools/check_pinn_architecture.py and git diff --check. Committed the day's work in four groups with plain messages. No push. No solver, reference, training or evaluation run.
+
+## 2026-11-16 (session: Lorenz-style PINN architecture)
+
+- Inspected the live lorenz1960-pinn code and paper architecture source at revision 0c5f9c86c597bd27897632fb917d6d17548eeffc. Its tracked worktree was unchanged; untracked notes were not used as implementation evidence. Wrote docs/lorenz-to-bvp-methodology.md with source links, retained patterns and required BVP replacements.
+- Recorded two old figure differences: the implemented Lorenz MLP has 11283 parameters including biases, not 11163, and its residual loss averages over all three components. The Lorenz trainer returns its terminal model and logs reference errors during training; these details are not copied as BVP selection rules.
+- Added a new architecture-centered diagram with one shared five-output MLP, nested eta derivatives, separate interior and endpoint residual branches, one scaled loss, Adam/L-BFGS feedback, independent monitoring and a check-only reference. Retained the existing fifty-task diagram unchanged. No causal time windows, hard initial-value lift, endpoint handoff or reference-data loss is added to the BVP.
+- Exported vector PDF and SVG, editable HTML and an image preview. Reused the canonical equation and boundary parser. Content checks confirm 21 distinct graph nodes, all 17 original residual expressions, valid MathML, embedded fonts and no missing-glyph markers or out-of-page text. Inspected the rendered sections directly because the visual-review agent was unavailable. Repaired arrow routing and made gradient checks occur after backpropagation, before weight updates.
+- Updated links and the guide freshness note; rebuilt strategy-guide.html. HTML preflight has no errors; its white-background advisory matches the user's theme. PDF metadata, fonts and boundary checks pass; six advisory punctuation flags concern multiplication dots in math. Record and whitespace checks pass. No physics, solver tests, training, commit, push or publication.
+
+## 2026-11-16 (session: complete methodology diagram)
+
+- Built the BVP methodology from the locked parameter record and unchanged Eqs. 14 to 19. Split it into 50 small tasks across 10 phases, with full equation, boundary, reference-matrix, training, error and acceptance formulas in separate panels. Physical and training configs were not changed.
+- Matched the user's reference theme: pale task boxes, numbered badges, green dashed groups and tabs, yellow decision diamonds, dark arrows and serif text. Saved the requested theme preference for later diagrams. Added vector PDF and SVG, editable HTML and Markdown, and a preview image. The original diffusion-example PDF is unchanged.
+- Added the methodology builder and content/PDF checker. Reused the canonical equation parser instead of copying residual formulas into the method. Checks confirm 22 displayed locked values, 17 canonical residual expressions, 50 ordered tasks, valid MathML, embedded PDF fonts and no out-of-page text or missing-glyph markers. SVG contains vector paths, not raster images.
+- A read-only math review found a circular acceptance gate. Corrected it: phase 8 records final-test pass with sensitivity pending; phase 9 decides final acceptance. Repaired multiline mathematical rendering and checked every rendered section for overlap and clipping. The visual-review agent was unavailable, so the rendered sections were inspected directly instead.
+- HTML preflight passed with no errors or warnings. PDF checks passed metadata, fonts and page-boundary checks; six advisory punctuation flags refer to multiplication dots in mathematical expressions, not clipped prose. No solver, reference, training or physical accuracy test ran.
+- Updated navigation links and rebuilt strategy-guide.html with the complete locked-case status. Ran the record and whitespace checks. No commit, push or publication.
+
+## 2026-11-16 (session: supervisor parameter lock)
+
+- Recorded the user's message with values directly from the supervisor. Saved all 24 received names and values, the date, explicit mappings and approved notation aliases in configs/physical-case-pending.json. The 22 equation coefficients are now complete and locked. Pr=8.8 supersedes the old sheet value; Da=0.2 is derived from the supplied M=5 and M=1/Da definition.
+- Kept H=1 and Prm=0.1 in the receipt, outside the equation coefficients. Kept the temperature, Lb, B and fw definition questions open. These questions do not authorize changing the locked numbers or Eqs. 14 to 19.
+- Added checks for the received-value checksum, mappings, case lock and pending validation status. The locked baseline passed, and all 24 in-memory altered-record tests were rejected as expected. No test changed repository data.
+- Checked the parameter values against the message and verified the wall-coefficient and conditional temperature/Lb arithmetic. The training config is byte-for-byte unchanged, including its eight null fields and proposed domain lengths. No solver validation, reference simulation, training or evaluation was run.
+- Updated the parameter record, supervisor questions, README and strategy. Left the generated guide unchanged and marked it stale. Hash checks confirmed that the existing flowchart and methodology work, equations, training config and generated guides were preserved.
+- Ran `python3 -I tools/check_records.py` and `git diff --check`: passed. The record checker reports complete physical parameters and pending software validation. No commit or push.
+
 ## 2026-11-14
 
 - Committed the 2026-11-13 parameter audit entry that was left uncommitted in a linked worktree, placed it under the per-paper analysis entry for the same day, and labeled it "session: parameter audit". The worktree change was a status log edit only; no file differed in content from what is now committed.
@@ -52,6 +86,6 @@ Newest first. One entry per working session. Keep it short and factual.
 
 ## Next
 
-1. Send the questions in docs/questions-for-supervisor.md.
-2. When values arrive, update configs/physical-case-pending.json and run tools/check_records.py.
-3. Then build and test the reference solver and the PINN step by step, as written in docs/strategy.md.
+1. Resolve the definition, wall-output and accuracy questions in docs/questions-for-supervisor.md without changing the locked values automatically.
+2. Build and test the parameter loader, original residuals and boundary calculations using the confirmed case and separate synthetic fixtures. Numerical settings still need choices and checks.
+3. Then build the reference, train and evaluate behind the gates in docs/strategy.md. Refresh the generated guides in a separate update.

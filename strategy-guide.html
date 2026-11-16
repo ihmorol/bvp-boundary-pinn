@@ -8,8 +8,8 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:28px 20px 60px}h1{font-size:1.8rem;line-height:1.25}h2{font-size:1.4rem;line-height:1.3}h3{font-size:1.15rem;line-height:1.4}h1,h2,h3{margin:1.6em 0 .6em}a{color:var(--link)}nav{display:flex;gap:8px 18px;flex-wrap:wrap;margin:24px 0}section{border-top:1px solid var(--line);padding-top:12px;margin-top:42px;scroll-margin-top:16px}.status{padding:16px 20px;background:var(--warn);border-left:4px solid var(--link)}.chain{display:grid;gap:10px;margin:18px 0}.node{background:var(--panel);padding:14px 18px;border-left:3px solid var(--link)}.arrow{text-align:center;color:var(--muted)}.branch{margin-top:8px;color:var(--muted)}.calcs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.calcs .node{height:100%}pre{background:var(--panel);padding:16px;overflow:auto;font-size:14px;line-height:1.55;border-radius:4px}code{font-family:ui-monospace,monospace}p code,li code{background:var(--panel);padding:1px 4px}table{width:100%;border-collapse:collapse;font-size:15px;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{font-weight:600}math{display:block;font-size:1.15rem;margin:18px 0;overflow-x:auto}.equation-stack math{margin:10px 0}details{margin:12px 0;padding:10px 0;border-bottom:1px solid var(--line)}summary{font-weight:600;cursor:pointer}li{margin:.3em 0}.read{font-weight:600}.small{font-size:14px;color:var(--muted)}@media(max-width:650px){.calcs{grid-template-columns:1fr}main{padding-inline:14px}body{font-size:16px}pre{font-size:13px}h1{font-size:1.5rem}table{font-size:14px}}
 </style></head><body><main>
 <h1>Five-variable boundary PINN</h1>
-<p>The source conditions, our rounded choices, the equations and the practical training plan are kept separate below. This guide contains no trained result.</p>
-<div class="status"><strong>Physical simulation is blocked.</strong> Missing: lambda_m, epsilon, Nr, Nt, Nb, Lb, Pe. Parameters are not replaced by literature defaults. Epsilon's fixed value versus range also needs confirmation.</div>
+<p>The locked supervisor values, source equations and proposed numerical settings are kept separate below. This guide contains no trained result. Read the <a href="bvp-methodology.html">complete small-task methodology diagram</a> or its <a href="bvp-methodology.pdf">PDF</a>.</p>
+<div class="status"><strong>All 22 physical coefficients are complete and locked.</strong> The supervisor receipt dated 2026-11-16 supplies the active values; Da=0.2 is derived from M=5. Software validation, reference, training and evaluation are pending. Numerical settings and definition questions stay separate.</div>
 <nav><a href="#parameters">Parameter record</a><a href="#equations">Equation calculation sheet</a><a href="#strategy">Architecture and training strategy</a><a href="#papers">Papers, evidence and research comparisons</a><a href="#flows">Editable flowchart source</a></nav>
 <h2>Architecture: what goes in and what comes out</h2>
 <div class="chain">
@@ -124,17 +124,233 @@
 </div><p><strong>Read:</strong> evaluate this expression at the endpoint shown; boundary error 12 should be zero.</p></details>
 </section>
 <section id="parameters"><h1>Parameter record</h1>
-<p>Source: <a href="sources/parameter-sheet/parameter-values.pdf">supervisor's scanned page</a>. Recorded on 2026-11-12.</p>
-<p><strong>These are mostly conditions, not fixed numerical values.</strong> The source condition and our chosen value are separate. The requested first case uses small rounded values close to allowed boundaries, without setting a denominator to zero. Our choices are proposals, not numbers directly supplied by the supervisor.</p>
-<p>The user chose to wait for the supervisor for missing values. We have not filled missing values from papers. The first physical case is therefore <strong>not runnable yet</strong>.</p>
-<h2>Source condition and first-case choice</h2>
+<h2>Supervisor confirmation: 2026-11-16</h2>
+<p>Source: the user's message received on 2026-11-16, reporting values directly from the supervisor. This message is the source of the active numbers, not the old scanned sheet or papers.</p>
+<p>All 24 received values are locked. After the mappings below, all 22 physical coefficients needed by Eqs. 14 to 19 have numerical values. H and Prm are confirmed received values kept outside that coefficient set. Numerical completeness is not software validation or proof of convergence.</p>
+<h3>Exact received values</h3>
+<pre><code class="language-text">%PARAMETERS
+b=0.2; bm = 0.2; B = 0.5; dt=0; Dt=0.5;
+H=1; k=0.2; L =0.5; M=5; tw = 0.2; ep = 0.1;
+
+Pe=2;Pr=8.8;Prm = 0.1;
+Nb=0.1; Nr = 0.5; Nt=0.3;
+Lb=1; Le=1;
+
+% BD parameters
+Bi=1; l = 0.3; fw = 0.2; Rd = 1; N1 = 0.1;
+
+bm := beta_m, dt := delta*, Dt = Delta,  L := lambda_m; tw = theta_w, M:= 1/Da
+</code></pre>
+<h3>Locked physical coefficients and mappings</h3>
+<p>The receipt explicitly states <code>bm=beta_m</code>, <code>dt=delta_star</code> (<code>delta*</code>), <code>Dt=Delta</code>, <code>L=lambda_m</code>, <code>tw=theta_w</code> and <code>M=1/Da</code>. The user also approved the notation aliases <code>k=kappa</code>, <code>l=ell</code> and <code>ep=epsilon</code>. These three aliases are not mappings explicitly stated in the supervisor receipt.</p>
+<p>Every received value in this table comes from the message dated above. <strong>Da=0.2 is derived as 1/M=1/5, not directly supplied.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Physical field</th>
+<th style="text-align: right;">Locked value</th>
+<th>Received value</th>
+<th>Mapping or basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Delta</td>
+<td style="text-align: right;">0.5</td>
+<td>Dt=0.5</td>
+<td>Explicit mapping: Dt=Delta</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align: right;">0.5</td>
+<td>B=0.5</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Da</td>
+<td style="text-align: right;">0.2</td>
+<td>M=5</td>
+<td>Derived from the explicit relation M=1/Da</td>
+</tr>
+<tr>
+<td>kappa</td>
+<td style="text-align: right;">0.2</td>
+<td>k=0.2</td>
+<td>User-approved notation alias: k=kappa</td>
+</tr>
+<tr>
+<td>delta_star</td>
+<td style="text-align: right;">0</td>
+<td>dt=0</td>
+<td>Explicit mapping: dt=delta_star, also written delta*</td>
+</tr>
+<tr>
+<td>theta_w</td>
+<td style="text-align: right;">0.2</td>
+<td>tw=0.2</td>
+<td>Explicit mapping: tw=theta_w</td>
+</tr>
+<tr>
+<td>lambda_m</td>
+<td style="text-align: right;">0.5</td>
+<td>L=0.5</td>
+<td>Explicit mapping: L=lambda_m, not the far endpoint</td>
+</tr>
+<tr>
+<td>beta_m</td>
+<td style="text-align: right;">0.2</td>
+<td>bm=0.2</td>
+<td>Explicit mapping: bm=beta_m</td>
+</tr>
+<tr>
+<td>epsilon</td>
+<td style="text-align: right;">0.1</td>
+<td>ep=0.1</td>
+<td>User-approved notation alias: ep=epsilon</td>
+</tr>
+<tr>
+<td>b</td>
+<td style="text-align: right;">0.2</td>
+<td>b=0.2</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Pr</td>
+<td style="text-align: right;">8.8</td>
+<td>Pr=8.8</td>
+<td>Direct; supersedes the historical sheet reading 6.8</td>
+</tr>
+<tr>
+<td>Le</td>
+<td style="text-align: right;">1</td>
+<td>Le=1</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>N1</td>
+<td style="text-align: right;">0.1</td>
+<td>N1=0.1</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Bi</td>
+<td style="text-align: right;">1</td>
+<td>boundary group Bi=1</td>
+<td>Direct boundary coefficient in Eq. 19</td>
+</tr>
+<tr>
+<td>Rd</td>
+<td style="text-align: right;">1</td>
+<td>Rd=1</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Nr</td>
+<td style="text-align: right;">0.5</td>
+<td>Nr=0.5</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Nt</td>
+<td style="text-align: right;">0.3</td>
+<td>Nt=0.3</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Nb</td>
+<td style="text-align: right;">0.1</td>
+<td>Nb=0.1</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Lb</td>
+<td style="text-align: right;">1</td>
+<td>Lb=1</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>Pe</td>
+<td style="text-align: right;">2</td>
+<td>Pe=2</td>
+<td>Direct, same name</td>
+</tr>
+<tr>
+<td>ell</td>
+<td style="text-align: right;">0.3</td>
+<td>l=0.3</td>
+<td>User-approved notation alias: l=ell</td>
+</tr>
+<tr>
+<td>fw</td>
+<td style="text-align: right;">0.2</td>
+<td>fw=0.2</td>
+<td>Direct value; meaning and sign convention remain open</td>
+</tr>
+</tbody>
+</table>
+<h3>Confirmed values outside the physical coefficient set</h3>
+<table>
+<thead>
+<tr>
+<th>Received symbol</th>
+<th style="text-align: right;">Locked received value</th>
+<th>Treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H</td>
+<td style="text-align: right;">1</td>
+<td>No active physical coefficient in Eqs. 14 to 19; interpretation remains open</td>
+</tr>
+<tr>
+<td>Prm</td>
+<td style="text-align: right;">0.1</td>
+<td>No active physical coefficient in Eqs. 14 to 19; do not assume a magnetic Prandtl mapping</td>
+</tr>
+</tbody>
+</table>
+<p>Both values come from the same 2026-11-16 receipt. Keep them separately; do not invent equation terms for them. Asking what they mean does not make the 22 physical coefficients numerically incomplete.</p>
+<p>In <a href="equations.md#highest-derivative-system-for-the-reference">the reference calculation sheet</a>, <code>M</code> is a local highest-derivative matrix and <code>H</code> is a local derivative vector. Those meanings are separate from the received scalars M=5 and H=1. The received L=0.5 means lambda_m=0.5, not the numerical far endpoint L used in the strategy.</p>
+<h2>Lock policy</h2>
+<p>No automatic changes or tuning of the locked target are allowed. Any change needs an explicit user or supervisor update, with its date and source recorded. Do not replace a supplied number to enforce a conditional definition. The earlier proposals and Pr=6.8 are superseded, not fallback defaults.</p>
+<p>Eqs. 14 to 19 stay unchanged. The numerical/training proposal in <a href="configs/training-proposal.json">training-proposal.json</a> also stays unchanged, including its eight null settings. These are numerical/training choices, not missing physical coefficients.</p>
+<h2>Coefficient sizes for the locked target</h2>
+<p>The following arithmetic uses the locked values above, not a computed solution. With <code>q=eta+kappa</code>, <code>h=eta+b</code>, kappa=b=Da=0.2 and beta_m=0.2, the wall eta=0 gives:</p>
+<ul>
+<li>1/q=5.</li>
+<li>1/q^3=125.</li>
+<li>1/Da=5.</li>
+<li>2*beta_m/h^4=250.</li>
+<li>The magnetic bracket in Eq. 14 contains (1/kappa-4/b)=-15 at the wall.</li>
+</ul>
+<p>These are coefficient sizes, not predicted solution values. They explain why an allowed number can still make the numerical problem difficult. They do not prove that the case has no solution.</p>
+<p>With theta_w=0.2, <code>A=1+(theta_w-1)*theta</code> becomes <code>1-0.8*theta</code>. The effective coefficient of theta'' in Eq. 16 is <code>(1+0.5*A^3)/8.8</code>, using the received Nr=0.5 and Pr=8.8. Theta is still unknown. Check this coefficient along any future computed solution; do not assume regularity from the parameter values alone.</p>
+<h2>Two cases, kept separate</h2>
+<p><strong>Target:</strong> the locked 22-field case above. It is numerically complete. It is not yet a validated physical result.</p>
+<p><strong>Optional debug starting case:</strong> kappa=1, b=1, Da=1 and theta_w=1.5, with the other target coefficients unchanged. These overrides are researcher-proposed numerical choices, not supervisor-supplied values. Keep them in a separate case that never mutates the locked target. A debug result cannot replace or validate the target result.</p>
+<p>Do not choose theta_w=1 merely because it is a rounded number: the printed boundary condition divides by theta_w-1. A stable algebraic limit can be studied later, but it does not automatically define the full physical normalization. Any continuation from the debug case towards the target must keep this issue explicit.</p>
+<h2>Open definitions, not missing numbers</h2>
+<p>These conditional checks use the recorded definitions and the locked values. They are not supervisor-confirmed derived values and do not authorize changes to the target.</p>
+<ul>
+<li>If DeltaT=Tf-T_infinity and T_infinity=Tc imply <code>epsilon=-1/(theta_w-1)</code>, then theta_w=0.2 gives epsilon=1.25, not the supplied 0.1. The temperature definitions remain open.</li>
+<li>If Lb uses DB and must satisfy <code>Lb=Pr*Le</code>, then Pr=8.8 and Le=1 give Lb=8.8, not the supplied 1. The DB versus Dn definition remains open.</li>
+<li>If the recorded page 7 definitions apply together, delta_star=0 gives B=1, not the supplied 0.5. Ask whether those relations govern this case; do not change B automatically.</li>
+<li>If <code>fw=Cw/(1-Cw)</code>, the supplied fw=0.2 gives Cw=1/6. The old negative-concentration example used the historical proposal fw=-0.5 and no longer applies. The meaning and sign convention of fw still need an answer.</li>
+<li>The meanings of H=1 and Prm=0.1 remain open. Neither is an active physical coefficient in the confirmed equations.</li>
+<li>The required wall quantities and acceptable accuracy have not been specified.</li>
+</ul>
+<p>Keep the questions in <a href="questions-for-supervisor.md">questions-for-supervisor.md</a>. Definition questions do not undo numerical completeness of the 22-field case.</p>
+<h2>Historical sheet readings and choices: 2026-11-12</h2>
+<p>Historical source: <a href="sources/parameter-sheet/parameter-values.pdf">supervisor's scanned page</a>. Recorded on 2026-11-12. The following readings and choices are preserved for history only. They are not active defaults. The 2026-11-16 receipt supersedes them, including the old Pr=6.8 reading.</p>
+<p>Most sheet entries were conditions, not fixed numerical values. The requested first case then used small rounded proposals near allowed boundaries, without making a denominator zero. The user chose to wait for the supervisor rather than fill the remaining values from papers. The word "pending" in this historical table describes that earlier state only.</p>
 <table>
 <thead>
 <tr>
 <th>Symbol in equations</th>
-<th>Reading of the sheet</th>
-<th style="text-align: right;">Proposed first value</th>
-<th>Basis and limits</th>
+<th>Historical reading of the sheet</th>
+<th style="text-align: right;">Historical proposed value</th>
+<th>Historical basis and limits</th>
 </tr>
 </thead>
 <tbody>
@@ -142,165 +358,152 @@
 <td>Delta</td>
 <td>Nonnegative or positive; inequality handwriting slightly unclear</td>
 <td style="text-align: right;">0.1</td>
-<td>Positive choice satisfies either reading and keeps microrotation coupling active</td>
+<td>Positive choice satisfied either reading and kept microrotation coupling active</td>
 </tr>
 <tr>
 <td>B</td>
 <td>Nonnegative or positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Positive choice satisfies either reading</td>
+<td>Positive choice satisfied either reading</td>
 </tr>
 <tr>
 <td>Da</td>
 <td>Positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Never use zero in the printed 1/Da expression</td>
+<td>Zero was excluded by the printed 1/Da expression</td>
 </tr>
 <tr>
 <td>kappa</td>
 <td>Handwritten K, positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Mapped to the curvature symbol in Eqs. 14–19; denominator eta+kappa stays nonzero</td>
+<td>K was mapped to the curvature symbol; eta+kappa stayed nonzero</td>
 </tr>
 <tr>
 <td>delta_star</td>
 <td>0, 1, 2, ...</td>
 <td style="text-align: right;">0</td>
-<td>Preserve the listed discrete values; use 1 and 2 as later cases</td>
+<td>First listed value; 1 and 2 were proposed as later cases, not approved target changes</td>
 </tr>
 <tr>
 <td>theta_w</td>
 <td>Positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Requested small rounded choice; do not assume this is a physically validated temperature regime</td>
+<td>Requested small rounded proposal, not a validated temperature regime</td>
 </tr>
 <tr>
 <td>lambda_m</td>
 <td>Symbol readable; bound unclear</td>
 <td style="text-align: right;">pending</td>
-<td>Do not turn an incomplete inequality into a number</td>
+<td>An incomplete inequality was not turned into a number</td>
 </tr>
 <tr>
 <td>beta_m</td>
 <td>Nonnegative or positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Keep the named beta_m distinct from the unclear separate M line</td>
+<td>Kept beta_m distinct from the unclear separate M sheet line</td>
 </tr>
 <tr>
 <td>epsilon</td>
-<td>Appears to read epsilon=1 followed by &gt;=0</td>
+<td>Appeared to read epsilon=1 followed by &gt;=0</td>
 <td style="text-align: right;">pending</td>
-<td>Fixed 1 versus a range is unclear; follow-up question was not answered</td>
+<td>Fixed 1 versus a range was unclear; the follow-up question was unanswered then</td>
 </tr>
 <tr>
 <td>b</td>
 <td>Constant, nonnegative or positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Inverse powers of eta+b prohibit b=0 for the regular baseline</td>
+<td>Inverse powers of eta+b excluded b=0 for the regular baseline</td>
 </tr>
 <tr>
 <td>Pr</td>
 <td>Fixed 6.8</td>
 <td style="text-align: right;">6.8</td>
-<td><strong>Do not round a supplied fixed value to 7 or 6.5</strong></td>
+<td>Recorded then as fixed, not rounded; now superseded by the receipt's Pr=8.8</td>
 </tr>
 <tr>
 <td>Le</td>
 <td>1, 2, 3, 4</td>
 <td style="text-align: right;">1</td>
-<td>First listed value; later test 2, 3 and 4 separately</td>
+<td>First listed value; 2, 3 and 4 were proposed as separate later cases</td>
 </tr>
 <tr>
 <td>N1</td>
 <td>Nonnegative or positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Positive value, rather than switching slip off at zero</td>
+<td>Positive choice kept slip active</td>
 </tr>
 <tr>
 <td>Bi</td>
 <td>Nonnegative or positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Positive value, so wall heating term remains present</td>
+<td>Positive choice kept the wall heating term active</td>
 </tr>
 <tr>
 <td>Rd</td>
-<td>Appears twice; at least one line is positive</td>
+<td>Appeared twice; at least one line was positive</td>
 <td style="text-align: right;">0.1</td>
-<td>Positive value satisfies the visible conditions</td>
+<td>Positive choice satisfied the visible conditions</td>
 </tr>
 <tr>
 <td>ell</td>
 <td>0 &lt;= ell &lt;= 1</td>
 <td style="text-align: right;">0.1</td>
-<td>Near lower boundary, but not zero</td>
+<td>Near the lower boundary, but not zero</td>
 </tr>
 <tr>
 <td>fw</td>
 <td>-1 &lt;= fw &lt;= 1</td>
 <td style="text-align: right;">-0.5</td>
-<td>Rounded nonzero value towards lower endpoint; do not infer suction/blowing sign without the stated convention</td>
+<td>Rounded nonzero proposal towards the lower endpoint; no suction/blowing sign was inferred</td>
 </tr>
 <tr>
 <td>Nr</td>
 <td>No usable uncrossed value</td>
 <td style="text-align: right;">pending</td>
-<td>Await supervisor</td>
+<td>Awaited supervisor at that time</td>
 </tr>
 <tr>
 <td>Nt</td>
 <td>Not given</td>
 <td style="text-align: right;">pending</td>
-<td>Await supervisor</td>
+<td>Awaited supervisor at that time</td>
 </tr>
 <tr>
 <td>Nb</td>
 <td>No usable uncrossed value</td>
 <td style="text-align: right;">pending</td>
-<td>Await supervisor; current equations divide by Nb</td>
+<td>Awaited supervisor at that time; the equations divide by Nb</td>
 </tr>
 <tr>
 <td>Lb</td>
 <td>Not given</td>
 <td style="text-align: right;">pending</td>
-<td>Await supervisor</td>
+<td>Awaited supervisor at that time</td>
 </tr>
 <tr>
 <td>Pe</td>
 <td>Not given</td>
 <td style="text-align: right;">pending</td>
-<td>Await supervisor</td>
+<td>Awaited supervisor at that time</td>
 </tr>
 </tbody>
 </table>
-<h2>Clarifications the user already gave</h2>
+<h3>Historical clarifications recorded on 2026-11-12</h3>
 <ol>
-<li>The two P-like handwritten lines refer to <strong>magnetic Prandtl number Pm</strong>. Pm is not in the specified equations. It is not Pe, Lb or the supplied Pr=6.8.</li>
-<li>The red/crossed-out M line is <strong>unresolved</strong>. Do not replace beta_m with M or add a new force term.</li>
-<li>Missing physical values must <strong>wait for the supervisor</strong>. Literature numbers are not defaults.</li>
+<li>The user identified the two P-like handwritten lines as magnetic Prandtl number Pm, outside the specified equations. This older clarification does not assign that meaning to the newly received Prm.</li>
+<li>The red/crossed-out M sheet line was unresolved then. The new receipt explicitly supplies M=1/Da. Neither the old line nor the new scalar replaces beta_m.</li>
+<li>Missing physical values were to wait for the supervisor, not use literature defaults. The 2026-11-16 receipt now supplies them.</li>
 <li>Work lives in this new local repository, not the Lorenz repository.</li>
-<li>The marked Eqs. 14–19 are the confirmed working equations. Differences from related papers are not permission to alter them.</li>
+<li>The marked Eqs. 14 to 19 are the confirmed working equations. Differences from related papers do not permit changes to them.</li>
 </ol>
-<p>A crossed-out line near the radiation entries is not a reliable active instruction. Keep its appearance in the source PDF rather than pretending it supplies Nr or Nb.</p>
-<h2>Numerical warning for the requested near-boundary choice</h2>
-<p>At eta=0, with kappa=b=Da=0.1 and beta_m=0.1:</p>
-<ul>
-<li>1/(eta+kappa)=10.</li>
-<li>1/(eta+kappa)^3=1000.</li>
-<li>1/Da=10.</li>
-<li>2*beta_m/(eta+b)^4=2000.</li>
-<li>The magnetic bracket in Eq. 14 contains (1/kappa-4/b)=-30 at the wall.</li>
-</ul>
-<p>These are coefficient sizes, not predicted solution values. They explain why a rounded allowed number can still make the numerical problem difficult. They do not prove the case has no solution.</p>
-<p>At theta_w=0.1, the quantity <code>A=1+(theta_w-1)*theta</code> becomes <code>1-0.9*theta</code>. The effective coefficient of theta'' in Eq. 16 is <code>(1+Nr*A^3)/Pr</code>. Nr is missing, and theta is unknown. The strategy must check this coefficient along the computed solution; it must not assume regularity before solving.</p>
-<h2>Two cases, kept separate</h2>
-<p><strong>Target:</strong> the requested small rounded choices above. This is the research case we will report if it passes verification.</p>
-<p><strong>Optional debug starting case:</strong> kappa=1, b=1, Da=1, theta_w=1.5, with the same remaining supplied coefficients. Its inverse-power terms are less extreme. It can help test the implementation or support parameter continuation towards the target. It is also blocked until the missing values arrive and is not presented as the supervisor's fixed baseline.</p>
-<p>Do not choose theta_w=1 merely because it is a rounded number: the printed boundary condition divides by theta_w-1. A stable algebraic limit can be studied later, but it does not automatically define the full physical normalization.</p>
+<p>The crossed-out line near the radiation entries was not a reliable numerical instruction. Keep its appearance in the source PDF as history; use the new receipt for Nr and Nb.</p>
 <h2>Machine-readable record</h2>
-<p><a href="configs/physical-case-pending.json">physical-case-pending.json</a> contains every physical field, chosen values, null missing values, exclusions and debug overrides. Null means unknown, never zero.</p>
-<p>A complete parameter table needs 22 coefficients for Eqs. 14–19. Seven remain pending: lambda_m, epsilon, Nr, Nt, Nb, Lb and Pe. A future validator must reject this pending file as a simulation input until all seven are supplied and the denominator/regularity checks pass.</p></section>
+<p><a href="configs/physical-case-pending.json">physical-case-pending.json</a> now holds the numerically complete, locked physical case with status <code>parameters_complete_validation_pending</code>. Its filename is retained only for link compatibility; it no longer means that physical numbers are missing. The record keeps the receipt, mappings, derived Da, excluded H/Prm and proposed debug overrides separate. No physical coefficient is null.</p>
+<p>The record checker compares the equation coefficients with the dated receipt and its mappings. A SHA-256 checksum guards the received values against unrecorded changes. Any authorized future update must update the dated record and checksum together; it cannot silently replace the locked target.</p>
+<p>No solver implementation, software validation, physical reference, training or evaluation has occurred. The next gate is software validation, followed by reference, training and evaluation as set out in <a href="docs/strategy.md">strategy.md</a>. Denominator and regularity checks remain required. The record checker checks record consistency; it is not proof of solver correctness or convergence.</p></section>
 <section id="equations"><h1>Equations and boundary calculation sheet</h1>
 <p>Working target: the supervisor-confirmed Eqs. 14–19 in <a href="sources/project-draft/project3Nov_2026.docx">the source draft</a>. We are solving the given numerical specification. We are not correcting its physical model by copying a related paper.</p>
+<p>A reading version of these equations with the locked numbers substituted is <a href="simplified-equations.md">the substituted sheet</a>. It is derived from this sheet and does not replace it.</p>
 <p>There are five physical outputs: f, g, theta, phi, chi. Primes mean derivatives with respect to eta, not NN weights. The NN weights are named <code>w</code> in the strategy so they are not confused with the physical output theta.</p>
 <h2>Short names used below</h2>
 <pre><code class="language-text">q = eta + kappa
@@ -449,7 +652,8 @@ H = [f4, g2, th2, ph2, ch2]
 <li>Compare a separately coded NumPy reference evaluator with the Torch evaluator at identical artificial states. Shared helper code is useful, but an independent transcription test is needed to catch shared errors.</li>
 </ol></section>
 <section id="strategy"><h1>PINN strategy and implementation plan</h1>
-<p>Status: <strong>strategy ready; physical simulation blocked by seven missing coefficients</strong>. All work is in this new repository. No solver training or physical-reference simulation has been run. Missing values stay null; they are not silently replaced by zero or by paper values.</p>
+<p>Status: <strong>parameters complete; validation pending</strong> (<code>parameters_complete_validation_pending</code>). All 22 physical coefficients are locked from <a href="parameters.md#supervisor-confirmation-2026-11-16">the user's 2026-11-16 message reporting direct supervisor values</a>, with Da derived from M. No solver implementation, software validation, physical reference, training or evaluation has occurred.</p>
+<p>The numerical/training proposal in <a href="configs/training-proposal.json">training-proposal.json</a> is unchanged, including its eight null settings. The name <a href="configs/physical-case-pending.json">physical-case-pending.json</a> is kept only for link compatibility; its physical values are complete. The generated <a href="strategy-guide.html">strategy-guide.html</a> is rebuilt from the current records. The <a href="bvp-pinn-architecture.html">PINN architecture</a> shows the Lorenz-style computational graph adapted to this BVP; <a href="lorenz-to-bvp-methodology.md">the comparison</a> records what is kept and replaced.</p>
 <p>Start with <a href="docs/parameters.md">the parameter record</a>, <a href="docs/equations.md">the exact equation sheet</a>, and <a href="docs/reading-list.md">the checked reading list</a>. The source equations are confirmed as written. A copying error in the older strategy is corrected here; the original Lorenz file remains unchanged.</p>
 <h2>1. What we will solve</h2>
 <p>The network takes one position, eta, and returns five predictions: f, g, theta, phi and chi. All physical coefficients remain fixed during that case. Predictions form smooth functions, so automatic differentiation gives the needed eta derivatives.</p>
@@ -459,11 +663,13 @@ H = [f4, g2, th2, ph2, ch2]
 <li>Twelve boundary errors from Eq. 19, evaluated at eta=0 and a finite far endpoint eta=L.</li>
 <li>No labeled reference solution in the baseline loss.</li>
 </ul>
+<p>Here L is the numerical far endpoint. The received L=0.5 maps to lambda_m, not to this endpoint. The received M=5 defines Da=1/M=0.2. The local matrix M and derivative vector H in the reference calculation are separate from the received scalar symbols. H=1 and Prm=0.1 remain recorded outside the 22 physical coefficients; do not add terms or assume a magnetic Prandtl mapping.</p>
 <p>A single network serves the whole interval. We do not carry a guessed state from one spatial window to the next using the old Lorenz time-rollout method.</p>
 <h2>2. Separate the target from an easier numerical check</h2>
-<p>The requested target uses kappa=b=Da=0.1, among the other recorded rounded choices. Near the wall, the inverse-power coefficients are large. Treat this as a numerical challenge, not proof that the parameters are invalid.</p>
-<p>Once the missing coefficients arrive, an optional debug case uses kappa=b=Da=1 and theta_w=1.5, keeping the same remaining physical coefficients. First test whether the solver and PINN work on this less extreme case. Then approach the target by parameter continuation if needed. For example, use rounded kappa/b/Da stages 1, 0.5 and 0.1. Keep theta_w's target choice separate; crossing theta_w=1 requires the stable radiation expression and confirmation that the full normalization permits the limit. Do not claim a continuous physical branch through that point automatically.</p>
-<p>The easy case is never relabeled as the requested result. Both target and debug cases are currently blocked by the same missing coefficients.</p>
+<p>The locked target uses kappa=b=Da=0.2 and beta_m=0.2, from <a href="parameters.md#supervisor-confirmation-2026-11-16">the dated parameter record</a>. With q=eta+kappa and h=eta+b, wall eta=0 gives 1/q=5, 1/q^3=125, 1/Da=5, 2*beta_m/h^4=250 and (1/kappa-4/b)=-15. These are coefficient sizes, not solution results or proof that the case is invalid.</p>
+<p>The received theta_w=0.2 gives A=1-0.8<em>theta. With Nr=0.5 and Pr=8.8, the thermal highest-derivative coefficient is (1+0.5</em>A^3)/8.8. It must be checked along the computed solution; numerical completeness does not establish regularity.</p>
+<p>An optional debug case uses kappa=b=Da=1 and theta_w=1.5, keeping the other target coefficients. These are researcher-proposed overrides in a separate case, not changes to the locked target. First test the solver and PINN on this less extreme case. If needed, proposed kappa/b/Da continuation stages are 1, 0.5 and 0.2. Keep theta_w's target separate; crossing theta_w=1 requires the stable radiation expression and confirmation that the full normalization permits the limit. Do not claim a continuous physical branch through that point automatically.</p>
+<p>No automatic target changes or physical-parameter tuning are allowed. A change needs an explicit user or supervisor update with a date and source. The debug case is never relabeled as the requested result. Both cases still need software and reference checks; neither has been run. Open definition questions do not permit replacing the supplied values.</p>
 <h2>3. Architecture and module responsibilities</h2>
 <table>
 <thead>
@@ -563,7 +769,7 @@ H = [f4, g2, th2, ph2, ch2]
 </code></pre>
 <p><strong>Read:</strong> square each scaled equation error and average over the interior positions. Multiply each equation average by its weight. Add the twelve weighted squared boundary errors.</p>
 <p>All weights start positive. Begin with weights of one after documenting characteristic scales; this does not guarantee the gradients are balanced. Scales must come from declared field/derivative magnitudes and equation terms, not a denominator equal to the current residual. An absolute loss threshold changes meaning when a scale changes, so save both the original and scaled errors.</p>
-<p>If there is a 2000-sized wall coefficient, a convenient formulation may scale that equation by a fixed characteristic magnitude. It must still report the original equation error. Dividing an equation by a tiny supplied parameter can also amplify numerical gradients. Record the scaling choice rather than hiding it.</p>
+<p>The target's 250-sized wall coefficient above may call for scaling that equation by a fixed characteristic magnitude. It must still report the original equation error. Dividing an equation by a tiny supplied parameter can also amplify numerical gradients. Record the scaling choice rather than hiding it.</p>
 <p>No initial-value term, temporal causal weights, Lorenz invariants or solution-data term belongs in this baseline. Do not train unconstrained loss weights that can reduce the objective by shrinking to zero.</p>
 <h2>6. Classical reference simulation</h2>
 <p>Before quantitative accuracy claims, solve the same BVP conventionally. Use the twelve first-order states and the highest-derivative matrix documented in <a href="docs/equations.md">equations.md</a>. Solve the matrix system, do not form its inverse. Check its scaled conditioning and effective theta-second-derivative coefficient along the state.</p>
@@ -590,11 +796,11 @@ H = [f4, g2, th2, ph2, ch2]
 <li>Fixed monitoring points used to select a model and diagnose fitting.</li>
 <li>Fresh final evaluation coordinates after design choices stop.</li>
 </ul>
-<p>For the first pilot, use about 1024 interior points. Half can cover the full interval using a seeded stratified uniform design; half can cover a wall subinterval chosen from min(kappa,b), while still preserving outer coverage. For kappa=b=0.1, a trial wall region of a few multiples of 0.1 is reasonable to test, not a claimed layer thickness. The reference and residual plots should guide changes.</p>
+<p>For the first pilot, use about 1024 interior points. Half can cover the full interval using a seeded stratified uniform design; half can cover a wall subinterval chosen from min(kappa,b), while still preserving outer coverage. For the locked kappa=b=0.2, a trial wall region of a few multiples of 0.2 is reasonable to test, not a claimed layer thickness. The reference and residual plots should guide changes.</p>
 <p>An unweighted mean over deliberately wall-biased points changes the emphasis of the objective. Say so. If the objective should approximate a uniform-domain integral, use appropriate quadrature/importance weights. Do not call these objectives identical.</p>
 <p>Use at least a dense monitoring grid and a fresh random final set, with extra checks between training points near the wall. Endpoint value agreement cannot show that an entire curve is correct.</p>
 <h2>8. Testing before any long run</h2>
-<p>Tests should run without the missing physical values where possible, using manufactured fixtures clearly marked as synthetic test coefficients. Such fixtures are not Case 1 and cannot silently become real-run defaults.</p>
+<p>Use manufactured fixtures where possible, clearly marked as synthetic test coefficients. They isolate software tests from the target case. Such fixtures are not the locked case and cannot silently become real-run defaults. None of the required software tests below has been run.</p>
 <p>Required tests:</p>
 <ol>
 <li>Parameter schema: exactly 22 physical coefficients, missing/null rejection, finite values and documented ranges.</li>
@@ -746,7 +952,7 @@ for seed in the declared seed list:
 repeat domain and sample sensitivity; report all failures
 compare controlled method variants; claim only measured improvements
 </code></pre>
-<p>No physical computation is executed by this document. The record-check tool in this repository checks documentation/config integrity, not BVP convergence or NN correctness.</p>
+<p>No physical computation is executed by this document. The record-check tool in this repository checks documentation/config integrity, not solver correctness, BVP convergence or NN correctness.</p>
 <h2>15. Failure handling and implementation gates</h2>
 <table>
 <thead>
@@ -984,9 +1190,462 @@ compare controlled method variants; claim only measured improvements
 <p>Do not claim “first five-field PINN,” “new best optimizer,” guaranteed stability, uniqueness or a speed advantage before a broader novelty search and the experiments. A plain PINN applied to another model does not by itself establish a new algorithm.</p>
 <h2>Retrieval record and honest limits</h2>
 <p>Three subagents performed the initial recent-paper searches. Follow-up audits narrowed claims from abstracts and removed unsupported transfer claims. One application follow-up repeatedly failed at provider capacity. Its earlier report is not upgraded to a new full-text check. Two available local full texts were inspected directly instead. Public metadata was used for the latest generic sources; no private source documents were uploaded to research services.</p>
-<p>Detailed training formulas from abstracts were not invented. Full text or a source implementation must be obtained before reproducing an advanced algorithm. Source-paper results remain author-reported until reproduced. The strategy's practical settings are testable engineering choices, not findings attributed to those papers.</p></section>
+<p>Detailed training formulas from abstracts were not invented. Full text or a source implementation must be obtained before reproducing an advanced algorithm. Source-paper results remain author-reported until reproduced. The strategy's practical settings are testable engineering choices, not findings attributed to those papers.</p>
+<h2>Second literature pass, November 12, 2026</h2>
+<p>Four parallel searches ran on November 12 (physical precedents, training methodology, boundary and sampling methods, benchmarks and surveys). Every candidate was then re-verified in-session against the arXiv API or the Crossref DOI registry before it entered this list. Titles, venues and years come from those fetched records. No entry rests on memory alone. Entries marked "no open PDF" are verified records without a readable full text; their claims stay at record level. Author-reported results stay author-reported; nothing from these papers was copied into configs/ or used to fill the missing parameters.</p>
+<h3>Role map for the new entries</h3>
+<table>
+<thead>
+<tr>
+<th>Entries</th>
+<th>Papers</th>
+<th>Where they help us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R12, R13, R14</td>
+<td>Bioconvection PINNs with microorganism fields</td>
+<td>Intro precedent for our chi field; how others weight a microorganism residual</td>
+</tr>
+<tr>
+<td>R15</td>
+<td>Curved stretching cylinder PINN</td>
+<td>Curved-wall coordinate handling next to our curvature terms</td>
+</tr>
+<tr>
+<td>R16</td>
+<td>Free-convective derivative network with FD reference</td>
+<td>Derivative representation arm; honest failure reporting</td>
+</tr>
+<tr>
+<td>R17, R18</td>
+<td>Micropolar PINNs, channel and paraboloid</td>
+<td>Microrotation field precedent; PINN paired with an independent check</td>
+</tr>
+<tr>
+<td>R19, R20, R21</td>
+<td>Boundary-layer and stretching-flow PINNs</td>
+<td>Application framing; PINN-as-checker precedent</td>
+</tr>
+<tr>
+<td>R22, R23</td>
+<td>Founding PINN papers</td>
+<td>Introduction anchors for the residual-penalty formulation</td>
+</tr>
+<tr>
+<td>R24, R25, R26, R27</td>
+<td>Training failure and weighting foundations</td>
+<td>Loss scaling and the B4 adaptive weight comparison</td>
+</tr>
+<tr>
+<td>R28, R29, R30, R31</td>
+<td>Recent weighting and optimizer studies</td>
+<td>Fixed versus adaptive weights; Adam and L-BFGS schedule</td>
+</tr>
+<tr>
+<td>R32, R33, R34, R35, R36</td>
+<td>Boundary enforcement methods</td>
+<td>Soft penalties versus exact imposition, comparison arm B6</td>
+</tr>
+<tr>
+<td>R37, R39</td>
+<td>Auxiliary outputs; hard-constrained Falkner-Skan</td>
+<td>First-order arm B5; closest structural BVP precedent</td>
+</tr>
+<tr>
+<td>R38, R40</td>
+<td>Failure-informed sampling; NTK weight theory</td>
+<td>Residual enrichment arm B3</td>
+</tr>
+<tr>
+<td>R41, R42</td>
+<td>Large-coefficient failure remedy; overfitting view</td>
+<td>Stiff-wall diagnosis; fresh-point evaluation design</td>
+</tr>
+<tr>
+<td>R43, R44, R45</td>
+<td>PINN versus classical comparisons and benchmarks</td>
+<td>The no-superiority-claim stance and evaluation practice</td>
+</tr>
+<tr>
+<td>R46, R47, R48</td>
+<td>Error analysis survey, PINN survey, critical review</td>
+<td>Intro positioning; residual-to-error reasoning</td>
+</tr>
+</tbody>
+</table>
+<h3>Closest physical precedents</h3>
+<h4>R12. Bioconvection PINN with our exact optimizer chain, 2026</h4>
+<p>Azari, Behrouzifar, Mahboobtosi and Ganji, <em>Results in Surfaces and Interfaces</em>, art. 101043, 2026. DOI https://doi.org/10.1016/j.rsurfi.2026.101043. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. The abstract was not readable, so the content claim is title-based.</li>
+<li>Claim (title): a TDF bioconvection nanofluid with gyrotactic microorganisms is modeled with a PINN trained with the Adam-LBFGS chain named in the title.</li>
+<li>Use here: the only verified precedent that combines a microorganism transport field with our planned two-stage optimizer schedule.</li>
+<li>Limits: microfluidics geometry, not a curved boundary layer; new paper without a citation record; title-based evidence only.</li>
+</ul>
+<h4>R13. Unified PINN for bioconvection over a stretching surface, 2024</h4>
+<p>Chandra and Das, <em>Engineering Applications of Artificial Intelligence</em> 133, art. 108647, 2024. DOI https://doi.org/10.1016/j.engappai.2024.108647. No open PDF found; record verified via Crossref and OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex keywords fetched in this session ("microorganism density" keyword matched 0.82).</li>
+<li>Claim (record): one unified network with an interior point algorithm studies bioconvection nanofluid flow over an inclined stretching surface.</li>
+<li>Use here: same architectural choice as ours, one network carrying several fields and residuals; documents an interior-point training alternative.</li>
+<li>Limits: closed access; abstract not read; 26 citations per OpenAlex are a search-side count.</li>
+</ul>
+<h4>R14. PINN predicting a microorganism-density field, 2026</h4>
+<p>Mathur, Gupta, Mishra and Singh, <em>International Journal of Thermofluids</em> 35, art. 101690, 2026. DOI https://doi.org/10.1016/j.ijft.2026.101690. No open PDF found; record verified via Crossref; abstract read via OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. One earlier web result mislabeled the journal; the Crossref container title is International Journal of Thermofluids.</li>
+<li>Claim (abstract): a PINN-based predictive framework for MHD stagnation-point bioconvective transport predicts a microorganism-density field among the coupled outputs.</li>
+<li>Use here: precedent for a PINN carrying our fifth field; when we choose weights for R18, we can compare how they handled the same residual.</li>
+<li>Limits: gold OA journal, but the PDF endpoint blocked scripted download; Casson hybrid nanofluid model differs from ours.</li>
+</ul>
+<h4>R15. PINN over a stretching cylinder, 2026</h4>
+<p>Khan, Khan, Ahammad et al., <em>Discover Nano</em> 21, art. 502, 2026. DOI https://doi.org/10.1186/s11671-026-04962-3. <a href="sources/literature/cylinder-nano-2026/stretching_cylinder_pinn_discover_nano_10.1186_s11671-026-04962-3.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex abstract fetched in this session; full PDF downloaded from the Springer page.</li>
+<li>Claim (abstract): a local non-similarity PINN solves MHD mixed convection of a Jeffrey fluid over a stretching horizontal cylinder in a Darcy porous medium, predicting momentum, thermal and solutal fields.</li>
+<li>Use here: a curved wall with coordinate terms, closest published setup to our eta+kappa curvature handling.</li>
+<li>Limits: no microorganism field and no fourth-order momentum; brand new with no citation record.</li>
+</ul>
+<h4>R16. Physics-informed derivative networks with a finite difference reference, 2025</h4>
+<p>Cong, Li, Sun and Ren, <em>Scientific Reports</em> 15, art. 18766, 2025. DOI https://doi.org/10.1038/s41598-025-03918-4. Publisher and PMC PDF endpoints are CAPTCHA-gated, so no local PDF; record verified via Crossref and the PMC page metadata.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex abstract fetched in this session; PMC page metadata confirmed in a browser session.</li>
+<li>Claim (abstract): physics-informed derivative networks output first derivatives and integrate numerically, solving the coupled Kuiken free-convective similarity ODEs across Prandtl numbers 0.1 to 10 where a same-size standard PINN fails; checked against a finite difference reference.</li>
+<li>Use here: published precedent for our derivative representation arm (direct outputs versus helper states) and for reporting where PINN training fails.</li>
+<li>Limits: free convection, not micropolar or nanofluid; mid-tier venue; abstract-level evidence for the failure claim.</li>
+</ul>
+<h4>R17. Micropolar MHD channel PINN with a semi-analytical check, 2025</h4>
+<p>Mirzagoli Ganji, Shateri and Ganji, <em>Physics of Fluids</em> 37(11), art. 113115, 2025. DOI https://doi.org/10.1063/5.0301887. No open PDF found; record verified via Crossref; abstract read via OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex abstract fetched in this session.</li>
+<li>Claim (abstract): steady MHD micropolar flow in a porous channel with microrotation, spin-gradient viscosity, micro-inertia and convective heat and mass transfer is solved by a PINN paired with the semi-analytical Akbari-Ganji method as a benchmark.</li>
+<li>Use here: a microrotation field inside a coupled nonlinear BVP, and the same checking pattern as our classical reference: the PINN is judged against a separate method, not against itself.</li>
+<li>Limits: channel flow, not a boundary layer; closed access; 28 citations per OpenAlex.</li>
+</ul>
+<h4>R18. Micropolar flow over a paraboloidal surface, 2025</h4>
+<p>Vaseem, Uddin and Upreti, <em>International Communications in Heat and Mass Transfer</em> 169, art. 109645, 2025. DOI https://doi.org/10.1016/j.icheatmasstransfer.2025.109645. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. The record spells the third author's name slightly differently than the search result; the record spelling is authoritative.</li>
+<li>Claim (title): a PINN study of phase-change micropolar fluid flow over a paraboloidal surface for solar thermal applications.</li>
+<li>Use here: a curved wall with a microrotation field; relevant to how curvature stiffens the wall region.</li>
+<li>Limits: title-based evidence; closed access; phase-change physics does not appear in our equations.</li>
+</ul>
+<h4>R19. PINNs for boundary-layer thermal-fluid problems, 2022</h4>
+<p>Bararnia and Esmaeilpour, <em>International Communications in Heat and Mass Transfer</em> 132, art. 105890, 2022. DOI https://doi.org/10.1016/j.icheatmasstransfer.2022.105890. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session; OpenAlex lists Falkner-Skan flow among its concepts.</li>
+<li>Claim (record): PINNs applied to viscous and thermal boundary-layer problems including Falkner-Skan-type flows.</li>
+<li>Use here: the established early reference that PINNs can solve nonlinear similarity BVPs; later weighting papers measure against works like this.</li>
+<li>Limits: closed access; abstract not read; 2022-era PINN practice; 153 citations per OpenAlex is a search-side count.</li>
+</ul>
+<h4>R20. PINN for MHD porous-media stretching flow, 2026</h4>
+<p>Jan, Khan and Farooq, <em>International Communications in Heat and Mass Transfer</em> 172, art. 110592, 2026. DOI https://doi.org/10.1016/j.icheatmasstransfer.2026.110592. No open PDF found; record verified via Crossref; keywords read via OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex record fetched in this session.</li>
+<li>Claim (record): a PINN models MHD boundary-layer flow with heat transfer over a linearly stretching boundary in porous media.</li>
+<li>Use here: a smaller sibling of our wall-flow problem that combines magnetic, porous and dissipative effects; shows the mixed wall condition setup in a strong heat transfer journal.</li>
+<li>Limits: closed access; fewer fields than ours; abstract text unavailable.</li>
+</ul>
+<h4>R21. PINN as a checker on squeezing-flow ODEs, 2026</h4>
+<p>Gaur and Srinivasacharya, <em>Physics of Fluids</em> 38(3), art. 032012, 2026. DOI https://doi.org/10.1063/5.0314754. No open PDF found; record verified via Crossref; abstract read via OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex abstract fetched in this session.</li>
+<li>Claim (abstract): for 3D squeezing flow of a rotating channel with a CNT hybrid nanofluid, similarity ODEs are solved by Haar wavelet collocation checked against bvp4c, and a PINN verifies solution accuracy and enforces physical constraints.</li>
+<li>Use here: the inverse role to ours: a classical solver first, PINN as verifier. This matches our classical-reference-first plan and shows the pattern is accepted practice.</li>
+<li>Limits: the PINN is not the primary solver there; closed access.</li>
+</ul>
+<h3>Foundations for the introduction and the loss design</h3>
+<h4>R22. The founding PINN paper, 2019</h4>
+<p>Raissi, Perdikaris and Karniadakis, <em>Journal of Computational Physics</em> 378, 686-707, 2019. DOI https://doi.org/10.1016/j.jcp.2018.10.045. <a href="sources/literature/pinn-foundations-2019/pinn_part1_arxiv_1711.10561.pdf">Local PDF</a> is the arXiv Part I companion (arXiv:1711.10561); the journal version is paywalled and the arXiv title differs from the journal title.</p>
+<ul>
+<li>Evidence: Crossref record with exact volume and pages fetched in this session; arXiv Part I record fetched separately.</li>
+<li>Claim (record): PDE residuals are embedded as penalties in the loss so networks solve forward and inverse problems without labeled solution data.</li>
+<li>Use here: the canonical source for our residual-sum loss; our 5 equation terms plus 12 boundary terms extend exactly this pattern.</li>
+<li>Limits: PDE setting; our BVP adds twelve coupled boundary penalties that this paper does not treat.</li>
+</ul>
+<h4>R23. Physics-informed machine learning survey, 2021</h4>
+<p>Karniadakis, Kevrekidis, Lu, Perdikaris, Wang and Yang, <em>Nature Reviews Physics</em> 3, 422-440, 2021. DOI https://doi.org/10.1038/s42254-021-00314-5. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. An earlier guessed DOI ending in -z returned 404 and was discarded.</li>
+<li>Claim (record): a review of physics-informed learning across forward, inverse and hybrid settings.</li>
+<li>Use here: the standard survey citation for positioning a PINN-for-BVP work in the introduction.</li>
+<li>Limits: review scope only; no transferable training recipe for our problem.</li>
+</ul>
+<h4>R24. Gradient flow pathologies and learning rate annealing, 2021</h4>
+<p>Wang, Teng and Perdikaris, <em>SIAM Journal on Scientific Computing</em> 43(5), A3055-A3081, 2021. DOI https://doi.org/10.1137/20M1318043. <a href="sources/literature/gradient-pathologies-2021/gradient_flow_pathologies_arxiv_2001.04536.pdf">Local PDF</a> (arXiv:2001.04536; the arXiv title omits the word Flow).</p>
+<ul>
+<li>Evidence: arXiv record and Crossref record with exact pages fetched in this session.</li>
+<li>Claim (abstract): soft PDE constraints act as domain-specific regularizers; unbalanced back-propagated gradients from numerical stiffness cause training failure, and learning rate annealing of loss terms mitigates it.</li>
+<li>Use here: the theory-backed reason our scaled, weighted loss needs care; the annealing scheme is the standard adaptive baseline for our B4 comparison.</li>
+<li>Limits: PDE benchmarks; reported gains are author-reported; annealing interacts with our L-BFGS stage and needs its own controlled test.</li>
+</ul>
+<h4>R25. Why PINNs fail to train, NTK view, 2022</h4>
+<p>Wang, Yu and Perdikaris, <em>Journal of Computational Physics</em> 449, art. 110768, 2022. DOI https://doi.org/10.1016/j.jcp.2021.110768. <a href="sources/literature/ntk-failure-2022/pinn_ntk_failure_arxiv_2007.14527.pdf">Local PDF</a> (arXiv:2007.14527; the arXiv title uses the PINNs short form).</p>
+<ul>
+<li>Evidence: arXiv record and Crossref record fetched in this session.</li>
+<li>Claim (abstract): the neural tangent kernels of different loss terms converge to different limits with imbalanced eigenvalues, which limits PINN training; an NTK-eigenvalue-based weighting scheme is proposed.</li>
+<li>Use here: explains why our 17 loss components converge at different speeds; the principled rule behind any reweighting of equations versus boundaries.</li>
+<li>Limits: NTK computation grows with point count and derivative order; a fourth-order residual makes full NTK weighting costly for us.</li>
+</ul>
+<h4>R26. Characterizing PINN failure modes, 2021</h4>
+<p>Krishnapriyan, Gholami, Zhe, Kirby and Mahoney, <em>Advances in Neural Information Processing Systems 34</em> (NeurIPS 2021), arXiv:2109.01050. <a href="sources/literature/failure-modes-2021/failure_modes_neurips2021_arxiv_2109.01050.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record with journal-ref NeurIPS 2021 fetched in this session.</li>
+<li>Claim (abstract): soft physics constraints make the loss landscape hard to optimize, so PINNs fail on moderately complex problems; curriculum regularization and sequence-to-sequence training reduce error by one to two orders of magnitude.</li>
+<li>Use here: the standard taxonomy for our failure analysis; the stiff-coefficient regime we face near the wall is exactly their failing regime.</li>
+<li>Limits: time-stepping benchmarks; their curriculum ideas do not transfer to a two-ended BVP without adaptation.</li>
+</ul>
+<h4>R27. Self-adaptive weights as soft attention, 2023</h4>
+<p>McClenny and Braga-Neto, <em>Journal of Computational Physics</em> 474, art. 111722, 2023. DOI https://doi.org/10.1016/j.jcp.2022.111722. <a href="sources/literature/self-adaptive-2023/self_adaptive_soft_attention_arxiv_2009.04544.pdf">Local PDF</a> (arXiv:2009.04544 v5)</p>
+<ul>
+<li>Evidence: arXiv record with journal-ref and DOI fields fetched in this session.</li>
+<li>Claim (abstract): trainable per-point self-adaptive weights act as soft attention and force the network to fit stubborn stiff regions, with reported accuracy gains over other PINN methods.</li>
+<li>Use here: the fine-grained extension of our fixed 17 weights; its pointwise weights target exactly the near-wall region where our coefficients stiffen.</li>
+<li>Limits: time-dependent PDE examples; pointwise weights on a 1D BVP need bounds to avoid trivial shrinking, which our strategy already requires for any adaptive weights.</li>
+</ul>
+<h3>Weighting, optimizer, boundary and sampling choices</h3>
+<h4>R28. Balanced residual decay rate weights, 2025</h4>
+<p>Chen, Howard and Stinis, <em>Journal of Computational Physics</em> 542, art. 114226, 2025. DOI https://doi.org/10.1016/j.jcp.2025.114226. <a href="sources/literature/residual-decay-weights-2025/balanced_residual_decay_weights_arxiv_2407.01613.pdf">Local PDF</a> (arXiv:2407.01613)</p>
+<ul>
+<li>Evidence: arXiv record with journal-ref fetched in this session; journal DOI verified via Crossref.</li>
+<li>Claim (abstract): pointwise adaptive weights balance residual decay rates across training points and loss terms, with bounded weights and low cost on PINN and DeepONet benchmarks.</li>
+<li>Use here: a concrete published weighting rule for our multi-term loss, implementable per term over the 5 plus 12 components with bounded growth.</li>
+<li>Limits: their examples are PDEs and operator benchmarks; decay-rate balancing on a 1D BVP is our own test to run.</li>
+</ul>
+<h4>R29. Multi-objective loss balancing study, 2025</h4>
+<p>Bischof and Kraus, <em>Computer Methods in Applied Mechanics and Engineering</em> 439, art. 117914, 2025. DOI https://doi.org/10.1016/j.cma.2025.117914. CC BY 4.0 per the Crossref license record, but no script-accessible PDF was found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record with license field fetched in this session.</li>
+<li>Claim (record and title): a study of multi-objective loss balancing methods for physics-informed deep learning.</li>
+<li>Use here: a CMAME-level benchmark of fixed versus adaptive balancing schemes; direct precedent for our fixed-weights baseline plus the B4 comparison.</li>
+<li>Limits: abstract not read in this session; read the full text before borrowing any specific scheme.</li>
+</ul>
+<h4>R30. Optimizing the optimizer for PINNs, 2025 preprint</h4>
+<p>Kiyani, Shukla, Urbán, Darbon and Karniadakis, arXiv:2501.16371, v6 February 2026. No journal record verified yet; cite as a preprint. <a href="sources/literature/optimizer-optimizing-2025/optimizing_the_optimizer_arxiv_2501.16371.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; OpenAlex shows quasi-Newton and line search keywords with about 123 citations of the preprint.</li>
+<li>Claim (abstract and keywords): quasi-Newton optimizers, including self-scaled BFGS and Broyden variants and L-BFGS with different line searches, are evaluated for PINNs; rescaling updates with historical gradient information brings order-of-magnitude accuracy gains without adaptive weights.</li>
+<li>Use here: directly informs our L-BFGS refinement stage, including line search choice and history size, and whether rescaled updates handle our stiff fourth-order residual better than plain L-BFGS.</li>
+<li>Limits: preprint, not peer-reviewed; PDE and operator benchmarks; settings must be re-tuned for our 1D problem.</li>
+</ul>
+<h4>R31. How accurate and competitive can PINNs be, 2025</h4>
+<p>Urbán, Stefanou and Pons, <em>Journal of Computational Physics</em> 523, art. 113656, 2025 (online December 2024). DOI https://doi.org/10.1016/j.jcp.2024.113656. No open PDF found; record verified via Crossref; abstract read via OpenAlex.</p>
+<ul>
+<li>Evidence: Crossref record and OpenAlex abstract fetched in this session.</li>
+<li>Claim (abstract): better optimization algorithms and small loss adjustments cut errors by orders of magnitude, so that small networks can match finite differences on their tests.</li>
+<li>Use here: supports our plan to test optimizer choice and loss conditioning first, before architecture changes; also a citation for the Adam-then-L-BFGS schedule question.</li>
+<li>Limits: closed access; claims are author-reported; their test problems differ from a nonlinear similarity BVP.</li>
+</ul>
+<h4>R32. Augmented Lagrangian relaxation for boundary conditions, 2023</h4>
+<p>Son, Cho and Hwang, <em>Neurocomputing</em> 548, art. 126424, 2023. DOI https://doi.org/10.1016/j.neucom.2023.126424. <a href="sources/literature/al-pinn-2023/augmented_lagrangian_PINN_arxiv_2205.01059.pdf">Local PDF</a> (arXiv:2205.01059)</p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; journal DOI verified via Crossref.</li>
+<li>Claim (abstract): initial and boundary conditions are treated as constraints and enforced with augmented Lagrangian relaxation, giving learnable multipliers that adaptively balance the loss terms, with convergence proofs.</li>
+<li>Use here: the main published alternative to fixed soft penalty weights for our twelve boundary terms; a candidate arm for comparison B4 or B6.</li>
+<li>Limits: their examples are time-dependent PDEs; the AL loop adds inner iterations and its proofs cover their setting, not ours.</li>
+</ul>
+<h4>R33. Hard constraints for inverse design, hPINNs, 2021</h4>
+<p>Lu, Pestourie, Yao, Wang, Verdugo and Johnson, <em>SIAM Journal on Scientific Computing</em> 43(6), B1105-B1132, 2021. DOI https://doi.org/10.1137/21M1397908. <a href="sources/literature/hpinn-hard-constraints-2021/hpinn_hard_constraints_arxiv_2102.04626.pdf">Local PDF</a> (arXiv:2102.04626)</p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; journal DOI verified via Crossref.</li>
+<li>Claim (abstract): hPINNs combine penalty terms with an augmented Lagrangian method as hard constraints, tested on Helmholtz and Stokes problems.</li>
+<li>Use here: the standard citation for AL-based hard constraints; frames comparison arm B6 beyond the distance function method in R8.</li>
+<li>Limits: hard-constraint demonstrations are on linear or simple problems; our twelve coupled nonlinear boundary relations are a different setting.</li>
+</ul>
+<h4>R34. Comparing ways to enforce Dirichlet boundary conditions, 2023</h4>
+<p>Berrone, Canuto, Pintore and Sukumar, <em>Heliyon</em> 9(8), e18820, 2023. DOI https://doi.org/10.1016/j.heliyon.2023.e18820. <a href="sources/literature/bc-comparison-2023/dirichlet_bc_enforcement_PINN_arxiv_2210.14795.pdf">Local PDF</a> (arXiv:2210.14795)</p>
+<ul>
+<li>Evidence: arXiv record with journal-ref fetched in this session; journal DOI verified via Crossref.</li>
+<li>Claim (paper): four Dirichlet imposition routes are compared for PINNs and VPINNs; modifying the network output to match boundary values beats tuned penalty scaling, with an approximate distance function performing best and Nitsche imposition worst in their tests.</li>
+<li>Use here: the closest published analogue of our planned comparison B6, soft penalties versus exact endpoint construction, done for BVP-style problems with penalty scaling like ours.</li>
+<li>Limits: linear Dirichlet conditions; our boundary set is nonlinear, coupled and includes flux-type conditions that this study does not cover.</li>
+</ul>
+<h4>R35. Trial solution for exact boundary imposition, 2024</h4>
+<p>Manavi, Fattahi and Becker, <em>Engineering Applications of Artificial Intelligence</em> 127, art. 107236, 2024. DOI https://doi.org/10.1016/j.engappai.2024.107236. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session.</li>
+<li>Claim (record and title): a Lagaris-style trial solution construction satisfies Dirichlet boundary conditions exactly inside the network, without boundary penalty terms.</li>
+<li>Use here: the modern ansatz reference for comparison arm B6 beyond R8's distance functions.</li>
+<li>Limits: metadata verified only; abstract not read; closed access; Dirichlet-only focus.</li>
+</ul>
+<h4>R36. Boundary condition enforcement comparative study, 2025 preprint</h4>
+<p>Rowan, Hampleman, Maute and Doostan, arXiv:2512.14941, December 2025. No journal record verified yet; cite as a preprint. <a href="sources/literature/bc-3d-comparison-2025/bc_enforcement_comparative_arxiv_2512.14941.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session.</li>
+<li>Claim (abstract): existing boundary enforcement techniques for PINNs are compared and a framework for arbitrary 3D geometries is proposed, with linear and nonlinear Dirichlet, Neumann and Robin tests.</li>
+<li>Use here: the newest side-by-side BC study we can cite when we justify keeping soft weighted penalties as our baseline.</li>
+<li>Limits: preprint; 3D geometries, not 1D similarity BVPs; conclusions must be re-checked on our conditions.</li>
+</ul>
+<h4>R37. Auxiliary outputs for high-order problems, A-PINN, 2022</h4>
+<p>Yuan, Ni, Deng and Hao, <em>Journal of Computational Physics</em> 462, art. 111260, 2022. DOI https://doi.org/10.1016/j.jcp.2022.111260. No open PDF found and no arXiv version was located in this session; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session.</li>
+<li>Claim (record): auxiliary output variables added to the network reformulate high-order and integro-differential problems for forward and inverse PINN training.</li>
+<li>Use here: the published journal precedent for our twelve-output first-order variant, the mechanism behind comparison arm B5, complementing the FO-PINN preprint in R7.</li>
+<li>Limits: closed access, metadata verified only; some search-side sources list different author orders; trust the Crossref record order.</li>
+</ul>
+<h4>R38. Failure-informed adaptive sampling, 2023</h4>
+<p>Gao, Yan and Zhou, <em>SIAM Journal on Scientific Computing</em> 45(4), A1971-A1994, 2023. DOI https://doi.org/10.1137/22M1527763. <a href="sources/literature/fi-pinn-sampling-2023/failure_informed_sampling_arxiv_2210.00279.pdf">Local PDF</a> (arXiv:2210.00279)</p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; journal DOI verified via Crossref.</li>
+<li>Claim (abstract): FI-PINNs define an effective failure probability from the PDE residual, use it as a posterior error indicator, and enrich collocation points in the failure region, with error bounds under their assumptions.</li>
+<li>Use here: the main published successor to RAR for our enrichment comparison arm B3; positions our custom top-error scoring against a named, checked method.</li>
+<li>Limits: PDE examples; their error bounds depend on assumptions we have not verified for a fourth-order nonlinear system.</li>
+</ul>
+<h4>R39. Hard-constrained Falkner-Skan with regional residual balancing, 2026 preprint</h4>
+<p>Endalew and Zhang, arXiv:2609.23493, September 2026. No journal record verified yet; cite as a preprint. <a href="sources/literature/falkner-skan-hard-bc-2026/falkner_skan_hard_constrained_arxiv_2609.23493.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session (v1, 20 September 2026).</li>
+<li>Claim (abstract): the generalized Falkner-Skan BVP is solved on a truncated finite domain with an exact boundary-admissible trial representation that removes boundary penalty terms, plus region-wise residual balancing over wall, middle and tail bands, and multi-stage Adam and L-BFGS training.</li>
+<li>Use here: the closest structural BVP precedent to our setup: a semi-infinite boundary-layer ODE, a finite eta=L far-field endpoint, hard wall conditions, regional weighting and our exact optimizer chain. It touches comparison arms B4, B6 and our eta=L choice at once. Same author group as R3.</li>
+<li>Limits: preprint; a third-order single-field problem, not five coupled fields; search-side notes say the ablations are single-seed; verify details in the full text before reuse.</li>
+</ul>
+<h4>R40. Convergence and sketching for NTK weights, 2025 preprint</h4>
+<p>Hirsch and Pichi, arXiv:2511.15530, November 2025. No journal record verified yet; cite as a preprint. <a href="sources/literature/ntk-sketching-2025/ntk_weights_sketching_arxiv_2511.15530.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session.</li>
+<li>Claim (abstract): convergence of gradient descent with adaptive NTK-based loss weights is proven under suitable conditions, and a randomized sketching method computes such weights cheaply.</li>
+<li>Use here: theory plus a feasible estimator if our fixed weights underperform; full NTK on a fourth-order residual would be too costly without sketching.</li>
+<li>Limits: preprint; assumptions must be checked against our nonsymmetric coupled system.</li>
+</ul>
+<h4>R41. A remedy for failure with large coefficients, 2025</h4>
+<p>Farhani, Hosseini Dashtbayaz, Kazachek and Wang, <em>Neural Networks</em> 183, art. 106963, 2025. DOI https://doi.org/10.1016/j.neunet.2024.106963. No open PDF found; record verified via Crossref; an SSRN preprint version exists.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. The claim below was reported by the search agent from a search result, not read from the article, and is marked accordingly.</li>
+<li>Claim (reported, not independently read): addresses PINN convergence failures when PDE coefficients grow large or the equation becomes strongly nonlinear, and proposes a remedy.</li>
+<li>Use here: the large-coefficient regime matches our near-wall inverse-power terms; a candidate reference for the stiff-wall arm after we read the full text.</li>
+<li>Limits: second-hand claim at this point; closed access; do not cite its mechanism until read.</li>
+</ul>
+<h4>R42. PINN failure modes as overfitting, 2026 preprint</h4>
+<p>Andersen and Matsubara, arXiv:2605.30910, May 2026. No journal record verified yet; cite as a preprint. <a href="sources/literature/overfitting-failure-2026/pinn_failure_overfitting_arxiv_2605.30910.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session.</li>
+<li>Claim (abstract): PINN failure modes come from overfitting, the residual loss is minimized at collocation points but not elsewhere; regularization with extended double backpropagation reaches state-of-the-art results on four standard failure-mode equations with up to 23 times fewer collocation points.</li>
+<li>Use here: a counterpoint to the pure optimization view; strengthens our design of separate monitoring and fresh final evaluation sets, because endpoint or training-point agreement is not interior accuracy.</li>
+<li>Limits: preprint; their benchmarks are standard failure-mode equations, not BVPs; double backpropagation triples differentiation cost on our fourth-order graph.</li>
+</ul>
+<h3>Benchmarks, honest comparisons and surveys</h3>
+<h4>R43. Can PINNs beat the finite element method, 2024</h4>
+<p>Grossmann, Komorowska, Latz and Schoenlieb, <em>IMA Journal of Applied Mathematics</em> 89(1), 143-174, 2024. DOI https://doi.org/10.1093/imamat/hxae011 (verified via Crossref in this session); preprint arXiv:2302.04107; the published CC BY version is also on PMC (PMC11197852). <a href="sources/literature/pinn-vs-fem-2024/pinn_vs_fem_arxiv_2302.04107.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; the search agent verified the published version and venue on the PMC record.</li>
+<li>Claim (abstract): a systematic cost and accuracy comparison on Poisson, Allen-Cahn and semilinear Schrodinger problems finds PINNs have not outperformed the finite element method; a simple loss scaling accelerates L-BFGS.</li>
+<li>Use here: the canonical honest head-to-head citation. It legitimizes our classical-reference-first plan and our explicit no-superiority-claim rule, and its scaling observation supports comparison arm B4.</li>
+<li>Limits: PDE problems, not similarity ODEs; conclusions are author-reported.</li>
+</ul>
+<h4>R44. Honest negative results in fluid PINNs, 2022</h4>
+<p>Chuang and Barba, <em>Proceedings of the Python in Science Conference</em> (SciPy 2022), 28-36, 2022. DOI https://doi.org/10.25080/majora-212e5952-005. <a href="sources/literature/pinn-pitfalls-report-2022/pinn_pitfalls_frustration_scipy2022_10.25080_majora-212e5952-005.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: proceedings record and PDF fetched in this session.</li>
+<li>Claim (abstract): a data-free PINN on the Taylor-Green vortex took about 32 hours to match a 16x16 finite difference run that took under 20 seconds, and a cylinder case failed to produce shedding.</li>
+<li>Use here: the clearest published example of reporting failure and cost honestly against classical solvers; supports saving and publishing our failed runs as results.</li>
+<li>Limits: fluid PDEs; conference venue; 2022 software environment.</li>
+</ul>
+<h4>R45. PINNacle benchmark, 2024</h4>
+<p>Hao, Yao, Su et al., "PINNacle: A Comprehensive Benchmark of Physics-Informed Neural Networks for Solving PDEs", <em>Advances in Neural Information Processing Systems 37</em>, Datasets and Benchmarks track, 2024. arXiv:2306.08827. <a href="sources/literature/pinnacle-benchmark-2024/pinnacle_benchmark_neurips2024_arxiv_2306.08827.pdf">Local PDF</a></p>
+<ul>
+<li>Evidence: arXiv record fetched in this session; the search agent verified the NeurIPS 2024 proceedings entry by fetching it.</li>
+<li>Claim (abstract): a benchmark suite of over 20 PDE problems and about 10 PINN variants, with analysis of domain decomposition and loss reweighting across failure modes.</li>
+<li>Use here: defines the evaluation and reporting practice our evaluation design can cite, and motivates testing loss weighting on our own problem instead of trusting aggregate leaderboards.</li>
+<li>Limits: PDE suite; no similarity-ODE BVP class; venue is NeurIPS 2024, not 2023 as some summaries claim.</li>
+</ul>
+<h4>R46. Numerical analysis of PINNs, Acta Numerica survey, 2024</h4>
+<p>De Ryck and Mishra, <em>Acta Numerica</em> 33, 633-713, 2024. DOI https://doi.org/10.1017/s0962492923000089. <a href="sources/literature/acta-numerica-survey-2024/numerical_analysis_pinn_survey_10.1017_s0962492923000089.pdf">Local PDF</a> (publisher CC BY PDF)</p>
+<ul>
+<li>Evidence: Cambridge record and PDF fetched in this session.</li>
+<li>Claim (record): a rigorous survey of error and convergence analysis for PINNs and related physics-informed models.</li>
+<li>Use here: the theoretical anchor for our evaluation design, in particular how residual metrics relate to true error, which is the reason we report per-field errors against a converged reference rather than loss values.</li>
+<li>Limits: mathematical survey; cite selectively; it does not prescribe a training recipe for our system.</li>
+</ul>
+<h4>R47. Scientific machine learning through PINNs survey, 2022</h4>
+<p>Cuomo, Schiano Di Cola, Giampaolo, Rozza, Raissi and Piccialli, <em>Journal of Scientific Computing</em> 92, art. 88, 2022. DOI https://doi.org/10.1007/s10915-022-01939-z. <a href="sources/literature/sciml-survey-2022/sciml_pinn_survey_arxiv_2201.05624.pdf">Local PDF</a> (arXiv:2201.05624)</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session; arXiv PDF downloaded.</li>
+<li>Claim (record): a widely cited review of PINN variants, loss choices, architectures and training strategies, noting that theoretical issues remain unresolved.</li>
+<li>Use here: framing survey for the introduction's coverage of loss structure and training choices.</li>
+<li>Limits: review; 2022, so it predates the recent weighting and BC studies above.</li>
+</ul>
+<h4>R48. Critical review of PINN claims, 2026</h4>
+<p>Naser, <em>Computers &amp; Industrial Engineering</em> 212, art. 111704, 2026. DOI https://doi.org/10.1016/j.cie.2025.111704. No open PDF found; record verified via Crossref.</p>
+<ul>
+<li>Evidence: Crossref record fetched in this session. The publisher page was not readable in this session.</li>
+<li>Claim (record and title): a critical review arguing PINNs carry structural limitations in engineering systems and that claimed advantages need case-specific evidence.</li>
+<li>Use here: a citable reference for the honest framing that a PINN result must be demonstrated per problem, which is exactly our research question.</li>
+<li>Limits: single-author review outside computational mathematics; abstract not read in this session; treat claims as the author's position.</li>
+</ul>
+<h3>What this pass did not find, and what it corrected</h3>
+<ul>
+<li>No verified paper solves an exact five-field (4,2,2,2,2) similarity system with a PINN. The closest verified physical matches carry a microorganism field (R12, R14), a microrotation field (R17, R18) or a curved wall (R15, R18), each with fewer fields than ours. Our reading-list caution from the first pass stands: we cannot claim "first five-field PINN" without a dedicated novelty search, and this pass still does not prove that none exists.</li>
+<li>No verified PINN paper claims a fourth-order squeezing-flow momentum equation besides R2. The squeezing paper in this pass (R21) uses a PINN only as a checker.</li>
+<li>RAR attribution corrected: the frequently cited "Shin, Darbon and Karniadakis RAR paper" does not exist as a sampling paper. arXiv:2004.01806 is their convergence paper for linear second-order PDEs. The RAR and RAR-D definitions we may follow remain in R6 (Wu et al., CMAME 2023).</li>
+<li>Title corrected: the Grossmann et al. comparison (R43) is against the finite element method, not the finite difference method.</li>
+<li>Venue corrected: PINNacle (R45) appeared in the NeurIPS 2024 Datasets and Benchmarks track, not 2023.</li>
+<li>Access limits recorded: ScienceDirect, AIP, Nature and PMC PDF endpoints returned bot walls or CAPTCHAs to scripted downloads. Those entries carry metadata-only status with verified Crossref or OpenAlex records. No paywalled content was circumvented.</li>
+<li>All local PDFs are arXiv versions or publisher open-access copies, recorded with SHA-256 hashes in sources/manifest.json. The R22 local PDF is the arXiv Part I companion whose title differs from the 2019 journal title.</li>
+<li>Citation counts quoted above are search-side estimates, not verified publisher counts. They are context only, not claims.</li>
+</ul></section>
 <section id="flows"><h1>Flowcharts</h1>
 <p>The browser-readable <a href="strategy-guide.html">strategy guide</a> renders these flows as labeled steps and branches. Mermaid source below is editable documentation, not code that trains a network.</p>
+<h2>Deterministic methodology overview</h2>
+<p>These stage numbers match <a href="methodology.md">the detailed methodology</a>. The <a href="bvp-methodology.html">HTML diagram</a> and <a href="bvp-methodology.pdf">PDF diagram</a> show five small tasks per stage, with separate mathematical strips. The builder checks these stage labels against the methodology source. The locked case has all 22 physical coefficients; software tests and numerical choices remain pending. A failed reference never becomes a verified result through a later residual check.</p>
+<pre><code class="language-mermaid">flowchart TD
+  S1[1. Freeze the specification and case] --&gt;|Valid case| S2[2. Freeze the numerical contract]
+  S1 --&gt;|Missing or invalid| BLOCK[BLOCKED: save the missing input or exact reason]
+  S2 --&gt;|Complete contract| S3[3. Pass the software tests]
+  S2 --&gt;|Unset setting| BLOCK
+  S3 --&gt;|Pass| S4[4. Build and validate the reference]
+  S3 --&gt;|Fail| FIX[FAILED_TESTS: repair and repeat stage 3]
+  S4 --&gt;|Reliable reference| S5[5. Construct the point sets]
+  S4 --&gt;|Fail or branch unresolved| REF[UNVERIFIED_REFERENCE: diagnose; no accuracy claim]
+  S5 --&gt; S6[6. Train the fixed-case PINN]
+  S6 --&gt;|Finite Adam checkpoint| S7[7. Refine and select the checkpoint]
+  S6 --&gt;|Nonfinite value or graph error| FAIL[FAILED_TRAINING: save the first bad term]
+  S7 --&gt;|Frozen selected checkpoint| S8[8. Lock and test the selected model]
+  S7 --&gt;|Refinement fails| ADAM[Keep the eligible Adam checkpoint and failure reason]
+  ADAM --&gt; S8
+  S8 --&gt;|All declared checks pass| S9[9. Check sensitivity and method changes]
+  S8 --&gt;|Any check fails| TEST[FAILED_ACCEPTANCE: retain the exposed final test]
+  S9 --&gt; S10[10. Report and archive every outcome]
+  BLOCK --&gt; S10
+  FIX --&gt; S10
+  REF --&gt; S10
+  FAIL --&gt; S10
+  TEST --&gt; S10
+</code></pre>
+<p>Separately approved exploration without a reference may use stages 5 to 7. It retains the unverified-reference status and cannot pass the reference-based acceptance rule. A redesign after final testing is a new logged run, never a hidden retry of the same test.</p>
+<h2>Lorenz-style BVP computational graph</h2>
+<p>This diagram follows the live Lorenz PINN's network, derivative, physics and optimizer structure, adapted to this two-ended BVP. See <a href="lorenz-to-bvp-methodology.md">the comparison</a>. It uses one shared network, not a separate trainable physics network. The complete method remains in <a href="methodology.md">methodology.md</a>.</p>
+<pre><code class="language-mermaid">flowchart TD
+  I[Fixed interior eta coordinates: N by 1] --&gt; X[Normalize x = 2 eta / L - 1]
+  X --&gt; NN[One shared MLP: 1 to 64 to 64 to 64 to 64 to 5]
+  NN --&gt; U[Physical fields: f g theta phi chi]
+  U --&gt; D[Componentwise eta derivatives: f through order 4; others through order 2]
+  U --&gt; R[Original R14 to R18]
+  D --&gt; R
+  P[Locked physical coefficients] --&gt; R
+  E[Endpoint coordinates: 0 and L] --&gt; EN[Evaluate the same NN and endpoint derivatives]
+  EN --&gt; B[All twelve original boundary errors]
+  P --&gt; B
+  R --&gt; JR[Scaled weighted equation loss]
+  B --&gt; JB[Scaled weighted boundary loss]
+  JR --&gt; J[One total loss]
+  JB --&gt; J
+  J --&gt; FIN{Finite values and connected gradients?}
+  FIN --&gt;|No| FAIL[Save failure; stop invalid update]
+  FIN --&gt;|Yes| G[Backpropagate to NN weights and biases]
+  G --&gt; OPT[Adam then deterministic fixed-objective L-BFGS]
+  OPT -.-&gt;|Update NN only| NN
+  OPT --&gt; MON[Independent monitoring and eligible checkpoints]
+  MPTS[Fixed monitoring coordinates] --&gt; MON
+  MON --&gt; LOCK[Select and lock checkpoint; retain Adam fallback]
+  LOCK --&gt; TEST[Open withheld coordinates; evaluate fields derivatives R and B]
+  REF[Checked twelve-state solve_bvp reference] -.-&gt;|Comparison only| TEST
+  TEST --&gt; SEN[Domain sample and seed sensitivity]
+  SEN --&gt; REPORT[Errors uncertainty costs status and all failures]
+</code></pre>
+<p>Reference values and final-test errors feed neither the training loss nor checkpoint ranking. Coordinate differentiation keeps a graph for the later loss-to-weight backward pass. The baseline has no Lorenz initial-value lift, time windows, endpoint handoff or causal weighting.</p>
 <h2>Architecture and gradient flow</h2>
 <pre><code class="language-mermaid">flowchart TD
   X[Eta coordinates] --&gt; N[One smooth five-output NN]
