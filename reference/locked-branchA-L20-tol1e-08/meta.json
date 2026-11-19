@@ -1,0 +1,275 @@
+{
+  "L": 20.0,
+  "bc_tol": 1e-08,
+  "boundary_errors": {
+    "B1": 0.0,
+    "B10": 0.0,
+    "B11": -3.2526065174565133e-19,
+    "B12": 0.0,
+    "B2": 0.0,
+    "B3": -2.220446049250313e-16,
+    "B4": 0.0,
+    "B5": 4.440892098500626e-16,
+    "B6": 0.0,
+    "B7": -5.794819807569245e-38,
+    "B8": -1.766685357339356e-37,
+    "B9": -4.668916624672273e-36
+  },
+  "branch": "A",
+  "case_id": "locked-branchA-L20-tol1e-08",
+  "case_sha256": "70d131f66d018a1a6baf3a5d8a7a64ef88d4825132c6f1ed81ae1472583b4ec8",
+  "checks": {
+    "G3_far_field_pass": false,
+    "G3_fixed_L_pass": true,
+    "V10_pass": true,
+    "V10_rk_multiple_shooting": {
+      "max_mismatch": 8.801848139228241e-13,
+      "max_rel_diff_by_state": {
+        "ch1": 1.3707952970645475e-10,
+        "chi": 2.7751811959575434e-10,
+        "f": 1.511460641729579e-10,
+        "f1": 6.393765061006903e-11,
+        "f2": 1.554614230802015e-11,
+        "f3": 1.3548014028291524e-11,
+        "g": 2.234850622889434e-10,
+        "g1": 7.576659255771067e-11,
+        "ph1": 9.908217069419497e-12,
+        "phi": 1.6542462492772609e-10,
+        "th1": 1.0412667129502655e-11,
+        "theta": 2.0581891785583124e-10
+      },
+      "max_wall_rel_diff": 1.9492999741698067e-10,
+      "method": "multiple shooting with DOP853",
+      "newton_iterations": 4,
+      "rtol": 1e-11,
+      "seconds": 15.5,
+      "segments": 40,
+      "self_diff_vs_rtol_check": 5.109894776451186e-10,
+      "start": "smooth guess, independent of solve_bvp"
+    },
+    "V12_pass": true,
+    "V12_slope_check": {
+      "ch1->ch2": 1.2125406887276616e-09,
+      "chi->ch1": 1.73332149136899e-09,
+      "f->f1": 2.866226739365317e-09,
+      "f1->f2": 2.1099144001340572e-10,
+      "f2->f3": 2.3401081462323057e-10,
+      "f3->f4": 6.582534643087275e-10,
+      "g->g1": 3.5092525172061922e-09,
+      "g1->g2": 7.901116910237212e-10,
+      "ph1->ph2": 1.0819326945833588e-09,
+      "phi->ph1": 4.0454813410931733e-10,
+      "th1->th2": 1.1031699618372067e-09,
+      "theta->th1": 5.426570267815378e-10
+    },
+    "V4_tol_two_tightest": true,
+    "V5_change_to_next_L_by_key": {
+      "ch1_0": 0.11677244310517032,
+      "f2_0": 3.8559022219511056e-05,
+      "f_0": 4.152183083073496e-05,
+      "f_L": 6.164557695305244e-05,
+      "g1_0": 3.5698212272168745e-05,
+      "g_0": 3.855902221954627e-05,
+      "ph1_0": 4.152183083052927e-05,
+      "phi_0": 0.0003903041357709103,
+      "th1_0": 4.15218308304705e-05,
+      "theta_0": 6.85986495427187e-05
+    },
+    "V5_chi_slope_change_two_largest_L": 0.2722419782741946,
+    "V5_core_L_independent": false,
+    "V5_core_change_to_largest_L": 0.0009848764682766683,
+    "V5_core_change_to_next_L": 0.0003903041357709103,
+    "V6_scan_guesses_in_branch": 25,
+    "V7_max_abs_bc": 4.440892098500626e-16,
+    "V7_pass": true,
+    "V8_core_then_chi": {
+      "chi_status": 0,
+      "core_status": 0,
+      "max_profile_rel_diff": 2.7645546962773437e-10,
+      "max_wall_rel_diff": 2.0822405740446678e-10
+    },
+    "V8_pass": true,
+    "V9_min_thermal_coefficient": 0.1427111050123625,
+    "far_decay_exponent_m": 0.23901840698247268,
+    "far_field_valid": true
+  },
+  "created": "2026-11-19T22:30:17",
+  "eval_first_step": 0.0005,
+  "eval_points": 4001,
+  "final_nodes": 1543,
+  "git": {
+    "commit": "407e52fe95875beee30cb017660218280a0f836f",
+    "dirty": true
+  },
+  "highest_order": [
+    "f4",
+    "g2",
+    "th2",
+    "ph2",
+    "ch2"
+  ],
+  "initial_nodes": 400,
+  "max_nodes": 100000,
+  "max_rms_residual": 9.982422435244345e-09,
+  "message": "The algorithm converged to the desired accuracy.",
+  "min_thermal_coefficient": 0.1427111050123625,
+  "numpy_version": "2.5.5",
+  "physical_parameters": {
+    "B": 0.5,
+    "Bi": 1.0,
+    "Da": 0.2,
+    "Delta": 0.5,
+    "Lb": 1.0,
+    "Le": 1.0,
+    "N1": 0.1,
+    "Nb": 0.1,
+    "Nr": 0.5,
+    "Nt": 0.3,
+    "Pe": 2.0,
+    "Pr": 8.8,
+    "Rd": 1.0,
+    "b": 0.2,
+    "beta_m": 0.2,
+    "delta_star": 0.0,
+    "ell": 0.3,
+    "epsilon": 0.1,
+    "fw": 0.2,
+    "kappa": 0.2,
+    "lambda_m": 0.5,
+    "theta_w": 0.2
+  },
+  "python_version": "3.12.13",
+  "scan_guesses_reaching_branch": [
+    {
+      "rate": 0.5,
+      "theta0": 0.1
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.2
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.3
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.4
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.5
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.6
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.1
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.2
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.3
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.4
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.5
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.6
+    },
+    {
+      "rate": 1.0,
+      "theta0": 1.1
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.1
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.2
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.3
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.4
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.5
+    },
+    {
+      "rate": 2.0,
+      "theta0": 1.1
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.1
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.2
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.3
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.4
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.5
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.6
+    }
+  ],
+  "scipy_version": "1.18.1",
+  "solver": "scipy.integrate.solve_bvp",
+  "state_order": [
+    "f",
+    "f1",
+    "f2",
+    "f3",
+    "g",
+    "g1",
+    "theta",
+    "th1",
+    "phi",
+    "ph1",
+    "chi",
+    "ch1"
+  ],
+  "status": 0,
+  "tol": 1e-08,
+  "use": "Testing and plotting only. Never a PINN training label (AGENTS.md section 3).",
+  "wall_values": {
+    "ch1_0": -2.008734673471387,
+    "f2_0": -4.2032976026770665,
+    "f_0": 0.08587059159369333,
+    "f_L": 0.19317373676283292,
+    "g1_0": -2.87130230009455,
+    "g_0": 1.2609892808031198,
+    "ph1_0": 3.778306030122506,
+    "phi_0": -0.12015496058592202,
+    "th1_0": -1.2594353433741687,
+    "theta_0": 0.25018528939671947
+  }
+}

@@ -169,3 +169,18 @@ Solve `M*H=-r0`; do not form an explicit matrix inverse. This triangular derivat
 4. Test a quadratic zero-flux wall cancellation and B2/B5's consequence `f0=-fw*Nt/(Pr*Le*Nb)*th1_0` when all denominators are nonzero.
 5. Verify all residual outputs have shape `(N,1)` before stacking into `(N,5)`.
 6. Compare a separately coded NumPy reference evaluator with the Torch evaluator at identical artificial states. Shared helper code is useful, but an independent transcription test is needed to catch shared errors.
+
+## Verification against the source, 2026-11-19
+
+Checked term by term against the equation images in `sources/project-draft/project3Nov_2026.docx` (SHA-256 starts `e9caca1674cc74b6`). Eqs. 14 to 19 are MathType objects whose previews are `word/media/image44.wmf` to `image49.wmf`. They were rendered with LibreOffice and pdftoppm at 220 dpi, then compared with this sheet and with `src/bvp_pinn/reference/equations.py`.
+
+| Eq. | Source image | Result |
+|---|---|---|
+| 14 | image44 | Match: all four (1+Delta) terms, the three kappa terms, the -0.5*delta_star bracket with (eta/2*f2 + f1)/q, -(f2 + f1/q)/Da, -Delta*(g2 + g1/q) and the beta_m term with (1/q - 4/h) |
+| 15 | image45 | Match |
+| 16 | image46 | Match: Nr bracket with A^3*th1/q, 3*c*A^2*th1^2, A^3*th2; the beta_m*lambda_m term over Pr*h^3 with (1 - 2/h^2) and -2*f1/h |
+| 17 | image47 | Match. The source writes the first two denominators as eta+k and the convective term with eta+kappa. The receipt gives k=0.2 and the approved alias k=kappa, so both are q = eta+kappa |
+| 18 | image48 | Match, including kappa/q*f*phi and -delta_star*eta/2*ph1 as printed. The Pe/Pr bracket is printed in red in the draft (a highlight, not a different term) |
+| 19 | image49 | Match for B1 to B12. The radiation bracket in B4 is printed in red. The source puts the far conditions at infinity. The reference imposes B7 to B9 and B12 at eta = L, and replaces B10 and B11 by asymptotic conditions that select the decaying theta and phi modes ([SPEC](SPEC_reference_solutions.md) section 8) |
+
+The parameter values are pinned to the receipt text by `tests/test_config.py`, which parses the received block verbatim and applies the stated mappings and aliases.

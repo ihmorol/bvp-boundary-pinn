@@ -1,0 +1,255 @@
+{
+  "L": 20.0,
+  "bc_tol": 1e-08,
+  "boundary_errors": {
+    "B1": 1.1102230246251565e-16,
+    "B10": 5.421010862427522e-20,
+    "B11": -1.0842021724855044e-19,
+    "B12": 0.0,
+    "B2": -6.938893903907228e-18,
+    "B3": 0.0,
+    "B4": 1.3877787807814457e-17,
+    "B5": 0.0,
+    "B6": 0.0,
+    "B7": -2.0433397895153045e-39,
+    "B8": -9.275385111957112e-39,
+    "B9": -1.1754943508222875e-38
+  },
+  "branch": "B",
+  "case_id": "locked-branchB-L20-tol1e-08",
+  "case_sha256": "70d131f66d018a1a6baf3a5d8a7a64ef88d4825132c6f1ed81ae1472583b4ec8",
+  "checks": {
+    "G3_far_field_pass": false,
+    "G3_fixed_L_pass": true,
+    "V10_pass": true,
+    "V10_rk_multiple_shooting": {
+      "max_mismatch": 7.290168468898628e-12,
+      "max_rel_diff_by_state": {
+        "ch1": 1.8804396578104028e-10,
+        "chi": 1.9926113536961054e-10,
+        "f": 9.009016370865491e-10,
+        "f1": 9.72744354427681e-11,
+        "f2": 3.0303499411665604e-11,
+        "f3": 4.810302133676452e-11,
+        "g": 1.1334493435265752e-10,
+        "g1": 3.681565792368171e-11,
+        "ph1": 1.3826490222803314e-10,
+        "phi": 8.695548871678177e-09,
+        "th1": 1.4222719522226987e-10,
+        "theta": 1.6172162345595844e-10
+      },
+      "max_wall_rel_diff": 9.270691491909464e-09,
+      "method": "multiple shooting with DOP853",
+      "newton_iterations": 7,
+      "rtol": 1e-11,
+      "seconds": 25.5,
+      "segments": 40,
+      "self_diff_vs_rtol_check": 1.6785771074242646e-10,
+      "start": "smooth guess, independent of solve_bvp"
+    },
+    "V12_pass": true,
+    "V12_slope_check": {
+      "ch1->ch2": 1.8010480084479415e-09,
+      "chi->ch1": 2.436037390974369e-09,
+      "f->f1": 3.2288201441359294e-09,
+      "f1->f2": 2.4138251390906554e-10,
+      "f2->f3": 1.995711196678263e-10,
+      "f3->f4": 5.849985678254105e-10,
+      "g->g1": 1.3936163147555764e-09,
+      "g1->g2": 4.068618594692912e-10,
+      "ph1->ph2": 1.2207744744097679e-09,
+      "phi->ph1": 1.6136229952177915e-09,
+      "th1->th2": 1.227251242882255e-09,
+      "theta->th1": 1.602314391247803e-09
+    },
+    "V4_tol_two_tightest": true,
+    "V5_change_to_next_L_by_key": {
+      "ch1_0": 0.09652851622243612,
+      "f2_0": 9.053581702948288e-06,
+      "f_0": 3.397656087711694e-05,
+      "f_L": 0.0023494836848449714,
+      "g1_0": 8.830545335129815e-06,
+      "g_0": 9.053581702863143e-06,
+      "ph1_0": 3.397656087706158e-05,
+      "phi_0": 0.0021676636330256755,
+      "th1_0": 3.397656087706157e-05,
+      "theta_0": 1.8170691431434088e-05
+    },
+    "V5_chi_slope_change_two_largest_L": 0.03326994652368308,
+    "V5_core_L_independent": false,
+    "V5_core_change_to_largest_L": 0.0028703098574926066,
+    "V5_core_change_to_next_L": 0.0023494836848449714,
+    "V6_scan_guesses_in_branch": 20,
+    "V7_max_abs_bc": 1.1102230246251565e-16,
+    "V7_pass": true,
+    "V8_core_then_chi": {
+      "chi_status": 0,
+      "core_status": 0,
+      "max_profile_rel_diff": 1.1151399524403827e-08,
+      "max_wall_rel_diff": 1.0941688344911637e-08
+    },
+    "V8_pass": true,
+    "V9_min_thermal_coefficient": 0.11929039780155826,
+    "far_decay_exponent_m": -0.005994278122486497,
+    "far_field_valid": false
+  },
+  "created": "2026-11-19T22:30:17",
+  "eval_first_step": 0.0005,
+  "eval_points": 4001,
+  "final_nodes": 2331,
+  "git": {
+    "commit": "407e52fe95875beee30cb017660218280a0f836f",
+    "dirty": true
+  },
+  "highest_order": [
+    "f4",
+    "g2",
+    "th2",
+    "ph2",
+    "ch2"
+  ],
+  "initial_nodes": 400,
+  "max_nodes": 100000,
+  "max_rms_residual": 9.992116178730028e-09,
+  "message": "The algorithm converged to the desired accuracy.",
+  "min_thermal_coefficient": 0.11929039780155826,
+  "numpy_version": "2.5.5",
+  "physical_parameters": {
+    "B": 0.5,
+    "Bi": 1.0,
+    "Da": 0.2,
+    "Delta": 0.5,
+    "Lb": 1.0,
+    "Le": 1.0,
+    "N1": 0.1,
+    "Nb": 0.1,
+    "Nr": 0.5,
+    "Nt": 0.3,
+    "Pe": 2.0,
+    "Pr": 8.8,
+    "Rd": 1.0,
+    "b": 0.2,
+    "beta_m": 0.2,
+    "delta_star": 0.0,
+    "ell": 0.3,
+    "epsilon": 0.1,
+    "fw": 0.2,
+    "kappa": 0.2,
+    "lambda_m": 0.5,
+    "theta_w": 0.2
+  },
+  "python_version": "3.12.13",
+  "scan_guesses_reaching_branch": [
+    {
+      "rate": 0.5,
+      "theta0": 0.7
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.8
+    },
+    {
+      "rate": 0.5,
+      "theta0": 0.9
+    },
+    {
+      "rate": 0.5,
+      "theta0": 1.0
+    },
+    {
+      "rate": 0.5,
+      "theta0": 1.1
+    },
+    {
+      "rate": 0.5,
+      "theta0": 1.2
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.7
+    },
+    {
+      "rate": 1.0,
+      "theta0": 0.8
+    },
+    {
+      "rate": 1.0,
+      "theta0": 1.0
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.6
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.7
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.8
+    },
+    {
+      "rate": 2.0,
+      "theta0": 0.9
+    },
+    {
+      "rate": 2.0,
+      "theta0": 1.0
+    },
+    {
+      "rate": 2.0,
+      "theta0": 1.2
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.7
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.8
+    },
+    {
+      "rate": 4.0,
+      "theta0": 0.9
+    },
+    {
+      "rate": 4.0,
+      "theta0": 1.0
+    },
+    {
+      "rate": 4.0,
+      "theta0": 1.1
+    }
+  ],
+  "scipy_version": "1.18.1",
+  "solver": "scipy.integrate.solve_bvp",
+  "state_order": [
+    "f",
+    "f1",
+    "f2",
+    "f3",
+    "g",
+    "g1",
+    "theta",
+    "th1",
+    "phi",
+    "ph1",
+    "chi",
+    "ch1"
+  ],
+  "status": 0,
+  "tol": 1e-08,
+  "use": "Testing and plotting only. Never a PINN training label (AGENTS.md section 3).",
+  "wall_values": {
+    "ch1_0": -1.348361161170657,
+    "f2_0": -6.9541615060426025,
+    "f_0": 0.03418054429933674,
+    "f_L": -0.00357529910882296,
+    "g1_0": -4.559730959099971,
+    "g_0": 2.086248451812781,
+    "ph1_0": 1.5039439491708169,
+    "phi_0": 1.5618574557265776,
+    "th1_0": -0.5013146497236057,
+    "theta_0": 0.5924193301696816
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "status": "researcher_chosen_numerical_settings",
+  "date": "2026-11-19",
+  "note": "Numerical settings for the classical reference only. Physical values come from physical-case-pending.json and are never changed here. Spec: docs/SPEC_reference_solutions.md.",
+  "solver": "scipy.integrate.solve_bvp",
+  "L_start": 10,
+  "L_values": [
+    10,
+    20,
+    40,
+    80,
+    160
+  ],
+  "tol_values": [
+    1e-05,
+    1e-06,
+    1e-07,
+    1e-08
+  ],
+  "bc_tol": "equal to tol",
+  "initial_nodes": 400,
+  "first_step": 0.001,
+  "max_nodes": 100000,
+  "agreement_rel": 0.0001,
+  "agreement_note": "Two solutions agree when every wall value differs by at most 1e-4 relative, about 4 significant figures (SPEC V4 to V8).",
+  "branch_scan": {
+    "rates": [
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "theta0": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0,
+      1.1,
+      1.2
+    ]
+  },
+  "branch_scan_note": "Smooth decaying guesses that satisfy B1, B2, B3, B5 and B6 at eta=0. Every converged solution is kept and grouped into branches by its wall values.",
+  "continuation_path": [
+    1.0,
+    0.5,
+    0.2
+  ],
+  "continuation_note": "Only if no guess converges: kappa=b=Da follow this path, theta_w stays 0.2, everything else locked. Reference-only aid; intermediate solutions are never reported.",
+  "mms": {
+    "L": 5.0,
+    "meshes": [
+      81,
+      161,
+      321,
+      641
+    ],
+    "min_order": 3.6
+  },
+  "mms_note": "Fixed uniform meshes with tol=bc_tol=1e-12 and max_nodes equal to the mesh size, so solve_bvp cannot refine the mesh but Newton still converges on it. Order from the nodal max error. At 1281 nodes the error reaches a floor near 1e-10, so that mesh is not used for the order.",
+  "eval_points": 4001,
+  "eval_first_step": 0.0005,
+  "L_reference": 20,
+  "L_reference_note": "Smallest L whose f, g, theta, phi wall values agree with the next L to 1e-4 relative under asymptotic far conditions (study 2026-11-19). chi has no L-independent limit, so chi is defined by chi(L)=0 at this L.",
+  "far_field": "asymptotic",
+  "far_field_note": "theta(inf)=0 and phi(inf)=0 are imposed at eta=L as asymptotic conditions (Lentini and Keller 1980, doi:10.1137/0717049), derived in equations.far_conditions. f1, f2, g keep zero values at L (they decay exponentially). chi keeps chi(L)=0 because Eq. 18 as printed has no decaying far-field solution for chi. Set to 'dirichlet' for the old truncation.",
+  "rk": {
+    "segments": 40,
+    "first_segment": 0.02,
+    "rtol": 1e-11,
+    "rtol_check": 1e-09
+  },
+  "rk_note": "Second, independent reference (check V10): multiple shooting with SciPy's DOP853 Runge-Kutta on 40 wall-clustered segments, Newton on the joins and boundary conditions, started from the smooth guess only. rtol_check is a looser second solve that estimates the integrator's own error."
+}
