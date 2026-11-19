@@ -1,6 +1,6 @@
 # PINN strategy and implementation plan
 
-Status: **parameters complete; validation pending** (`parameters_complete_validation_pending`). All 22 physical coefficients are locked from [the user's 2026-11-16 message reporting direct supervisor values](parameters.md#supervisor-confirmation-2026-11-16), with Da derived from M. No solver implementation, software validation, physical reference, training or evaluation has occurred.
+Status: **parameters complete; validation pending** (`parameters_complete_validation_pending`). All 22 physical coefficients are locked from [the user's 2026-11-16 message reporting direct supervisor values](parameters.md#supervisor-confirmation-2026-11-16), with Da derived from M. The classical reference was built on 2026-11-19 ([reference study](../reference/study.md), [SPEC](SPEC_reference_solutions.md) section 8). No PINN training or evaluation has occurred.
 
 The numerical/training proposal in [training-proposal.json](../configs/training-proposal.json) is unchanged, including its eight null settings. The name [physical-case-pending.json](../configs/physical-case-pending.json) is kept only for link compatibility; its physical values are complete. The generated [strategy-guide.html](../strategy-guide.html) is rebuilt from the current records. The [PINN architecture](../bvp-pinn-architecture.html) shows the Lorenz-style computational graph adapted to this BVP; [the comparison](lorenz-to-bvp-methodology.md) records what is kept and replaced.
 

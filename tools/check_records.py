@@ -94,7 +94,7 @@ if training["reference"]["used_as_training_labels"]:
     errors.append("Baseline reference cannot be used as training labels.")
 if training["model"]["output_fields"] != ["f", "g", "theta", "phi", "chi"]:
     errors.append("Output order does not match the equation sheet.")
-for path in [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]:
+for path in [ROOT / "README.md", ROOT / "TODO.md", *sorted((ROOT / "docs").glob("*.md")), *sorted((ROOT / "journal").glob("*.md"))]:
     text = path.read_text()
     if "<!--" in text:
         errors.append(f"Unfilled marker in {path.relative_to(ROOT)}.")
@@ -114,7 +114,7 @@ PROTECTED_PHRASES = [
     "A comprehensive study of non-adaptive and residual-based adaptive sampling for physics-informed neural networks",
     "PINNacle: A Comprehensive Benchmark of Physics-Informed Neural Networks for Solving PDEs",
 ]
-for path in [ROOT / "README.md", ROOT / "AGENTS.md", *sorted((ROOT / "docs").glob("*.md"))]:
+for path in [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "TODO.md", *sorted((ROOT / "docs").glob("*.md")), *sorted((ROOT / "journal").glob("*.md"))]:
     text = path.read_text()
     cleaned = re.sub(r"```.*?```", " ", text, flags=re.S)
     cleaned = re.sub(r"`[^`]*`", " ", cleaned)
@@ -140,5 +140,5 @@ if missing:
     print("PHYSICAL CASE BLOCKED: missing " + ", ".join(missing))
 else:
     print("PHYSICAL PARAMETERS COMPLETE: 22 equation coefficients from the locked supervisor record, with Da derived from M.")
-print("Numerical settings and acceptance scales remain proposals. Definition questions remain open.")
+print("Numerical settings and acceptance scales remain proposals. Definition questions closed by the supervisor on 2026-11-19: values are used as given.")
 print("SOFTWARE VALIDATION PENDING: no solver, reference simulation or training test was run.")

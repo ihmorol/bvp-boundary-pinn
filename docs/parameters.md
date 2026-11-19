@@ -104,7 +104,7 @@ These conditional checks use the recorded definitions and the locked values. The
 - The meanings of H=1 and Prm=0.1 remain open. Neither is an active physical coefficient in the confirmed equations.
 - The required wall quantities and acceptable accuracy have not been specified.
 
-Keep the questions in [questions-for-supervisor.md](questions-for-supervisor.md). Definition questions do not undo numerical completeness of the 22-field case.
+Keep the questions in [questions-for-supervisor.md](questions-for-supervisor.md). On 2026-11-19 the supervisor answered that the physical meaning of the values is not needed: the supplied values are used exactly as given, so the definition questions are closed and change nothing in this record.
 
 ## Historical sheet readings and choices: 2026-11-12
 
@@ -153,4 +153,4 @@ The crossed-out line near the radiation entries was not a reliable numerical ins
 
 The record checker compares the equation coefficients with the dated receipt and its mappings. A SHA-256 checksum guards the received values against unrecorded changes. Any authorized future update must update the dated record and checksum together; it cannot silently replace the locked target.
 
-No solver implementation, software validation, physical reference, training or evaluation has occurred. The next gate is software validation, followed by reference, training and evaluation as set out in [strategy.md](strategy.md). Denominator and regularity checks remain required. The record checker checks record consistency; it is not proof of solver correctness or convergence.
+The classical reference was built on 2026-11-19 ([reference study](../reference/study.md)). No PINN training or evaluation has occurred. The next gate is software validation, followed by reference, training and evaluation as set out in [strategy.md](strategy.md). Denominator and regularity checks remain required. The record checker checks record consistency; it is not proof of solver correctness or convergence.
