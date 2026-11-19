@@ -1,7 +1,14 @@
 # src/bvp_pinn
 
-Code will live here, following docs/strategy.md section 3. Nothing is implemented yet, so there is no runnable code and no fake stubs.
+Code for the BVP. Rules: [docs/CODING_RULES.md](../../docs/CODING_RULES.md) and the writing rule in AGENTS.md.
 
-Planned modules: config.py, model.py, derivatives.py, equations.py, boundaries.py, losses.py, reference.py, sampling.py, train.py, evaluate.py, io.py, tests/.
+- `config.py`: loads the locked physical case and the reference settings.
+- `reference/`: classical reference with scipy's solve_bvp. Spec: [docs/SPEC_reference_solutions.md](../../docs/SPEC_reference_solutions.md).
+  - `equations.py`: Eqs. 14 to 19 in first-order form.
+  - `solver.py`: meshes, guesses, solve and extend in L.
+  - `verify.py`: manufactured-solution and core-then-chi checks.
+  - `io.py`: write and load reference data with hash checks. PINN training code must not import it.
+  - `run.py`: the full study; run `uv run python -m bvp_pinn.reference.run` from the repository root.
+  - `plots.py`: figures and the study table.
 
-Rules for code and comments: same as the writing rule in AGENTS.md. Simple words, short sentences. Comments say why, not what.
+PINN modules come next ([TODO.md](../../TODO.md) phase P1).

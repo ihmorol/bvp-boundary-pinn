@@ -1,6 +1,8 @@
 # PINN strategy and implementation plan
 
-Status: **strategy ready; physical simulation blocked by seven missing coefficients**. All work is in this new repository. No solver training or physical-reference simulation has been run. Missing values stay null; they are not silently replaced by zero or by paper values.
+Status: **parameters complete; validation pending** (`parameters_complete_validation_pending`). All 22 physical coefficients are locked from [the user's 2026-11-16 message reporting direct supervisor values](parameters.md#supervisor-confirmation-2026-11-16), with Da derived from M. The classical reference was built on 2026-11-19 ([reference study](../reference/study.md), [SPEC](SPEC_reference_solutions.md) section 8). No PINN training or evaluation has occurred.
+
+The numerical/training proposal in [training-proposal.json](../configs/training-proposal.json) is unchanged, including its eight null settings. The name [physical-case-pending.json](../configs/physical-case-pending.json) is kept only for link compatibility; its physical values are complete. The generated [strategy-guide.html](../strategy-guide.html) is rebuilt from the current records. The [PINN architecture](../bvp-pinn-architecture.html) shows the Lorenz-style computational graph adapted to this BVP; [the comparison](lorenz-to-bvp-methodology.md) records what is kept and replaced.
 
 Start with [the parameter record](parameters.md), [the exact equation sheet](equations.md), and [the checked reading list](reading-list.md). The source equations are confirmed as written. A copying error in the older strategy is corrected here; the original Lorenz file remains unchanged.
 
@@ -14,15 +16,19 @@ The complete check uses:
 - Twelve boundary errors from Eq. 19, evaluated at eta=0 and a finite far endpoint eta=L.
 - No labeled reference solution in the baseline loss.
 
+Here L is the numerical far endpoint. The received L=0.5 maps to lambda_m, not to this endpoint. The received M=5 defines Da=1/M=0.2. The local matrix M and derivative vector H in the reference calculation are separate from the received scalar symbols. H=1 and Prm=0.1 remain recorded outside the 22 physical coefficients; do not add terms or assume a magnetic Prandtl mapping.
+
 A single network serves the whole interval. We do not carry a guessed state from one spatial window to the next using the old Lorenz time-rollout method.
 
 ## 2. Separate the target from an easier numerical check
 
-The requested target uses kappa=b=Da=0.1, among the other recorded rounded choices. Near the wall, the inverse-power coefficients are large. Treat this as a numerical challenge, not proof that the parameters are invalid.
+The locked target uses kappa=b=Da=0.2 and beta_m=0.2, from [the dated parameter record](parameters.md#supervisor-confirmation-2026-11-16). With q=eta+kappa and h=eta+b, wall eta=0 gives 1/q=5, 1/q^3=125, 1/Da=5, 2*beta_m/h^4=250 and (1/kappa-4/b)=-15. These are coefficient sizes, not solution results or proof that the case is invalid.
 
-Once the missing coefficients arrive, an optional debug case uses kappa=b=Da=1 and theta_w=1.5, keeping the same remaining physical coefficients. First test whether the solver and PINN work on this less extreme case. Then approach the target by parameter continuation if needed. For example, use rounded kappa/b/Da stages 1, 0.5 and 0.1. Keep theta_w's target choice separate; crossing theta_w=1 requires the stable radiation expression and confirmation that the full normalization permits the limit. Do not claim a continuous physical branch through that point automatically.
+The received theta_w=0.2 gives A=1-0.8*theta. With Nr=0.5 and Pr=8.8, the thermal highest-derivative coefficient is (1+0.5*A^3)/8.8. It must be checked along the computed solution; numerical completeness does not establish regularity.
 
-The easy case is never relabeled as the requested result. Both target and debug cases are currently blocked by the same missing coefficients.
+An optional debug case uses kappa=b=Da=1 and theta_w=1.5, keeping the other target coefficients. These are researcher-proposed overrides in a separate case, not changes to the locked target. First test the solver and PINN on this less extreme case. If needed, proposed kappa/b/Da continuation stages are 1, 0.5 and 0.2. Keep theta_w's target separate; crossing theta_w=1 requires the stable radiation expression and confirmation that the full normalization permits the limit. Do not claim a continuous physical branch through that point automatically.
+
+No automatic target changes or physical-parameter tuning are allowed. A change needs an explicit user or supervisor update with a date and source. The debug case is never relabeled as the requested result. Both cases still need software and reference checks; neither has been run. Open definition questions do not permit replacing the supplied values.
 
 ## 3. Architecture and module responsibilities
 
@@ -89,7 +95,7 @@ J = sum over the 5 equations of lambda_i * mean(r_i**2)
 
 All weights start positive. Begin with weights of one after documenting characteristic scales; this does not guarantee the gradients are balanced. Scales must come from declared field/derivative magnitudes and equation terms, not a denominator equal to the current residual. An absolute loss threshold changes meaning when a scale changes, so save both the original and scaled errors.
 
-If there is a 2000-sized wall coefficient, a convenient formulation may scale that equation by a fixed characteristic magnitude. It must still report the original equation error. Dividing an equation by a tiny supplied parameter can also amplify numerical gradients. Record the scaling choice rather than hiding it.
+The target's 250-sized wall coefficient above may call for scaling that equation by a fixed characteristic magnitude. It must still report the original equation error. Dividing an equation by a tiny supplied parameter can also amplify numerical gradients. Record the scaling choice rather than hiding it.
 
 No initial-value term, temporal causal weights, Lorenz invariants or solution-data term belongs in this baseline. Do not train unconstrained loss weights that can reduce the objective by shrinking to zero.
 
@@ -125,7 +131,7 @@ Maintain four separate sets:
 - Fixed monitoring points used to select a model and diagnose fitting.
 - Fresh final evaluation coordinates after design choices stop.
 
-For the first pilot, use about 1024 interior points. Half can cover the full interval using a seeded stratified uniform design; half can cover a wall subinterval chosen from min(kappa,b), while still preserving outer coverage. For kappa=b=0.1, a trial wall region of a few multiples of 0.1 is reasonable to test, not a claimed layer thickness. The reference and residual plots should guide changes.
+For the first pilot, use about 1024 interior points. Half can cover the full interval using a seeded stratified uniform design; half can cover a wall subinterval chosen from min(kappa,b), while still preserving outer coverage. For the locked kappa=b=0.2, a trial wall region of a few multiples of 0.2 is reasonable to test, not a claimed layer thickness. The reference and residual plots should guide changes.
 
 An unweighted mean over deliberately wall-biased points changes the emphasis of the objective. Say so. If the objective should approximate a uniform-domain integral, use appropriate quadrature/importance weights. Do not call these objectives identical.
 
@@ -133,7 +139,7 @@ Use at least a dense monitoring grid and a fresh random final set, with extra ch
 
 ## 8. Testing before any long run
 
-Tests should run without the missing physical values where possible, using manufactured fixtures clearly marked as synthetic test coefficients. Such fixtures are not Case 1 and cannot silently become real-run defaults.
+Use manufactured fixtures where possible, clearly marked as synthetic test coefficients. They isolate software tests from the target case. Such fixtures are not the locked case and cannot silently become real-run defaults. None of the required software tests below has been run.
 
 Required tests:
 
@@ -271,7 +277,7 @@ repeat domain and sample sensitivity; report all failures
 compare controlled method variants; claim only measured improvements
 ```
 
-No physical computation is executed by this document. The record-check tool in this repository checks documentation/config integrity, not BVP convergence or NN correctness.
+No physical computation is executed by this document. The record-check tool in this repository checks documentation/config integrity, not solver correctness, BVP convergence or NN correctness.
 
 ## 15. Failure handling and implementation gates
 

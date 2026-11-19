@@ -65,7 +65,7 @@ def signed_terms(node, sign=1):
     return [(sign, node)]
 
 
-def rendered_equations(text):
+def equation_expressions(text):
     expressions = {}
     for block in re.findall(r"```text\n(.*?)```", text, flags=re.S):
         current, fragments = None, []
@@ -82,6 +82,12 @@ def rendered_equations(text):
     expected = [f"R{i}" for i in range(14, 19)] + [f"B{i}" for i in range(1, 13)]
     if any(name not in expressions for name in expected):
         raise ValueError("An original equation or boundary residual is missing.")
+    return expressions
+
+
+def rendered_equations(text):
+    expressions = equation_expressions(text)
+    expected = [f"R{i}" for i in range(14, 19)] + [f"B{i}" for i in range(1, 13)]
     output = ['<section id="rendered-equations"><h2>Original equation and boundary errors, rendered</h2>',
               '<p>Each row is an error expression whose target is zero. Multi-line expressions are read together. Parentheses show the exact arithmetic grouping; the shorter q, h and A definitions are in the calculation sheet.</p>',
               '<p>Superscript (1), (2), (3) and (4) mean derivative order. A plain superscript 2 or 3 means a power. All derivatives are with respect to eta. An endpoint (0) or (L) means evaluation at that position.</p>']
