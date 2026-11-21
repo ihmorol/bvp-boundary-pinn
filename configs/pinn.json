@@ -1,0 +1,49 @@
+{
+  "status": "pilot defaults, 2026-11-21. Values marked in docs/IMPLEMENTATION_NOTES.md section 4 are set by the pilots and then frozen.",
+  "common": {
+    "L": 20.0,
+    "width": 40,
+    "depth": 4,
+    "input_map": "linear",
+    "map_scale": 0.1,
+    "n_points": 2000,
+    "n_monitor": 1000,
+    "stretch": 5.0,
+    "bc_mode": "exact",
+    "tfc_decay": 0.5,
+    "windows": [
+      0.0,
+      0.5,
+      2.0,
+      6.0,
+      20.0
+    ],
+    "adam_steps": 20000,
+    "lr": 0.001,
+    "lr_end": 0.0001,
+    "weight_alpha": 0.9,
+    "weight_every": 1000,
+    "lbfgs_iters": 5000,
+    "lbfgs_history": 50,
+    "log_every": 100,
+    "threads": 1
+  },
+  "arms": {
+    "B0": {
+      "structure": "single"
+    },
+    "B1": {
+      "structure": "windows"
+    },
+    "B2": {
+      "structure": "staged",
+      "replay": "physics",
+      "replay_weight": 1.0
+    },
+    "B3": {
+      "structure": "staged",
+      "replay": "self",
+      "replay_weight": 1.0
+    }
+  }
+}
