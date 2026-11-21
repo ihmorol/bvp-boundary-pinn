@@ -19,6 +19,11 @@ BC_NAMES = tuple(f"B{i}" for i in range(1, 13))
 
 def residuals(eta, z, H, p):
     """Return R14 to R18 stacked as (5, ...). Each target is zero."""
+    return np.stack(residual_terms(eta, z, H, p))
+
+
+def residual_terms(eta, z, H, p):
+    """R14 to R18 as a tuple. Plain arithmetic only, so PyTorch tensors work too (the PINN uses this)."""
     f, f1, f2, f3, g, g1, th, th1, ph, ph1, ch, ch1 = z
     f4, g2, th2, ph2, ch2 = H
     kappa, Delta, ds = p["kappa"], p["Delta"], p["delta_star"]
@@ -57,7 +62,7 @@ def residuals(eta, z, H, p):
            + kappa / q * f * ph
            + p["Pe"] / Pr * (ch * ph2 + ch1 * ph1)
            - ds * eta / 2 * ph1)
-    return np.stack([R14, R15, R16, R17, R18])
+    return R14, R15, R16, R17, R18
 
 
 def thermal_coefficient(z, p):
@@ -128,14 +133,19 @@ def far_conditions(zb, L, p):
 
 
 def boundary(za, zb, p, stable=True, L=None):
-    """B1 to B12. za is the state at eta=0, zb at eta=L.
+    """B1 to B12 as an array. za is the state at eta=0, zb at eta=L."""
+    return np.array(boundary_terms(za, zb, p, stable, L))
+
+
+def boundary_terms(za, zb, p, stable=True, L=None):
+    """B1 to B12 as a list. Plain arithmetic only, so PyTorch tensors work too.
 
     With L given, B10 and B11 become the asymptotic conditions of far_conditions. chi keeps
     chi(L)=0: as printed, Eq. 18 has no decaying far-field solution for chi (SPEC section 8).
     """
     f, f1, f2, f3, g, g1, th, th1, ph, ph1, ch, ch1 = za
     b4 = b4_stable(th, th1, p) if stable else b4_original(th, th1, p)
-    out = np.array([
+    out = [
         f1 - 1 - p["N1"] * (f2 - f1 / p["kappa"]),
         f - p["fw"] / (p["Pr"] * p["Le"]) * ph1,
         g + p["ell"] * f2,
@@ -143,7 +153,7 @@ def boundary(za, zb, p, stable=True, L=None):
         ph1 + p["Nt"] / p["Nb"] * th1,
         ch - 1,
         zb[1], zb[2], zb[4], zb[6], zb[8], zb[10],
-    ])
+    ]
     if L is not None:
         out[9], out[10] = far_conditions(zb, L, p)
     return out

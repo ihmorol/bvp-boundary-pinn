@@ -1,6 +1,6 @@
 # PINN plan for the BVP
 
-Date: 2026-11-19. Status: plan, nothing run. Scope: this repository only.
+Date: 2026-11-19, updated 2026-11-21. Status: code written (`src/bvp_pinn/pinn/`), pilots running. Scope: this repository only.
 
 Related files:
 
@@ -27,8 +27,9 @@ All arms solve the locked case on [0, 20] (branch A), with the same boundary con
 
 - tanh networks, float64
 - the five residuals and twelve boundary errors from [equations.md](equations.md)
-- declared fixed loss scales
-- Adam, then L-BFGS
+- boundary conditions built into the output or as loss terms, one mode for all arms, chosen by pilot P2a ([BC_ENFORCEMENT_REVIEW.md](BC_ENFORCEMENT_REVIEW.md))
+- gradient-norm loss weights (Wang et al. 2023), frozen before L-BFGS (decided 2026-11-21, [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 5)
+- Adam, then L-BFGS on the full problem, kept only if the monitor loss improves
 - matched total step budgets across arms
 
 **Every arm imposes all twelve boundary conditions at every training step.**

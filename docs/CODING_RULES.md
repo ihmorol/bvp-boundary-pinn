@@ -9,7 +9,7 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../AGENTS.md), which always win
 | `src/bvp_pinn/` | All BVP code. Rewrite useful Lorenz patterns; never import from `prior-work/` ([prior-work/README.md](../prior-work/README.md)) |
 | `src/bvp_pinn/config.py` | Loads the locked case (with its SHA-256) and the reference settings |
 | `src/bvp_pinn/reference/` | NumPy equations, solve_bvp driver, checks, data I/O, run script, plots ([SPEC_reference_solutions.md](SPEC_reference_solutions.md)) |
-| `src/bvp_pinn/` PINN modules | **Proposed.** A separately written PyTorch evaluator, compared in tests with the NumPy one ([equations.md](equations.md) integrity test 6) |
+| `src/bvp_pinn/pinn/` | The PINN, one file per job ([IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 1). It calls the same `reference/equations.py` functions on tensors instead of a second transcription; the SymPy test checks those functions |
 | `tests/` | pytest tests, one file per topic |
 | `configs/` | JSON configs. `physical-case-pending.json` is locked; never edit it from code |
 | `reference/<case_id>/` | Accepted reference data (SPEC section 6) |
