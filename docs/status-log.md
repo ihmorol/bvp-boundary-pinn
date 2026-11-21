@@ -58,6 +58,16 @@ Newest first. One entry per working session. Keep it short and factual.
 - Separated the two works: moved journal-strategy.md, single-network-retention.md and implementation-workflow.md into a new journal/ folder with a README, and fixed their links. Wrote docs/PINN_PLAN.md as the BVP-only plan (arms B0 to B3, run rules, metrics, gates, figures, dates) and repointed PRD, SPEC, CODING_RULES and TODO to it. tools/check_records.py now also scans TODO.md and journal/.
 - tools/check_records.py: the new files pass. The run still fails on pre-existing links in docs/lorenz-to-bvp-methodology.md, which point to sibling repos and do not resolve from this worktree. No solver, training or evaluation run.
 
+## 2026-11-17 (session: redrawn one-page diagrams)
+
+- The user found the earlier methodology and architecture diagrams hard to read: too much text, poor layout. Redrew both as one A4 landscape page each, in the style of methodology-flowchart-a4.pdf: numbered boxes, dashed green groups, yellow decision diamonds, short labelled arrows.
+- Methodology diagram: 13 boxes. Three training seeds on the left, software tests and the classical reference set up once on the right, then the accuracy check, sensitivity, method comparison, wall quantities and the result or a recorded failure.
+- Architecture diagram: one training step (points, shared network, derivatives, R14 to R18, B1 to B12, locked case, one loss, finite check, update), the checks outside the loss, and a bottom row with the four changes from the Lorenz PINN.
+- Added tools/build_diagrams.py. It draws both figures and stops if text overflows a box, boxes overlap, an arrow crosses a box or tab, a label sits on a group border, or the writing rule breaks. Checked that the new checks catch the two layout faults fixed during this session. Exports are one-page A4 PDFs with embedded STIX fonts, outlined SVGs and PNG previews, about 80 to 90 KB per PDF.
+- Replaced docs/methodology.md with a short box-by-box guide. Moved the fifty-task version to docs/archive/ with a note. Removed the old builders and checkers. Updated README, flowcharts.md, the Lorenz comparison links and the guide link; rebuilt strategy-guide.html.
+- Ran tools/check_records.py and git diff --check: passed. No solver, reference, training or evaluation ran. No commit.
+- Second pass, same day: the user said the methodology copied the reference figure's diffusion-problem flow. Kept the visual style and redrew the flow for this BVP in four gated stages: case and code (locked case, wall coefficient sizes, software tests), reference for checking only (with an unverified branch), training per seed (near-wall points, Adam, L-BFGS, finite check, monitor-based checkpoint), then test and report. Updated docs/methodology.md and the Mermaid overview in docs/flowcharts.md to the new numbering. The architecture diagram is unchanged.
+
 ## 2026-11-16 (session: substituted reading sheet and commit of the day's work)
 
 - Wrote docs/simplified-equations.md: Eqs. 14 to 19 and the Eq. 19 boundary errors restated with the locked values substituted, as a reading aid. equations.md stays authoritative and links the sheet. delta_star=0 removes all unsteady terms; kappa=b=0.2 merges h into q; Eqs. 16 and 17 are shown multiplied by 8.8, which does not change their zero sets.
