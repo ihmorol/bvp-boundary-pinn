@@ -65,19 +65,24 @@ Work the phases in order. A phase is done only when its definition of done holds
 
 **Done when:** a fresh process reloads the reference through the loader and the hash check fails on a tampered copy. Met (`tests/test_reference_verify.py`; the plots reload through the loader).
 
-## P1. PINN building blocks (gate G1)
+## P1. PINN building blocks (gate G1, done 2026-11-21)
 
-- [ ] PyTorch residuals and boundary errors; test against the NumPy version at identical states
-- [ ] Nested autograd derivatives up to order 4 for f and order 2 for the others; test on known functions
-- [ ] Network: input eta only (scaled inside the model), five outputs, tanh, float64
-- [ ] Loss with declared fixed scales; each of the 5 equation terms and 12 boundary terms logged separately
+- [x] PyTorch residuals and boundary errors, by calling the same `reference/equations.py` functions; test against NumPy at identical states
+- [x] Nested autograd derivatives up to order 4 for f and order 2 for the others; test on known functions
+- [x] Network: input eta only (scaled inside the model), five outputs, tanh, float64
+- [x] Boundary layer (TFC) with soft, linear and exact modes ([docs/BC_ENFORCEMENT_REVIEW.md](docs/BC_ENFORCEMENT_REVIEW.md)); test that its conditions hold for random weights
+- [x] Gradient-norm loss weights (Wang et al. 2023); each of the 5 equation terms and 12 boundary errors logged separately
+- [ ] Review of every PINN file by the other member
+
+Details: [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). Issue #2.
 
 **Done when:** all G1 tests pass, and a gate G5 review confirms the training code does not import the reference loader.
 
 ## P2. Arm B0 pilot (basic single network)
 
-- [ ] Wall-clustered collocation points; Adam, then L-BFGS
-- [ ] Fill the null scales and budgets in the numerical config, each with a dated note
+- [x] Wall-clustered collocation points; Adam, then L-BFGS with rollback
+- [ ] P2a: boundary mode pilot, rule declared in IMPLEMENTATION_NOTES section 5.1 (issue #3)
+- [ ] P2b: sizes and budgets in configs/pinn.json, each with a dated note (issue #4)
 - [ ] Pilot at seed 0; evaluate against the reference only after the run ends
 
 **Done when:** B0 trains end to end and writes a complete run folder (CODING_RULES section 7). The pilot errors are recorded, whatever they are.
