@@ -2,7 +2,7 @@
 
 ## Purpose and evidence
 
-This is the approved architecture-centered companion to the [existing fifty-task methodology](methodology.md), not its replacement. Open the [PDF architecture](../bvp-pinn-architecture.pdf), [SVG](../bvp-pinn-architecture.svg) or [editable HTML](../bvp-pinn-architecture.html). It explains the network, derivative, physics and optimizer loop. The [strategy](strategy.md) still controls the gates: complete parameters, software tests, reference, training, then evaluation.
+This is the checked source comparison behind the [architecture diagram](methodology.md#architecture-diagram-box-by-box). Open the [PDF architecture](../bvp-pinn-architecture.pdf), [SVG](../bvp-pinn-architecture.svg) or [editable HTML](../bvp-pinn-architecture.html). It explains the network, derivative, physics and optimizer loop. The [strategy](strategy.md) still controls the gates: complete parameters, software tests, reference, training, then evaluation.
 
 The dated [parameter record](parameters.md#supervisor-confirmation-2026-11-16) locks all 22 physical coefficients. Numerical settings remain proposals, including eight null settings in [training-proposal.json](../configs/training-proposal.json). Software validation, reference computation, training and evaluation remain pending. This document reports source inspection and parameter-count arithmetic, not test results.
 
@@ -74,6 +74,6 @@ Scales and weights are fixed and positive; scale values remain pending. Report o
 
 Before training, freeze settings and pass software tests. Then validate the same twelve-state BVP with solve_bvp, checking regularity, guesses, mesh, tolerance, domain and branch-specific uncertainty. Reference failure blocks the baseline gate; separately authorized exploration remains unverified. Reference curves never become training labels.
 
-Follow [checkpoint selection](methodology.md#7-refine-and-select-the-checkpoint), not Lorenz's terminal-model return. On an independent fixed monitor, define Q as the largest threshold-normalized scaled residual RMS, residual maximum or absolute boundary error. Minimize `(Q,J_monitor,E,o)` lexicographically, where E counts cumulative full-objective evaluations and o is checkpoint order. Thresholds and cadence must be declared first. Reference errors and final points never rank candidates.
+Follow [monitor-based checkpoint selection](strategy.md#9-adam-training-flow), not Lorenz's terminal-model return. On an independent fixed monitor, define Q as the largest threshold-normalized scaled residual RMS, residual maximum or absolute boundary error. Minimize `(Q,J_monitor,E,o)` lexicographically, where E counts cumulative full-objective evaluations and o is checkpoint order. Thresholds and cadence must be declared first. Reference errors and final points never rank candidates.
 
 Refine the best eligible Adam state with a frozen objective and fresh closure graphs. Preserve Adam if refinement fails or does not improve monitor rank; record the reason. After model lock, generate fresh dense/random evaluation sets. Report every original/scaled residual and boundary error, five fields, f-prime, wall derivatives and reference uncertainty. Smooth curves or low training loss alone do not pass acceptance.
