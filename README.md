@@ -19,14 +19,11 @@ Classical reference built and verified on 2026-11-19 on [0, 20] with asymptotic 
 | docs/strategy.md | Architecture, training flow, reference plan, tests, outputs, failure handling |
 | docs/reading-list.md | Papers we checked, with what each one does and does not establish |
 | docs/flowcharts.md | Editable Mermaid diagrams of the full flow |
-| docs/methodology.md | Fifty small method tasks, full mathematical rules and source notes |
-| bvp-methodology.pdf | Complete vector methodology diagram using the supplied flowchart theme |
-| bvp-methodology.svg | Vector SVG copy with outlined text for portable mathematics |
-| bvp-methodology.html | Editable, self-contained diagram with local fonts and MathML |
-| docs/lorenz-to-bvp-methodology.md | Verified comparison with the live Lorenz PINN and the BVP adaptation |
-| bvp-pinn-architecture.pdf | Lorenz-style BVP computational graph, training loop and complete math panels |
-| bvp-pinn-architecture.svg | Vector architecture copy with outlined text |
-| bvp-pinn-architecture.html | Editable architecture diagram with shared-network and optimizer-feedback paths |
+| docs/methodology.md | Box-by-box guide to the two diagrams, with links to the detail |
+| bvp-methodology.pdf | One-page methodology diagram (also .svg, .html, -preview.png) |
+| bvp-pinn-architecture.pdf | One-page diagram of one training step and the checks outside the loss (also .svg, .html, -preview.png) |
+| methodology-flowchart-a4.pdf | Style reference for both diagrams (a diffusion example, not this problem) |
+| docs/lorenz-to-bvp-methodology.md | Checked comparison with the live Lorenz PINN and what changes for this BVP |
 | TODO.md | Ordered BVP task list, from the first reference step to results |
 | docs/PRD.md | BVP problem statement, goal, scope, deliverables, success metrics |
 | docs/SPEC_reference_solutions.md | Classical reference: solver, settings, verification, data format |
@@ -39,7 +36,7 @@ Classical reference built and verified on 2026-11-19 on [0, 20] with asymptotic 
 | docs/questions-for-supervisor.md | Open questions to ask the supervisor |
 | configs/physical-case-pending.json | Numerically complete locked case; old filename kept for link compatibility |
 | configs/training-proposal.json | Proposed training settings, not validated choices |
-| tools/ | Record checks and the guide builder |
+| tools/ | Record checks, the guide builder and the diagram builder (build_diagrams.py) |
 | src/bvp_pinn/ | Code: config loader and the classical reference package (reference/) |
 | tests/ | pytest tests; run `uv run pytest` |
 | pyproject.toml, uv.lock | Python 3.12 environment; create it with `uv sync` |

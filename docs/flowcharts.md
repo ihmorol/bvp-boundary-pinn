@@ -2,41 +2,40 @@
 
 The browser-readable [strategy guide](../strategy-guide.html) renders these flows as labeled steps and branches. Mermaid source below is editable documentation, not code that trains a network.
 
-## Deterministic methodology overview
+## Methodology overview
 
-These stage numbers match [the detailed methodology](methodology.md). The [HTML diagram](../bvp-methodology.html) and [PDF diagram](../bvp-methodology.pdf) show five small tasks per stage, with separate mathematical strips. The builder checks these stage labels against the methodology source. The locked case has all 22 physical coefficients; software tests and numerical choices remain pending. A failed reference never becomes a verified result through a later residual check.
+Same numbers as the [methodology diagram](../bvp-methodology.pdf) and [its guide](methodology.md).
 
 ```mermaid
 flowchart TD
-  S1[1. Freeze the specification and case] -->|Valid case| S2[2. Freeze the numerical contract]
-  S1 -->|Missing or invalid| BLOCK[BLOCKED: save the missing input or exact reason]
-  S2 -->|Complete contract| S3[3. Pass the software tests]
-  S2 -->|Unset setting| BLOCK
-  S3 -->|Pass| S4[4. Build and validate the reference]
-  S3 -->|Fail| FIX[FAILED_TESTS: repair and repeat stage 3]
-  S4 -->|Reliable reference| S5[5. Construct the point sets]
-  S4 -->|Fail or branch unresolved| REF[UNVERIFIED_REFERENCE: diagnose; no accuracy claim]
-  S5 --> S6[6. Train the fixed-case PINN]
-  S6 -->|Finite Adam checkpoint| S7[7. Refine and select the checkpoint]
-  S6 -->|Nonfinite value or graph error| FAIL[FAILED_TRAINING: save the first bad term]
-  S7 -->|Frozen selected checkpoint| S8[8. Lock and test the selected model]
-  S7 -->|Refinement fails| ADAM[Keep the eligible Adam checkpoint and failure reason]
-  ADAM --> S8
-  S8 -->|All declared checks pass| S9[9. Check sensitivity and method changes]
-  S8 -->|Any check fails| TEST[FAILED_ACCEPTANCE: retain the exposed final test]
-  S9 --> S10[10. Report and archive every outcome]
-  BLOCK --> S10
-  FIX --> S10
-  REF --> S10
-  FAIL --> S10
-  TEST --> S10
+  S1[1. Locked case] --> S2[2. Wall coefficient sizes and loss scales]
+  S2 --> S3[3. Software tests]
+  S3 --> T{All tests pass?}
+  T -->|No: fix the code| S3
+  T -->|Yes| S4[4. First-order system with solve_bvp]
+  S4 --> S5[5. Convergence checks: tolerance, mesh, L, guesses]
+  S5 --> C{Converged?}
+  C -->|Yes| REF[Reference curves, check only]
+  C -->|No| UNV[Unverified reference: no accuracy claim]
+  S5 -->|then train| S6[6. Point sets, half near the wall]
+  S6 --> S7[7. Network and loss]
+  S7 --> S8[8. Adam training]
+  S8 --> S9[9. L-BFGS refinement]
+  S9 --> F{All values finite?}
+  F -->|No| STOP[Stop and save the first bad term]
+  F -->|Yes| S10[10. Pick the checkpoint on monitor points]
+  S10 -.->|next seed| S6
+  S10 -->|after 3 seeds| S11[11. Final test vs reference]
+  REF --> S11
+  S11 --> A{Targets met?}
+  A -->|Yes| S12[12. Sensitivity, then variants B1 to B6]
+  S12 --> S13[13. Report]
+  A -->|No: reported as failed| S13
 ```
-
-Separately approved exploration without a reference may use stages 5 to 7. It retains the unverified-reference status and cannot pass the reference-based acceptance rule. A redesign after final testing is a new logged run, never a hidden retry of the same test.
 
 ## Lorenz-style BVP computational graph
 
-This diagram follows the live Lorenz PINN's network, derivative, physics and optimizer structure, adapted to this two-ended BVP. See [the comparison](lorenz-to-bvp-methodology.md). It uses one shared network, not a separate trainable physics network. The complete method remains in [methodology.md](methodology.md).
+Text version of the [architecture diagram](../bvp-pinn-architecture.pdf). It follows the Lorenz PINN's loop, changed for this two-ended BVP. See [the comparison](lorenz-to-bvp-methodology.md). One shared network, no separate trainable physics network.
 
 ```mermaid
 flowchart TD
