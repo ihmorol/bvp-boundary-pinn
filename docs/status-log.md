@@ -2,6 +2,12 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-21 (session: PINN review and reading guide)
+
+- Reviewed the uncommitted PINN code (worktree `fydp-journal-strategy-84b3e1`, branch `bvp/pinn`), the reference code, and Eqs. 14 to 19 against the draft page rendered at 220 dpi. Equations match; 23 tests pass; PINN residuals on reference A are 4.5e-13.
+- The two finished B0 pilots (soft, linear; 3000 Adam steps) do not reach the reference: theta(0) near 0, B4 missed by about 2.3. Gradient-norm weights reached 3e9 to 7e10. Report: [PINN_REVIEW_2026-11-21.md](PINN_REVIEW_2026-11-21.md).
+- Added a plain-language guide to the PINN: [PINN_GUIDE.md](PINN_GUIDE.md). Nothing committed.
+
 ## 2026-11-19 (session: evidence and standard figures)
 
 - Rebuilt the reference figures after review: profiles on a linear eta axis (full domain and wall layer), with Runge-Kutta circles and wall values in each title; supplementary figures for branch B, far-field tails and the verification study. Old log-axis figures removed.
