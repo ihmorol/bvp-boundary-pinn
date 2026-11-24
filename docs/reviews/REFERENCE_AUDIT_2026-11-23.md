@@ -268,7 +268,7 @@ What was done about each defect. None changes Eqs. 14 to 18, B1 to B12 or the lo
 | D5 | Done | engine/README (2026-11-23); SPEC V5 row and the far decay rate in SPEC 8.2 (2026-11-24) |
 | D6 | Done | L ladder to 10 240 with both forms; the three-point fit predicts the new points to 3e-5 relative or better, and every fitted limit lies inside the two-form bracket ([reference/error_bars.md](../../reference/error_bars.md)) |
 | Checks at other values | Removed | At the user's decision, the published-limit checks (V11, the audit's check 6a) and the manufactured solution (V3) were removed: they solved other parameter values or a forced equation. The audit's verdicts that rest on them now rest on the three agreeing solvers, the tolerance study and the slope check |
-| D7 | Done, with its limit | `engine/bvp_engine --deflate`: 81 deflated Newton runs from 52 starts found only A and B, both confirmed on a finer mesh. Still a finite search |
+| D7 | Done, with its limit | `engine/bvp_engine --deflate`: 105 deflated Newton runs from 52 starts found only A and B, both confirmed on a finer mesh. Still a finite search |
 
 ## Files
 

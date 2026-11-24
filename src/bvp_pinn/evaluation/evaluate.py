@@ -164,6 +164,8 @@ def failure_lines(rows, folders, name):
     for x in folders:
         if not is_finished(x):
             lines.append(f"- `{x.name}`: started but never finished (no meta.json)")
+        elif not (x / "model.pt").exists():
+            lines.append(f"- `{x.name}`: {read_json(x / 'meta.json').get('result', 'no model saved')}")
     block = read_config()["campaign"]
     if name in (block["name"], f"{block['name']}-dry"):
         have = {}
@@ -214,9 +216,9 @@ def main(argv=None):
     p = load_case()[0]
     refs = load_references()
     if args.runs:
-        return evaluate_folders([f for f in args.runs if is_finished(f)], refs, p)
+        return evaluate_folders([f for f in args.runs if is_finished(f) and (f / "model.pt").exists()], refs, p)
     folders = campaign_folders(args.campaign)
-    rows = evaluate_folders([f for f in folders if is_finished(f)], refs, p)
+    rows = evaluate_folders([f for f in folders if is_finished(f) and (f / "model.pt").exists()], refs, p)
     out = write_campaign(args.campaign, rows, failure_lines(rows, folders, args.campaign))
     print(f"{len(rows)} runs of campaign {args.campaign} in {out / 'summary.csv'}; failures in {out / 'failures.md'}")
     return rows

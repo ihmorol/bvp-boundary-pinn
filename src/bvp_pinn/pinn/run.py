@@ -55,7 +55,12 @@ def run(arm, seed, dry_run=False, device="cpu", runs_root=RUNS, assess=True, **o
     print(f"{folder.path.name}: {sum(x.numel() for x in model.parameters())} parameters, "
           f"{len(train_pts)} points, device {device}", flush=True)
     start = time.perf_counter()
-    status = train(model, p, cfg, train_pts, monitor_pts, folder.log, seed)
+    try:
+        status = train(model, p, cfg, train_pts, monitor_pts, folder.log, seed)
+    except Exception as err:  # a crash is a result too: record it, so a resumed campaign does not repeat it
+        folder.save_failure(f"error: {type(err).__name__}: {err}", time.perf_counter() - start,
+                            {"seed": seed, "case_sha256": case_sha, "device": device})
+        raise
     status["wall_seconds"] = time.perf_counter() - start
     folder.save(model, status, {"train": train_pts, "monitor": monitor_pts},
                 {"seed": seed, "case_sha256": case_sha, "device": device})

@@ -135,9 +135,15 @@ class RunFolder:
                 "parameters": sum(x.numel() for x in model.parameters())}
         (self.path / "meta.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
 
+    def save_failure(self, result, seconds, meta):
+        """meta.json for a run that crashed: no model, so it is reported, never evaluated or re-run."""
+        meta = {**meta, "result": result, "wall_seconds": seconds, "git": git_commit(),
+                "python": platform.python_version(), "torch": torch.__version__}
+        (self.path / "meta.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
+
 
 def is_finished(folder):
-    """A run folder is finished once meta.json exists, whatever its result."""
+    """A run folder is finished once meta.json exists, whatever its result (crashes included)."""
     return (Path(folder) / "meta.json").exists()
 
 

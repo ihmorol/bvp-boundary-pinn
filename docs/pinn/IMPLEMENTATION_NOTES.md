@@ -171,7 +171,7 @@ Boundary-mode pilot rule, declared before running (from BC_ENFORCEMENT_REVIEW.md
 
 | Gate | Check | Status |
 |---|---|---|
-| G1 | Derivatives to order 4 on known functions; PyTorch equations equal NumPy; gradient-norm weights equal the paper's formula; replay and interface losses; TFC conditions hold for random weights (both modes, one network and window networks); Levenberg-Marquardt starts from exactly the training loss and lowers it for B1 and soft modes; config checks; the acceptance rule; every arm end to end | Pass, 57 tests in the whole suite (`uv run pytest`, 2026-11-24) |
+| G1 | Derivatives to order 4 on known functions; PyTorch equations equal NumPy; gradient-norm weights equal the paper's formula; replay and interface losses; TFC conditions hold for random weights (both modes, one network and window networks); Levenberg-Marquardt starts from exactly the training loss and lowers it for B1 and soft modes; config checks; the acceptance rule; every arm end to end | Pass, 60 tests in the whole suite (`uv run pytest`, 2026-11-24) |
 | G5 | No module of `bvp_pinn.pinn` imports the reference data or `bvp_pinn.evaluation` | Pass (test parses every import) |
 | G4 | Per-window error after each stage, B2 and B3 | Computed in `evaluate.py`, figure FB5 |
 | G6 | Claims only if all 5 paired seeds agree | Applied when writing results |

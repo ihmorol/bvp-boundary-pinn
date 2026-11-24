@@ -428,7 +428,10 @@ int deflate(double L, const std::string& out_path, const Params& p) {
         ++tried;
         int known = (int)roots.size();
         int steps = deflated_newton(x, z, p, pass == 0 ? std::vector<std::vector<State>>{} : roots);
-        if (steps < 0) break;
+        if (steps < 0) {
+          if (pass == 0 && !roots.empty()) continue;  // plain Newton failed: still try it deflated
+          break;
+        }
         bool is_new = true;
         for (const auto& r : roots)
           if (rms(z, &r) < 1e-6 * std::max(1.0, rms(r))) is_new = false;

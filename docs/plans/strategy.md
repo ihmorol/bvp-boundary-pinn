@@ -15,7 +15,7 @@ A gate opens only when the one before it holds.
 | Gate | What must hold | State on 2026-11-24 | Detail |
 |---|---|---|---|
 | 1 Parameters | All 22 values locked, none filled from papers | Done 2026-11-16 | [parameters.md](../problem/parameters.md) |
-| 2 Software tests | `uv run pytest` passes: equations against SymPy, derivatives to order 4, built-in conditions, losses, optimizers, the acceptance rule, an end-to-end run of every arm, the no-leakage check, and the fixed-problem guards (`tests/test_fixed_problem.py`) | Pass, 57 tests | [IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) section 6 |
+| 2 Software tests | `uv run pytest` passes: equations against SymPy, derivatives to order 4, built-in conditions, losses, optimizers, the acceptance rule, an end-to-end run of every arm, the no-leakage check, and the fixed-problem guards (`tests/test_fixed_problem.py`) | Pass, 60 tests | [IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) section 6 |
 | 3 Reference | SPEC checks V1, V2, V4 to V10, V12, all at the locked case; L chosen; branches found | Pass. Audited 2026-11-23; audit defects closed 2026-11-24 | [SPEC](../reference-solver/SPEC_reference_solutions.md), [audit](../reviews/REFERENCE_AUDIT_2026-11-23.md) |
 | 4 Training | Pilots P2b and P3 freeze `configs/pinn.json` with dated notes; then the campaign, 4 arms x 5 seeds | Code ready; pilots and campaign not run | [PINN_PLAN.md](../pinn/PINN_PLAN.md) sections 2, 3 and 8 |
 | 5 Evaluation | Metrics, figures and the answers to PINN_PLAN section 7, every number traced to a run ID | Code ready and tested on a dry campaign; no campaign result yet | [PINN_PLAN.md](../pinn/PINN_PLAN.md) sections 4 to 7 |

@@ -56,9 +56,12 @@ def main(argv=None):
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--list", action="store_true", help="only show what is done and what is left")
-    ap.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE", help="pilot use only, never in the campaign")
+    ap.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE", help="only with --dry-run")
     args = ap.parse_args(argv)
     overrides = parse_set(args.set)
+    if overrides and not args.dry_run:
+        raise SystemExit("--set changes the run settings, so those runs would not be campaign runs; "
+                         "use bvp_pinn.pinn.run for pilots, or --set together with --dry-run")
     plan = planned(args.arms, args.seeds, args.dry_run, **overrides)
     todo = [(arm, seed) for arm, seed, _, done in plan if not done]
     for arm, seed, folder, done in plan:

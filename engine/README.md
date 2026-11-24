@@ -34,7 +34,7 @@ Branch search by deflation (added 2026-11-24, reference audit D7):
 engine/bvp_engine --deflate 20
 ```
 
-Newton on the box scheme (401 nodes) from 52 smooth starts, each time with every root found so far deflated: Newton runs on M(z) R(z) with M = product over roots of (|z - r|^-2 + 1), so it cannot return to a known root (Farrell, Birkisson and Funke, SIAM J. Sci. Comput. 37, 2015). No parameter value changes. Each new root is re-solved on 801 nodes to check that it is not a mesh artifact. Result on 2026-11-24: 81 Newton runs, two solutions, branches A and B, both confirmed; about 10 s. Table: `engine/out/engine_branches.csv`.
+Newton on the box scheme (401 nodes) from 52 smooth starts, each time with every root found so far deflated: Newton runs on M(z) R(z) with M = product over roots of (|z - r|^-2 + 1), so it cannot return to a known root (Farrell, Birkisson and Funke, SIAM J. Sci. Comput. 37, 2015). No parameter value changes. Each new root is re-solved on 801 nodes to check that it is not a mesh artifact. Result on 2026-11-24: 105 Newton runs, two solutions, branches A and B, both confirmed; about 20 s. Starts where plain Newton fails still get the deflated passes. Table: `engine/out/engine_branches.csv`.
 
 Outputs go to `engine/out/` (not committed, except `engine_convergence.csv`, which `tools/reference_error_bars.py` reads, and `engine_branches.csv`):
 

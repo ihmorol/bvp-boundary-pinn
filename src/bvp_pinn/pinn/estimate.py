@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import subprocess
 import tempfile
 from pathlib import Path
@@ -99,7 +100,7 @@ def judge(meta, est, rule):
         reasons.append(f"boundary error {bmax:.3g} > {rule['boundary_max']}")
     if est.get("score") is None:
         reasons.append(f"no estimate: {est.get('error')}")
-    elif est["score"] > rule["score_max"]:
+    elif not math.isfinite(est["score"]) or est["score"] > rule["score_max"]:
         reasons.append(f"estimate score {est['score']:.3g} > {rule['score_max']}")
     if est.get("score") is None and len(reasons) == 1:
         accepted = None  # only the estimate is missing: undecided, not rejected

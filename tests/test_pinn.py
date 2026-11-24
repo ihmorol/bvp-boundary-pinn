@@ -297,6 +297,32 @@ def test_acceptance_rule():
     out = judge(no_decay, {"score": None, "error": "x"}, rule)
     assert out["accepted"] is False and len(out["reasons"]) == 2
     assert judge({"result": "non-finite loss in Adam stage 0"}, {"score": 1e-5}, rule)["accepted"] is False
+    assert judge(good, {"score": float("nan")}, rule)["accepted"] is False  # a NaN score never passes
+
+
+def test_a_crashed_run_is_recorded_and_not_repeated(tmp_path, monkeypatch):
+    """A run that raises writes meta.json with its error, so a resumed campaign skips it and
+    evaluation lists it as a failure instead of trying to load a model that was never saved."""
+    import json
+    from bvp_pinn.pinn import run as run_mod
+    from bvp_pinn.pinn.runs import is_finished
+
+    def boom(*args, **kwargs):
+        raise MemoryError("out of memory in a test")
+
+    monkeypatch.setattr(run_mod, "train", boom)
+    with pytest.raises(MemoryError):
+        run_mod.run("B0", 0, dry_run=True, runs_root=tmp_path, assess=False)
+    torch.set_default_device("cpu")
+    (folder,) = tmp_path.iterdir()
+    assert is_finished(folder) and not (folder / "model.pt").exists()
+    assert json.loads((folder / "meta.json").read_text())["result"].startswith("error: MemoryError")
+
+
+def test_campaign_refuses_overrides_outside_a_dry_run():
+    from bvp_pinn.pinn import campaign
+    with pytest.raises(SystemExit):
+        campaign.main(["--arms", "B0", "--seeds", "0", "--list", "--set", "adam_steps=10"])
 
 
 def test_every_arm_trains_end_to_end(tmp_path):

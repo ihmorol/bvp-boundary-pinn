@@ -332,7 +332,7 @@ The reference wall values we aim for (branch A):
 
 ## 14. Where we stand
 
-**2026-11-24.** All four arms train end to end with the same refine chain, every run is judged without the reference, and evaluation builds every planned table and figure. 57 tests pass.
+**2026-11-24.** All four arms train end to end with the same refine chain, every run is judged without the reference, and evaluation builds every planned table and figure. 60 tests pass.
 
 **Result so far (B0 only, two seeds, 1 000 points):** from scratch, every wall value except phi(0) within 4e-4 of the reference (seed 0: theta(0) 0.2501906 against 0.2501853); phi(0) is off by 4.3e-4 in seed 0 and 6.2e-3 in seed 1. The acceptance rule, applied to all 13 pilot runs, accepts exactly the three that match the reference. Numbers and run IDs: [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 7.
 

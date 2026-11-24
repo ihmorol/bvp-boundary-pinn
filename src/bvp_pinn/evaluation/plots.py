@@ -30,7 +30,10 @@ NUMBERS = ("max_field_rel_l2", "wall_rel_max", "wall_seconds", "adam_seconds", "
 
 
 def load_summary(campaign):
-    with open(results_dir(campaign) / "summary.csv") as fh:
+    path = results_dir(campaign) / "summary.csv"
+    if not path.exists():
+        raise SystemExit(f"no {path}: campaign {campaign} has no evaluated runs yet (run bvp_pinn.evaluation.evaluate first)")
+    with open(path) as fh:
         rows = list(csv.DictReader(fh))
     for r in rows:
         for k in NUMBERS:
