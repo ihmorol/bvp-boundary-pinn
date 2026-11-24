@@ -1,7 +1,7 @@
 """Load the locked physical case and the reference settings.
 
 Code reads these files and never writes them. The physical values are the
-supervisor's locked values (docs/parameters.md); the reference settings are
+supervisor's locked values (docs/problem/parameters.md); the reference settings are
 our numerical choices (configs/reference.json).
 """
 from __future__ import annotations

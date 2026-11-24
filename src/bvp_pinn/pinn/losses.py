@@ -7,16 +7,52 @@ from .model import states
 from .physics import boundary, residuals
 
 
-def equation_mse(model, groups, p):
+ORDERS = torch.tensor([4.0, 2.0, 2.0, 2.0, 2.0])  # highest derivative order of R14 to R18
+
+
+def residual_scale(eta, p, kind):
+    """Fixed positive factor for each residual at each point, as an (N, 5) tensor, or None.
+
+    "log": R_k times (eta + b)^order_k. With s = log(eta + b), d/deta = (1/(eta + b)) d/ds, so
+    this is each equation written in the variable s, where the thin wall layer and the slow
+    power-law tails both have size of order one. It uses only eta, b and the derivative orders,
+    never the reference or the current residuals. The zero set of every equation is unchanged.
+
+    "balanced": like "log" near the wall, but each momentum row stops growing where its own
+    far-field balance takes over, so far-out f and g rows no longer dominate the loss
+    (docs/reviews/PINN_METHOD_SYNTHESIS_2026-11-23.md, change P-A). With q = eta + kappa:
+      R14 times q^4/(1 + c14 q^2), c14 = (1/Da)/(1 + Delta): the Darcy term against f4
+      R15 times q^2/(1 + c15 q^2), c15 = 2 Delta B/(1 + Delta/2): the g term against g2
+      R16, R17, R18 times q^2
+    Built from eta and the locked coefficients only.
+    """
+    if kind in (None, "none"):
+        return None
+    if kind == "log":
+        return (eta + p["b"]) ** ORDERS.to(eta)
+    if kind == "balanced":
+        q2 = (eta + p["kappa"]) ** 2
+        c14 = (1 / p["Da"]) / (1 + p["Delta"])
+        c15 = 2 * p["Delta"] * p["B"] / (1 + p["Delta"] / 2)
+        return torch.cat([q2 * q2 / (1 + c14 * q2), q2 / (1 + c15 * q2), q2, q2, q2], 1)
+    raise ValueError(f"unknown residual_scale {kind!r}")
+
+
+def equation_mse(model, groups, p, scale=None):
     """Mean square of each of the 5 residuals over all points, as a (5,) tensor.
 
     groups is a list of (network index, points), so window networks each see their own points.
+    scale names a fixed residual scale (residual_scale); None or "none" means plain residuals.
     """
     total, n = 0.0, 0
     for k, eta in groups:
         eta = eta.detach().clone().requires_grad_(True)
         z, H = states(model[k], eta)
-        total = total + residuals(eta, z, H, p).pow(2).sum(0)
+        r = residuals(eta, z, H, p)
+        s = residual_scale(eta.detach(), p, scale)
+        if s is not None:
+            r = r * s
+        total = total + r.pow(2).sum(0)
         n += eta.shape[0]
     return total / n
 
@@ -52,16 +88,22 @@ class GradNormWeights:
 
     So every weighted term pulls on the network with the same gradient norm. Term 0 is the
     equation loss; the rest are the soft boundary terms and, for B1, the interface term.
+
+    cap bounds every weight (review H2: weights reached 3e9 to 7e10 in the pilots). Bounded
+    weights are also what the convergence theory of adaptive weights needs.
     """
 
-    def __init__(self, n, alpha):
+    def __init__(self, n, alpha, cap=None):
         self.w = torch.ones(n)
         self.alpha = alpha
+        self.cap = cap
 
     def update(self, params, terms):
         norms = torch.stack([_grad_norm(t, params) for t in terms])
         hat = norms.sum() / (norms + 1e-30)
         self.w = self.alpha * self.w + (1 - self.alpha) * hat.detach()
+        if self.cap is not None:
+            self.w = self.w.clamp(max=self.cap)
 
 
 def _grad_norm(loss, params):

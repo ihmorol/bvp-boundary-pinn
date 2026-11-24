@@ -1,10 +1,10 @@
 {
-  "status": "pilot defaults, 2026-11-21. Values marked in docs/IMPLEMENTATION_NOTES.md section 4 are set by the pilots and then frozen.",
+  "status": "pilot defaults, 2026-11-21; training options set on 2026-11-23 from the B0 runs in docs/pinn/IMPLEMENTATION_NOTES.md sections 7.1 and 7.2 (seed 0 only): log input map, smooth start profile with a zero last layer, the log residual scale for Adam and L-BFGS, and for B0 a final Levenberg-Marquardt stage on the balanced scale (refine lbfgs:log+lm:balanced). Runs are chosen by the Newton-step error estimate, not by their loss. best_checkpoint and resample_every stay off until a run compares them.",
   "common": {
     "L": 20.0,
     "width": 40,
     "depth": 4,
-    "input_map": "linear",
+    "input_map": "log",
     "map_scale": 0.1,
     "n_points": 2000,
     "n_monitor": 1000,
@@ -26,11 +26,22 @@
     "lbfgs_iters": 5000,
     "lbfgs_history": 50,
     "log_every": 100,
-    "threads": 1
+    "threads": 1,
+    "start": "smooth",
+    "start_rate": 1.0,
+    "start_theta0": 0.3,
+    "zero_last": true,
+    "residual_scale": "log",
+    "weight_cap": 1000.0,
+    "best_checkpoint": false,
+    "resample_every": 0,
+    "refine": "lbfgs",
+    "lm_iters": 260
   },
   "arms": {
     "B0": {
-      "structure": "single"
+      "structure": "single",
+      "refine": "lbfgs:log+lm:balanced"
     },
     "B1": {
       "structure": "windows"

@@ -594,7 +594,7 @@ def main():
     for build in (methodology, architecture):
         scene = build()
         scene.validate()
-        path = ROOT / f"{scene.name}.html"
+        path = ROOT / "docs/methodology/figures" / f"{scene.name}.html"
         path.write_text(html(scene))
         if not args.no_export:
             export(scene, path)

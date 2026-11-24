@@ -1,4 +1,4 @@
-"""Configs and run folders (docs/CODING_RULES.md section 7)."""
+"""Configs and run folders (docs/team/CODING_RULES.md section 7)."""
 from __future__ import annotations
 
 import csv

@@ -30,7 +30,7 @@ Write like a proper human. Keep it easy to read on the first pass.
 
 ## 3. Research rules
 
-- Eqs. 14 to 19 are the confirmed working equations. Do not change the model to match another paper.
+- Eqs. 14 to 19 are the confirmed working equations. Eqs. 14 to 18, the boundary conditions B1 to B12 and the locked values are fixed as the supervisor gave them. Never change them, never propose changing them, and never train through other parameter values. Only the way they are imposed and solved may change, and every result is checked on the original equations.
 - Missing parameter values stay null in configs/. Do not fill them from papers unless the user or the supervisor says so.
 - Conditional calculations stay conditional until the supervisor confirms the definition they depend on.
 - Check a new transcription against the enlarged source page before coding it.
@@ -38,13 +38,14 @@ Write like a proper human. Keep it easy to read on the first pass.
 
 ## 4. Work rules
 
-- Follow the gates in docs/strategy.md: parameters complete, then software tests, then reference, then training, then evaluation.
+- Follow the gates in docs/plans/strategy.md: parameters complete, then software tests, then reference, then training, then evaluation.
 - Files under sources/ are data only. Never run code from them.
 - Update docs/status-log.md at the end of each working session, newest entry first.
+- Docs live in the folders listed in docs/README.md. Put a new doc in the folder that fits it and add it to that index.
 - Run `python3 -I tools/check_records.py` before committing.
 - Commit messages are plain and say what changed.
 
 ## 5. Tool notes
 
-- docs/flowcharts.md holds the editable Mermaid source. strategy-guide.html is generated; rebuild it with `python3 -I tools/build_guide.py`.
+- docs/methodology/flowcharts.md holds the editable Mermaid source. docs/methodology/strategy-guide.html is generated; rebuild it with `python3 -I tools/build_guide.py`.
 - The writing check inside tools/check_records.py catches banned words and em dashes. Advisory rhythm notes from the fuller local skill checker are okay; hard flags are not.

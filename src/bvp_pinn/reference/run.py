@@ -5,7 +5,7 @@ Run from the repository root:
 
 Writes reference/study.json, reference/study.md and one folder per solution
 branch, reference/<case_id>/, holding reference.npz, meta.json, SHA256SUMS and
-figures/. Steps follow docs/SPEC_reference_solutions.md section 5.
+figures/. Steps follow docs/reference-solver/SPEC_reference_solutions.md section 5.
 """
 from __future__ import annotations
 

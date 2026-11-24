@@ -3,7 +3,7 @@ import re
 
 from bvp_pinn.config import PARAMETER_NAMES, load_case
 
-# Verbatim from the receipt (docs/parameters.md); re-sent by the user on 2026-11-19.
+# Verbatim from the receipt (docs/problem/parameters.md); re-sent by the user on 2026-11-19.
 RECEIPT = """
 b=0.2; bm = 0.2; B = 0.5; dt=0; Dt=0.5;
 H=1; k=0.2; L =0.5; M=5; tw = 0.2; ep = 0.1;

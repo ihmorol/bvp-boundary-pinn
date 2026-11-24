@@ -2,6 +2,7 @@
 
     uv run python -m bvp_pinn.pinn.run --arm B0 --seed 0
     uv run python -m bvp_pinn.pinn.run --arm B2 --seed 0 --dry-run
+    uv run python -m bvp_pinn.pinn.run --arm B0 --set init_from=runs/<run_id> adam_steps=0 refine=bfgs
 
 Writes runs/<run_id>/. Evaluation against the reference is a separate step
 (bvp_pinn.pinn.evaluate), so nothing here can read the reference (gate G5).
@@ -13,7 +14,7 @@ import time
 
 import torch
 
-from ..config import load_case
+from ..config import ROOT, load_case
 from . import model as nets
 from .points import make_points
 from .runs import RunFolder, resolve
@@ -41,17 +42,19 @@ def run(arm, seed, dry_run=False, device="cpu", **overrides):
     torch.manual_seed(seed)
     p, case_sha = load_case()
     model = nets.build(cfg, p)
+    if cfg.get("init_from"):  # continue from a finished run of the same network and problem
+        model.load_state_dict(torch.load(ROOT / cfg["init_from"] / "model.pt", map_location=device))
     train_pts, monitor_pts = make_points(cfg, seed)
     folder = RunFolder(cfg, seed)
     print(f"{folder.path.name}: {sum(x.numel() for x in model.parameters())} parameters, "
           f"{len(train_pts)} points, device {device}")
     start = time.perf_counter()
-    status = train(model, p, cfg, train_pts, monitor_pts, folder.log)
+    status = train(model, p, cfg, train_pts, monitor_pts, folder.log, seed)
     status["wall_seconds"] = time.perf_counter() - start
     folder.save(model, status, {"train": train_pts, "monitor": monitor_pts},
                 {"seed": seed, "case_sha256": case_sha, "device": device})
     print(f"{status['result']} in {status['wall_seconds']:.1f} s; "
-          f"L-BFGS accepted: {status.get('lbfgs_accepted')}; wrote {folder.path}")
+          f"refine ({status.get('refine')}) accepted: {status.get('refine_accepted')}; wrote {folder.path}")
     return folder.path
 
 
