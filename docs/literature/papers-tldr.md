@@ -2,6 +2,8 @@
 
 One short block per paper. Read this once and you know what each paper is and what it gives us. Full detail with page references lives in `sources/literature/<folder>/analysis.md` (each now starts with the same TL;DR). Start from [the tracker](paper-analysis-tracker.md) for status or [the synthesis](literature-synthesis.md) for decisions.
 
+**Arm names (note of 2026-11-24):** B4, B5 and B6 in this file are the variants of the archived 2026-11-16 strategy (B4 gradient-based weights, B5 a twelve-output first-order network, B6 exact endpoint conditions). They are not the current arms. The current arms are B0 to B3 of [PINN_PLAN.md](../pinn/PINN_PLAN.md); the weighting and exact-condition ideas became shared settings ([IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) section 5.1).
+
 Relevance: high means it shapes our pipeline choices. Medium means background or template only.
 
 ## Physical and structural precedents

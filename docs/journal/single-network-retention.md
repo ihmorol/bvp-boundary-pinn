@@ -69,7 +69,7 @@ J_s(w) = J_phys(lambda_s)                                     Eqs. 14 to 19 at t
 
 **Read:** solve the new stage, and keep the old stages solved. Physics replay suits the BVP better than self-replay. Checking an old stage's residual is cheap, and it does not freeze old errors in place [J].
 
-Only the target stage (the locked supervisor case) is reported as the result. The other stages are researcher-chosen numerical steps, labeled as such, as [strategy.md](../plans/strategy.md) section 2 already requires. Physical sweeps (Pr, Nb and others) need supervisor approval first.
+Only the target stage (the locked supervisor case) is reported as the result. The other stages are researcher-chosen numerical steps, labeled as such, as [strategy.md](../archive/strategy-2026-11-16.md) section 2 already requires. Physical sweeps (Pr, Nb and others) need supervisor approval first.
 
 ## 4. Honest risks
 

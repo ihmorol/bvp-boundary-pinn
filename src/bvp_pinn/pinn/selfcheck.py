@@ -1,7 +1,7 @@
 """Checks of a trained network that need no reference solution.
 
 They tell from the PINN alone whether it can be the decaying solution that B10 and B11 ask
-for, and where its residual is still large. evaluate.py compares with the reference later.
+for, and where its residual is still large. bvp_pinn.evaluation compares with the reference later.
 
   wall values   f''(0), theta(0), theta'(0), phi'(0), chi'(0), f(L): the numbers the paper reports
   m, mp         far-field decay powers of theta and phi (reference/equations.py, far_conditions).

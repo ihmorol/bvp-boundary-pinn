@@ -1,6 +1,6 @@
 # Implementation workflow: two members, from code to understood results
 
-Date: 2026-11-19. Scope: implementation, runs, figures and reading the results. Paper writing is out of scope here. Plan only; nothing in it has been run.
+Date: 2026-11-19. Scope: implementation, runs, figures and reading the results. Paper writing is out of scope here. Plan only, written before any code. For the BVP, [PINN_PLAN.md](../pinn/PINN_PLAN.md) is current where the two differ (see the note of 2026-11-24 in [README.md](README.md)).
 
 This plan replaces the BVP design in [single-network-retention.md](single-network-retention.md) sections 1 and 3 (the two-input network). Journal choice, compliance and the audit stay in [journal-strategy.md](journal-strategy.md).
 
@@ -18,7 +18,7 @@ Received from the user on 2026-11-19, reporting the supervisor's position:
 | The problem comes from M.J. Uddin and M.I. Hasan through the supervisor; we work on it with them | Ownership is settled as collaboration. Author order is still to be agreed, but it does not block implementation |
 | The physical meaning of each parameter and variable is not needed. Use the values as given, build a numerical reference, train the PINN on eta, test it against the reference | All definition questions are closed. Every metric is a numerical comparison against the reference (section 5); nothing waits on a physical interpretation |
 
-Continuation on kappa, b, Da (the debug path in [strategy.md](../plans/strategy.md) section 2) stays allowed only inside the classical reference, to find the locked-case solution. A PINN never trains at non-supervisor values unless the supervisor approves it as a fallback.
+Continuation on kappa, b, Da (the debug path in [strategy.md](../archive/strategy-2026-11-16.md) section 2) stays allowed only inside the classical reference, to find the locked-case solution. A PINN never trains at non-supervisor values unless the supervisor approves it as a fallback.
 
 ## 2. Team roles
 

@@ -1,59 +1,67 @@
 # PINN implementation notes
 
-Date: 2026-11-21. Scope: the PINN stage (TODO phases P1 to P5) for Eqs. 14 to 19. This file says what the code does, where, and why: what we took from papers and their code, which known failures each part guards against, the decisions and who made them, and the trade-offs we measured.
+Date: 2026-11-21, updated 2026-11-24. Scope: the PINN stage (TODO phases P1 to P5) for Eqs. 14 to 19. This file says what the code does, where, and why: what we took from papers and their code, which known failures each part guards against, the decisions and who made them, and the trade-offs we measured.
 
 Related: [PINN_PLAN.md](PINN_PLAN.md) (arms, gates, metrics), [BC_ENFORCEMENT_REVIEW.md](BC_ENFORCEMENT_REVIEW.md) (how the boundary conditions are imposed), [literature-synthesis.md](../literature/literature-synthesis.md) (the 25 papers), [CODING_RULES.md](../team/CODING_RULES.md).
 
 ## 1. Where things are
 
-All PINN code is in `src/bvp_pinn/pinn/`, one file per job:
+Two packages, one file per job. `src/bvp_pinn/pinn/` trains and judges runs and never reads the reference. `src/bvp_pinn/evaluation/` compares finished runs with the reference.
 
 | File | Job | Lines |
 |---|---|---:|
-| `model.py` | The tanh network (eta in, five fields out), window networks for B1, derivatives by autograd | about 110 |
-| `jets.py` | All derivatives up to order 4 in one forward pass (Taylor mode); same numbers as autograd | about 135 |
-| `start.py` | Optional fixed start profile under the network (`start = smooth`), the analytic guess of the reference solvers | about 45 |
-| `constraints.py` | Boundary conditions built into the output (soft, linear or exact mode) | about 160 |
-| `physics.py` | Eqs. 14 to 18 and B1 to B12 on tensors, by calling `reference/equations.py` | about 30 |
-| `points.py` | Training and monitor points, denser near the wall | about 35 |
-| `losses.py` | Equation, boundary, interface and replay losses; fixed residual scale; gradient-norm weights with an optional cap | about 100 |
-| `train.py` | The four arms: stages, Adam (best checkpoint, resampling), refine stage (L-BFGS or full BFGS) with rollback | about 200 |
-| `bfgs.py` | Full BFGS with a dense inverse Hessian and a strong Wolfe line search | about 90 |
-| `lm.py` | Levenberg-Marquardt for the exact-mode sum of squares, with a per-point Jacobian (vmap of jacrev) | about 120 |
-| `selfcheck.py` | Checks without the reference: wall values, far decay powers m and mp, failure share | about 50 |
-| `runs.py` | Configs, run IDs, run folders | about 65 |
-| `run.py` | Command line: train one arm and seed | about 65 |
-| `evaluate.py` | Compare runs with the reference; `results/summary.csv` | about 140 |
-| `plots.py` | Figures FB1 to FB5 and table TB2 | about 170 |
+| `pinn/model.py` | The tanh network (eta in, five fields out), window networks for B1, derivatives (jets, autograd as a fallback) | about 110 |
+| `pinn/jets.py` | All derivatives up to order 4 in one forward pass (Taylor mode); same numbers as autograd | about 135 |
+| `pinn/start.py` | Optional fixed start profile under the network (`start = smooth`), the analytic guess of the reference solvers | about 35 |
+| `pinn/constraints.py` | Boundary conditions built into the output (soft, linear or exact mode) | about 160 |
+| `pinn/physics.py` | Eqs. 14 to 18 and B1 to B12 on tensors, by calling `reference/equations.py`; nothing can add a term | about 30 |
+| `pinn/points.py` | Training and monitor points, denser near the wall | about 35 |
+| `pinn/losses.py` | Equation, boundary, interface and replay losses; fixed residual scale; gradient-norm weights with an optional cap | about 115 |
+| `pinn/train.py` | The four arms: stages, Adam (best checkpoint, resampling), refine chain (L-BFGS, BFGS, Levenberg-Marquardt) with rollback | about 235 |
+| `pinn/bfgs.py` | Full BFGS with a dense inverse Hessian and a strong Wolfe line search | about 85 |
+| `pinn/lm.py` | Levenberg-Marquardt on the frozen-weight training objective, for every arm: one Jacobian block per network, interface and soft boundary rows through the Woodbury identity | about 225 |
+| `pinn/selfcheck.py` | Checks without the reference: wall values, far decay powers m and mp, tail fit, failure share | about 65 |
+| `pinn/estimate.py` | Newton-step error estimate with the C++ engine (built on demand) and the acceptance rule | about 120 |
+| `pinn/runs.py` | Configs and their checks, run IDs, run folders, `load_run` | about 135 |
+| `pinn/run.py` | Command line: train one arm and seed, then judge it | about 70 |
+| `pinn/campaign.py` | Command line: every arm and seed of the campaign, tagged, resumable, several at once | about 85 |
+| `evaluation/evaluate.py` | Metrics per run; `results/<campaign>/summary.csv` and `failures.md` | about 225 |
+| `evaluation/classical.py` | solve_bvp timing at tolerances 1e-3 to 1e-8, for the time-to-accuracy comparison | about 85 |
+| `evaluation/plots.py` | Figures FB1 to FB5 and FX1, tables TB2 and TX1 | about 230 |
+| `figstyle.py` | One figure style for the reference and PINN figures | about 35 |
 
-Settings: [configs/pinn.json](../../configs/pinn.json) (shared settings, then one block per arm). Tests: `tests/test_pinn.py` (gate G1 and G5 checks).
+Settings: [configs/pinn.json](../../configs/pinn.json): shared settings, one block per arm, the acceptance rule (`selection`) and the campaign (`campaign`). Tests: `tests/test_pinn.py` (gates G1 and G5, the refine chain for every arm, the acceptance rule, an end-to-end run of each arm).
 
 How data flows:
 
 ```text
-configs/pinn.json --> run.py --> train.py --> runs/<run_id>/   (never reads the reference)
-                                                   |
-reference/locked-branch*/ --> evaluate.py --> metrics.json, results/summary.csv --> plots.py
+configs/pinn.json --> pinn.campaign / pinn.run --> train.py --> runs/<run_id>/ --> estimate.py --> selection.json
+                                   (bvp_pinn.pinn never reads the reference)            |
+reference/locked-branch*/ --> evaluation.evaluate --> metrics.json, results/<campaign>/summary.csv, failures.md
+                              evaluation.classical --> results/<campaign>/classical_timing.json
+                              evaluation.plots     --> results/<campaign>/figures/, wall_values.md, cost.md
 ```
 
 ## 2. Commands
 
 ```bash
-uv run pytest                                                    # all tests, including gate G1
-uv run python -m bvp_pinn.pinn.run --arm B0 --seed 0 --dry-run   # whole pipeline in seconds, results meaningless
-uv run python -m bvp_pinn.pinn.run --arm B2 --seed 3             # one real run
-uv run python -m bvp_pinn.pinn.run --arm B0 --seed 0 --set bc_mode=soft adam_steps=3000
-uv run python -m bvp_pinn.pinn.evaluate                          # after training: metrics and summary
-uv run python -m bvp_pinn.pinn.plots                             # after evaluate: figures and TB2
+uv run pytest                                                    # all tests, including gates G1 and G5
+uv run python -m bvp_pinn.pinn.run --arm B0 --seed 0 --dry-run   # whole pipeline of one arm in under a minute, results meaningless
+uv run python -m bvp_pinn.pinn.run --arm B2 --seed 3             # one real run, then its acceptance verdict
+uv run python -m bvp_pinn.pinn.run --arm B0 --seed 0 --set adam_steps=3000   # a pilot with one setting changed
+uv run python -m bvp_pinn.pinn.campaign --list                   # campaign: what is done, what is left
+uv run python -m bvp_pinn.pinn.campaign --jobs 3                 # campaign: run what is left, three at once
+uv run python -m bvp_pinn.evaluation.evaluate                    # after the campaign: metrics, summary, failures
+OMP_NUM_THREADS=1 uv run python -m bvp_pinn.evaluation.classical # solve_bvp timing, on the machine the runs used
+uv run python -m bvp_pinn.evaluation.plots                       # figures FB1 to FB5, FX1; tables TB2, TX1
+uv run python -m bvp_pinn.evaluation.evaluate --runs runs/<run_id>   # a pilot: metrics.json only
 ```
 
 Checks outside training (tools/):
 
 ```bash
-uv run python tools/pinn_manufactured.py --set input_map=log start=smooth zero_last=1   # known-answer check of the training code
-g++ -O2 -std=c++17 -o engine/bvp_engine engine/bvp_engine.cpp
-uv run python tools/pinn_error_estimate.py runs/<run_id>                               # error estimate without the reference
-uv run python tools/reference_error_bars.py                                            # grid and L error bars of the reference
+uv run python tools/pinn_error_estimate.py runs/<run_id>                       # estimate and verdict for an older run folder
+uv run python tools/reference_error_bars.py                                    # grid, L and far-field error bars of the reference
 ```
 
 ### Training options added on 2026-11-23
@@ -68,7 +76,7 @@ Each option defaults to the old behaviour, so older run folders rebuild the same
 | `weight_cap` | null or a number | Upper bound on the gradient-norm weights (soft and linear modes) | P2 |
 | `best_checkpoint` | false, true | Restores the Adam state with the lowest monitor loss (one-stage arms) | P9 |
 | `resample_every` | 0 or steps | New stratified training points during Adam (B0 only); the refine stage uses the fixed points | P7 |
-| `refine` | lbfgs, bfgs, lm, or a chain such as `lbfgs:log+lm:balanced` | Refine stages after Adam, in order, each with an optional scale after the colon. `lbfgs_iters` for L-BFGS and BFGS, `lm_iters` for Levenberg-Marquardt | P1 |
+| `refine` | lbfgs, bfgs, lm, or a chain such as `lbfgs:log+lm:balanced` | Refine stages after Adam, in order, each with an optional scale after the colon. `lbfgs_iters` for L-BFGS and BFGS, `lm_iters` for Levenberg-Marquardt. Since 2026-11-24 the chain `lbfgs:log+lm:balanced` is shared by all arms | P1 |
 
 Colab: see section 8.
 
@@ -86,7 +94,9 @@ Colab: see section 8.
 | Sukumar, Srivastava 2022 (CMAME, doi 10.1016/j.cma.2021.114333) | Evidence that exact enforcement can beat untuned soft penalties in 1D Robin and fourth-order problems | reason for the pilot in section 4 |
 | Kiyani et al. 2025 (CMAME 446) and synthesis items 12 and 13 | float64 throughout; L-BFGS with strong Wolfe line search | `run.py`, `train.py` |
 | Overfitting study, sources/literature/overfitting-failure-2026 (synthesis item 14) | Monitor points never used for gradients, to catch overfitting between training points | `points.py`, `train.monitor_loss` |
-| Our synthesis items 11 and 12 | Keep the Adam result if L-BFGS makes the monitor loss worse or gives NaN | `train.lbfgs_phase` |
+| Our synthesis items 11 and 12 | Keep the earlier state if a refine stage makes the monitor loss worse or gives NaN | `train.refine_once` |
+| Madsen, Nielsen and Tingleff 2004, section 3.2 | Levenberg-Marquardt damping update (Nielsen's rule) | `lm.py` |
+| Woodbury identity (standard linear algebra) | Adds the few interface and soft-boundary rows to the per-network blocks of J'J without forming one large matrix | `lm.solve` inside `lm.minimize` |
 
 Full citations are in [RESEARCH_NOTES.md](../literature/RESEARCH_NOTES.md) and [BC_ENFORCEMENT_REVIEW.md](BC_ENFORCEMENT_REVIEW.md).
 
@@ -108,15 +118,19 @@ Our own Lorenz code (`prior-work/lorenz-pinn`) set the house style: small module
 |---|---|---|
 | Unbalanced loss terms, boundary gradients starved (Wang 2021; synthesis item 4) | Gradient-norm weights give every weighted term the same gradient norm | Done |
 | The 2021 annealing weights explode once a term is nearly met | Replaced by the 2023 gradient-norm rule (section 5.2) | Done, measured |
-| Soft conditions never met exactly (synthesis item 9) | TFC layer: up to all 12 conditions exact; the mode is chosen by a declared pilot | Pilot running |
+| Soft conditions never met exactly (synthesis item 9) | TFC layer: all 12 conditions exact | Done: exact mode chosen by pilot P2a (2026-11-22) |
 | Equations of very different size (synthesis items 6, 7) | Each equation divided by the coefficient of its highest derivative, so all five are in highest-derivative units. A rescaling only; the solutions are unchanged | Done |
 | float32 underflow in fourth-order autograd (synthesis item 13) | float64 everywhere | Done |
 | Thin wall layer under-resolved (reference figures: f'''' = -1728 at the wall) | Points stretched toward the wall (`stretch`); optional log input map; B1 to B3 give the wall its own window | Settings fixed in pilots |
 | Overfitting between collocation points (synthesis item 14) | Separate monitor points; L-BFGS kept only if the monitor loss improves | Done |
-| L-BFGS NaN or blow-up (synthesis item 11) | Rollback to the Adam state | Done |
-| Training reads the answer (gate G5) | Only `evaluate.py` and `plots.py` load the reference; a test fails otherwise | Done, tested |
-| A PINN can land on the other solution branch | `evaluate.py` reports which reference branch each run is nearest to | Done |
-| Truncated domain (Pantokratoras 2009) | Same L = 20 and same asymptotic far conditions as the reference | Done |
+| L-BFGS NaN or blow-up (synthesis item 11) | Each refine stage is rolled back on its own if its monitor loss rises or is not finite | Done |
+| A small loss can hide a wrong solution (run E8, section 7.1) | Acceptance rule: decaying far field, no constant tail, Newton-step error estimate; never the loss alone, never the reference | Done, tested; on the 13 pilot runs it accepts exactly the three that match the reference (section 7.4) |
+| Arms differ by optimizer, not by structure | One refine chain for every arm; B1 gets the block form of Levenberg-Marquardt | Done, tested (end-to-end test of every arm) |
+| Training reads the answer (gate G5) | Only `bvp_pinn.evaluation` loads the reference; no file of `bvp_pinn.pinn` imports it or the evaluation package, and a test parses every import | Done, tested |
+| Pilot runs mixed into campaign tables | Campaign runs carry a `campaign` tag; evaluation reads only tagged runs | Done |
+| A PINN can land on the other solution branch | `evaluation/evaluate.py` reports which reference branch each run is nearest to | Done |
+| Truncated domain (Pantokratoras 2009) | Same L = 20 and same asymptotic far conditions as the reference; the config check refuses any other L | Done, tested |
+| The problem drifts: another parameter value, a changed case file, a changed equation (AGENTS.md section 3) | `config.load_case` pins the case file's SHA-256 and returns read-only values; `train.train` and the reference study call `config.check_locked`; `runs.validate` refuses settings that name a physical value or are not in `configs/pinn.json`; no code adds a term or source to the equations; the C++ engine's transcription is checked against solve_bvp | Done, tested (`tests/test_fixed_problem.py`, 2026-11-24) |
 
 ## 5. Decisions and trade-offs
 
@@ -130,8 +144,14 @@ Our own Lorenz code (`prior-work/lorenz-pinn`) set the house style: small module
 | Pilots on this CPU, final runs on Google Colab | User | 2026-11-21 |
 | Weighted terms: the summed equation loss is one term; each soft boundary condition is its own term; B1's interface is one term | Us (the paper weights one term per loss type) | 2026-11-21 |
 | Replay weight of B2 and B3 is fixed, chosen from 0.1, 1, 10 by training residual in the pilot (PINN_PLAN section 3) | Plan | 2026-11-19 |
-| Final L-BFGS in every arm runs on the full problem; B2 and B3 drop the replay term there | Us, so all arms end on the same objective | 2026-11-21 |
+| The refine stages in every arm run on the full problem; B2 and B3 drop the replay term there | Us, so all arms end on the same objective | 2026-11-21 |
 | Each Adam stage restarts the optimizer and its learning-rate decay | Us, as bc-PINN trains each segment afresh | 2026-11-21 |
+| B0 refine chain `lbfgs:log+lm:balanced` | Us, from runs X3 and X4 (section 7.2) | 2026-11-23 |
+| The same refine chain for all four arms; B1 gets a block Levenberg-Marquardt (one block per window network) instead of staying on L-BFGS | Us, so an arm difference is not an optimizer difference ([gap report](../reviews/IMPLEMENTATION_GAP_2026-11-24.md) C1, C2) | 2026-11-24 |
+| Acceptance rule and one run per arm and seed (PINN_PLAN section 3; values in `configs/pinn.json`) | Us, declared before the campaign | 2026-11-24 |
+| Evaluation in its own package; campaign runs tagged; results per campaign | Us (gate G5; gap report C5, C8) | 2026-11-24 |
+| The problem is enforced in code: pinned case file, read-only values, `check_locked`, config refuses physical values and other L | User's instruction, built by us | 2026-11-24 |
+| Remove every check that solves other parameter values or a changed equation: published-limit benchmarks (V11), manufactured solutions (V3, the PINN tool and its forcing hook), the SymPy test at altered values | User | 2026-11-24 |
 
 Boundary-mode pilot rule, declared before running (from BC_ENFORCEMENT_REVIEW.md section 8): B0 with exact, linear and soft modes, seeds 0 to 2. Keep exact unless it fails to converge in any seed, gives NaN, or ends with a higher mean equation residual on the monitor points than linear in all 3 seeds. Soft runs count only if every boundary error ends below 1e-6. Only training-side numbers are used. Then the mode is frozen for all arms.
 
@@ -145,13 +165,14 @@ Boundary-mode pilot rule, declared before running (from BC_ENFORCEMENT_REVIEW.md
 | Points: 2000 or 1000? | 0.42 s against 0.20 s per Adam step (1 thread); 2 threads help only at 2000 points | 1000 for pilots; the final count is set from the pilots |
 | Cost of a full run | About 0.2 to 0.4 s per Adam step on 1 CPU thread, so 20 000 steps take 1 to 2 hours | Final runs on Colab; see section 8 |
 | TFC layer cost | One extra network evaluation with two derivatives at each end, per forward pass | Small; measured in the pilot |
+| Levenberg-Marquardt cost at 2000 points (2026-11-24, 1 thread, 2 steps each) | B0 (5 205 weights): 24 s per step, peak 2.1 GB. B1 (20 820 weights, 4 blocks): 32 s per step, peak 1.6 GB. At 1000 points B0 took about 12 s per step | 260 LM steps take about 1.7 h (B0) to 2.3 h (B1). One dense 20 820 x 20 820 matrix for B1 would need 3.5 GB; the block solve avoids it |
 
 ## 6. Gate status
 
 | Gate | Check | Status |
 |---|---|---|
-| G1 | Derivatives to order 4 on known functions; PyTorch equations equal NumPy; gradient-norm weights equal the paper's formula; replay and interface losses; TFC conditions hold for random weights (both modes, one network and window networks) | Pass (`tests/test_pinn.py`) |
-| G5 | No training module loads the reference | Pass (test) |
+| G1 | Derivatives to order 4 on known functions; PyTorch equations equal NumPy; gradient-norm weights equal the paper's formula; replay and interface losses; TFC conditions hold for random weights (both modes, one network and window networks); Levenberg-Marquardt starts from exactly the training loss and lowers it for B1 and soft modes; config checks; the acceptance rule; every arm end to end | Pass, 57 tests in the whole suite (`uv run pytest`, 2026-11-24) |
+| G5 | No module of `bvp_pinn.pinn` imports the reference data or `bvp_pinn.evaluation` | Pass (test parses every import) |
 | G4 | Per-window error after each stage, B2 and B3 | Computed in `evaluate.py`, figure FB5 |
 | G6 | Claims only if all 5 paired seeds agree | Applied when writing results |
 
@@ -159,9 +180,9 @@ Boundary-mode pilot rule, declared before running (from BC_ENFORCEMENT_REVIEW.md
 
 | Pilot | Question | Status |
 |---|---|---|
-| P2a | Boundary mode (rule in 5.1) | Running |
-| P2b | Network size, point count, stretch, input map, Adam and L-BFGS budgets for B0 | After P2a |
-| P3 | Window edges, replay weight from 0.1, 1, 10 (B2, B3), B1 interface | After P2b |
+| P2a | Boundary mode (rule in 5.1) | Done 2026-11-22: exact, frozen (issue #3) |
+| P2b | Network size, point count, stretch, input map, Adam, L-BFGS and LM budgets for B0 | Partly done: sections 7.1 to 7.3 set the method at 1000 points. The 2000-point count and the budgets are still pilot values; LM cost at 2000 points is measured (section 7.4) |
+| P3 | Window edges, replay weight from 0.1, 1, 10 (B2, B3), B1 interface | Not started; the code runs for all arms (section 7.4) |
 
 Results are added here with run IDs when each pilot ends.
 
@@ -194,7 +215,7 @@ What it shows (one seed, so a signal, not a claim under rule G6):
 Checks outside training:
 
 - **Error estimate without the reference** (`tools/pinn_error_estimate.py`, one Newton step of the box scheme). For E3 it matched the true wall errors within 10 to 20 % (f''(0): estimate 0.92, true 0.84; theta'(0): -0.29 against -0.25). For E1 and E2, which are far from the solution, it overshot by 2 to 5 times, as a one-step linear estimate should. So it is reliable once a run is near the solution.
-- **Manufactured solution** (`tools/pinn_manufactured.py`, E3 settings, 4 000 Adam and 1 500 L-BFGS, 1 142 s): **failed** to recover the known answer (theta(0) 0.72 against 0.50; theta relative L2 1.28). Its forcing R(u*) is largest at the wall, where the dipole coefficient of Eq. 14 is about 250, and the forced R14 monitor MSE was still 1.5e4 when the budget ran out. So this check fails for the same reason as the real case (wall layer, budget). It does not yet separate a code fault from slow training; a longer run of this check is the next test.
+- **Manufactured solution** (tool removed on 2026-11-24, see section 7.4; E3 settings, 4 000 Adam and 1 500 L-BFGS, 1 142 s): **failed** to recover the known answer (theta(0) 0.72 against 0.50; theta relative L2 1.28). Its forcing R(u*) is largest at the wall, where the dipole coefficient of Eq. 14 is about 250, and the forced R14 monitor MSE was still 1.5e4 when the budget ran out. So this check fails for the same reason as the real case (wall layer, budget). It does not yet separate a code fault from slow training; a longer run of this check is the next test.
 - **Levenberg-Marquardt** (`refine = lm`, `pinn/lm.py`): built and unit-tested, but one step on the full network did not finish in about 10 minutes on 4 threads here (the Jacobian through the jets is the cost). Not used for results on this laptop.
 
 ### 7.2 Balanced scale and Levenberg-Marquardt, 2026-11-23 (seed 0, one seed only)
@@ -239,19 +260,34 @@ Settings (now the B0 default in configs/pinn.json, except the pilot point counts
 | phi'(0) | 3.77826 (1.3e-5) | 3.77783 (1.3e-4) | 3.77831 |
 | g'(0) | -2.87141 (3.8e-5) | -2.87213 (2.9e-4) | -2.87130 |
 | chi'(0) | -2.00882 (4.5e-5) | -2.00858 (7.5e-5) | -2.00873 |
+| phi(0), added 2026-11-24 | -0.1202070 (4.3e-4) | -0.1194119 (6.2e-3) | -0.1201550 |
 | Relative L2, f / g / theta / phi / chi | 9.1e-4 / 6.2e-4 / 2.6e-4 / 1.5e-4 / 1.3e-4 | 5.1e-3 / 2.1e-3 / 3.0e-3 / 2.9e-3 / 1.5e-4 | |
 | m (decay power), tail share, theta(L) | 0.2388, 0.0011, 0.0684 | 0.2374, 0.0043, 0.0687 | 0.2390, 0.0028, 0.068 |
 | Error-estimate score (no reference) | 4.1e-5 | 3.2e-4 | |
 
 Numbers in brackets are relative errors against reference A at L = 20. What it shows:
 
-- **The pipeline reaches the reference from scratch, in both seeds.** Every wall value is within 4e-4 relative, and seed 0 within 6e-5. That is at or below the reference's own distance from the eta -> infinity values (about 2e-4, SPEC section 8.6). Both runs are on branch A with a decaying tail.
+- **The pipeline reaches the reference from scratch, in both seeds.** Every wall value except phi(0) is within 4e-4 relative, and seed 0 within 6e-5. phi(0), added to the table on 2026-11-24, is 4.3e-4 off in seed 0 and 6.2e-3 in seed 1 (section 7.4). That is at or below the reference's own distance from the eta -> infinity values (about 2e-4, SPEC section 8.6). Both runs are on branch A with a decaying tail.
 - **The reference-free score ranks the seeds correctly** (seed 0 better than seed 1) and is of the right size. So a run can be accepted or rejected without the reference.
 - **The loss target is met.** The balanced equation loss is below 2e-6 in both runs, so 1e-3 to 1e-4 is passed by two to three orders of magnitude. The plain (unscaled) MSE is 8e-4 (seed 0) and 7e-3 (seed 1), almost all of it from R14 in the wall layer, where the terms are of size 1e3.
 - **Limits.** Two seeds, not the five of the campaign rule (G6). 1 000 points, not the 2 000 of the default. One laptop, one thread per run. The LM loss was still falling at step 260, so more steps would likely help.
+
+### 7.4 Campaign readiness, 2026-11-24
+
+What changed in the code is listed in the [gap report](../reviews/IMPLEMENTATION_GAP_2026-11-24.md) and section 5.1. What was measured:
+
+- **Dry campaign** (`python -m bvp_pinn.pinn.campaign --dry-run --jobs 4`): all 20 runs (4 arms x 5 seeds, tiny settings) trained, ran the full refine chain, and were judged, in 72 s on this laptop. The acceptance rule rejected all 20 with reasons, as it should for 40 Adam steps. `evaluate`, `classical` (1 repeat) and `plots` then built `summary.csv`, `failures.md`, TB2, TX1 and figures FB1 to FB5 and FX1 for that campaign (`results/P4-dry/`, not committed).
+- **Acceptance rule on the 13 real pilot runs** (E1 to E8, X1 to X4, and the two runs of section 7.3; run before evaluation): accepted X3 `c0b70da5` (score 2e-4), seed 0 `bvp-B0-s0-3a276995` (4.1e-5) and seed 1 `bvp-B0-s1-3a276995` (3.2e-4); rejected the other ten (E1, E2 for no far decay; X1, X2, X4 for the tail; all for the score). These are the three runs that match the reference, so the code applies the rule as intended. The bars were set from these same runs, so this is a check of the code, not an independent test of the bars.
+- **phi(0) is the largest wall error.** Evaluation of the two section 7.3 runs, with phi(0) now in the wall table: phi(0) is 4.3e-4 relative off in seed 0 and 6.2e-3 in seed 1; every other wall value is within 4e-4. The Newton-step estimate sees it: estimated phi(0) error -4.7e-5 against a true -5.2e-5 (seed 0), 7.52e-4 against 7.43e-4 (seed 1). The declared score does not include phi(0). Adding it would reject seed 1 and X3. This is a choice for the team before the campaign, recorded in the gap report.
+- **LM cost at 2000 points** is in section 5.2.
+- **The estimate's own floor.** On a fresh solve_bvp solution of the locked case, the engine's Newton step on the 3 201-node estimate mesh is 4e-6 to 7.5e-5 relative at the wall: the box scheme's own error there. So scores near 1e-4 or below, such as seed 0's 4.1e-5, are at the estimator's floor and do not rank runs further. The acceptance bar of 1e-3 is ten times above it.
+- **Not run yet:** pilots P2b and P3, and the campaign.
+- **Removed later the same day** (user's decision; AGENTS.md section 3): the manufactured-solution checks (`tools/pinn_manufactured.py`, the forcing hook in `pinn/physics.py`, reference check V3) and the published-limit benchmarks (V11). They solved a forced equation or other parameter values. Every check now uses the locked case only.
 
 ## 8. Colab
 
 - Colab gives float64 on its CPUs and GPUs, but consumer GPUs run float64 far slower than float32. Measure one short run on each before the campaign. **[judgment]**
 - `pyproject.toml` pins Python 3.12. If the Colab image moves to a newer Python, install with `pip install --no-deps -e .` and the listed packages, or relax the pin with a dated note.
-- The campaign is 4 arms x 5 seeds. Each run writes its own folder, so runs can be split across sessions and merged by copying `runs/` back before `evaluate`.
+- The campaign is 4 arms x 5 seeds: `python -m bvp_pinn.pinn.campaign`. It skips finished runs, so it can be split across sessions (`--arms`, `--seeds`) and merged by copying `runs/` back before `evaluate`. `--jobs N` runs N at once; budget about 2.1 GB per B0 run and 1.6 GB per B1 run at 2000 points.
+- The acceptance rule needs `engine/bvp_engine`. It is built with g++ on first use (`bvp_pinn.pinn.estimate.ensure_engine`); Colab images include g++.
+- Run `bvp_pinn.evaluation.classical` on the same machine type as the runs, so the times in FX1 and TX1 compare.

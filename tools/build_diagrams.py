@@ -330,18 +330,18 @@ class Scene:
 def methodology():
     s = Scene("bvp-methodology", "BVP PINN methodology",
               "Methodology for the five-field boundary problem in four gated stages: fix the case and "
-              "pass the software tests, build a classical reference for checking only, train the PINN "
-              "for three seeds, then test against the reference and report every outcome.")
+              "pass the software tests, build a classical reference for checking only, train four arms "
+              "for five seeds each, then test against the reference and report every outcome.")
 
     # stage 1: case and code
     s.group(46, 24, 1108, 136, "1 · Case and code")
     s.box("case", 66, 46, 250, 76, "peach", 1, "Locked case", [
         "Eqs. 14 to 19 for *f*, *g*, *θ*, *φ*, *χ*", "22 supervisor values, steady form"], size=12)
     s.box("sizes", 340, 46, 250, 76, "purple", 2, "Wall coefficient sizes", [
-        "*q* = *h* = 0.2 at *η* = 0: terms reach 250", "fix loss scales *s*, *t* from these sizes"], size=12)
+        "*q* = *h* = 0.2 at *η* = 0: terms reach 250", "fixed residual scales from *η* only"], size=12)
     s.box("tests", 614, 46, 250, 76, "cyan", 3, "Software tests", [
-        "13 tests on synthetic cases", "derivatives, signs, BCs, gradients"], size=12)
-    s.diamond("pass", 980, 84, 200, 76, "All tests pass?", ["13 of 13"])
+        "pytest: equations against SymPy,", "derivatives, BCs, optimizers"], size=12)
+    s.diamond("pass", 980, 84, 200, 76, "All tests pass?", ["every one"])
     s.arrow([(316, 84), (340, 84)])
     s.arrow([(590, 84), (614, 84)])
     s.arrow([(864, 84), (880, 84)])
@@ -355,7 +355,7 @@ def methodology():
     s.box("system", 66, 218, 250, 76, "cyan", 4, "First-order system", [
         "12 states, same 22 values", "SciPy solve_bvp, mesh dense at the wall"], size=12)
     s.box("converge", 340, 218, 250, 76, "cyan", 5, "Convergence checks", [
-        "tolerance 10^{−5} to 10^{−7}, finer mesh", "*L* = 10, 15, 20, several guesses"], size=12)
+        "tolerance 10^{−5} to 10^{−8}, three solvers", "*L* = 20 to 10 240, branch search"], size=12)
     s.diamond("converged", 710, 256, 200, 76, "Converged?", ["every check agrees"])
     s.box("curves", 850, 212, 284, 46, "cyan", None, "Reference curves", [
         "check only, never a training label"], size=12)
@@ -371,22 +371,22 @@ def methodology():
     s.label("then train", 298, 352, anchor="start")
 
     # stage 3: training, per seed
-    s.group(46, 366, 1108, 300, "3 · Train, each seed 0, 1, 2")
+    s.group(46, 366, 1108, 300, "3 · Train 4 arms, 5 seeds")
     s.box("points", 66, 388, 252, 76, "blue", 6, "Point sets", [
-        "1024 interior, half near the wall", "monitor and test sets kept apart"], size=12)
+        "2000 points, stretched to the wall", "monitor set kept apart"], size=12)
     s.box("net", 342, 388, 252, 76, "purple", 7, "Network and loss", [
-        "*η* → 4 tanh layers of 64 → 5 fields", "R14 to R18, B1 to B12, scaled"], size=12)
+        "*η* → 4 tanh layers of 40 → 5 fields", "B1 to B12 built in; loss R14 to R18"], size=12)
     s.box("adam", 618, 388, 252, 76, "green", 8, "Adam training", [
-        "trial rate 10^{−3} to 10^{−4}, 20000 steps", "checkpoint at fixed intervals"], size=12)
-    s.box("lbfgs", 894, 388, 240, 76, "green", 9, "L-BFGS refinement", [
-        "points, scales, weights frozen", "strong Wolfe line search"], size=12)
+        "rate 10^{−3} to 10^{−4}, 20000 steps", "smooth start profile, log scale"], size=12)
+    s.box("lbfgs", 894, 388, 240, 76, "green", 9, "Refine: L-BFGS, LM", [
+        "weights frozen; Levenberg-Marquardt", "each stage kept only if it helps"], size=12)
     s.arrow([(318, 426), (342, 426)])
     s.arrow([(594, 426), (618, 426)])
     s.arrow([(870, 426), (894, 426)])
-    s.diamond("finite", 1014, 532, 220, 76, "All values finite?", ["in Adam and L-BFGS"])
+    s.diamond("finite", 1014, 532, 220, 76, "All values finite?", ["in every stage"])
     s.arrow([(1014, 464), (1014, 494)])
-    s.box("pick", 618, 494, 252, 76, "blue", 10, "Pick the checkpoint", [
-        "best rank on monitor points", "never on reference or test error"], size=12)
+    s.box("pick", 618, 494, 252, 76, "blue", 10, "Accept or reject", [
+        "Newton-step error estimate, tail", "never the reference; rejects stay"], size=12)
     s.arrow([(904, 532), (870, 532)])
     s.label("YES", 887, 524, bold=True)
     s.box("stop", 894, 596, 240, 52, "red", None, "Stop and save", [
@@ -394,19 +394,19 @@ def methodology():
     s.arrow([(1014, 570), (1014, 596)])
     s.label("NO", 1024, 587, anchor="start", bold=True)
     s.arrow([(618, 532), (192, 532), (192, 464)], dashed=True, color=GROUP)
-    s.label("next seed", 405, 525, color=GROUP, bold=True)
+    s.label("next run", 405, 525, color=GROUP, bold=True)
 
     # stage 4: test and report
     s.arrow([(744, 570), (744, 680), (290, 680), (290, 730)])
-    s.label("after 3 seeds", 752, 600, anchor="start")
+    s.label("after 20 runs", 752, 600, anchor="start")
     s.arrow([(1134, 235), (1174, 235), (1174, 694), (330, 694), (330, 730)])
     s.label("reference curves, check only", 1000, 689)
     s.group(46, 708, 1108, 124, "4 · Test and report")
-    s.box("final", 66, 730, 290, 76, "gray", 11, "Final test vs reference", [
-        "fresh points: fields, *f* ′, every R and B", "proposed targets: BC 10^{−4}, field 10^{−3}"], size=12)
-    s.diamond("targets", 486, 768, 220, 76, "Targets met?", ["reference error far below"])
-    s.box("sense", 624, 730, 240, 76, "gray", 12, "Sensitivity, variants", [
-        "*L*, point count, seed spread", "then B1 to B6, one change at a time"], size=12)
+    s.box("final", 66, 730, 290, 76, "gray", 11, "Test against the reference", [
+        "fields, wall values, every R and B", "time against solve_bvp at equal error"], size=12)
+    s.diamond("targets", 486, 768, 220, 76, "Same in all 5 seeds?", ["rule G6 for every claim"])
+    s.box("sense", 624, 730, 240, 76, "gray", 12, "Compare the arms", [
+        "B1 to B3 against B0, paired seeds", "retention per window, cost"], size=12)
     s.box("report", 888, 730, 246, 76, "orange", 13, "Report", [
         "fields, wall quantities, errors, cost", "or the failure with its cause"], size=12, thick=True)
     s.arrow([(356, 768), (376, 768)])
@@ -414,19 +414,19 @@ def methodology():
     s.label("YES", 610, 760, bold=True)
     s.arrow([(864, 768), (888, 768)])
     s.arrow([(486, 806), (486, 820), (1011, 820), (1011, 806)])
-    s.label("NO: reported as failed", 740, 816)
+    s.label("NO: no consistent effect", 740, 816)
     return s
 
 
 def architecture():
     s = Scene("bvp-pinn-architecture", "BVP PINN architecture",
               "One training step of the five-field PINN: points pass through one shared network, "
-              "automatic differentiation gives the derivatives, the locked coefficients turn them into "
-              "equation and boundary errors, and one scalar loss updates the weights. Checks and the "
-              "classical reference stay outside the loss.")
+              "Taylor-mode jets give the derivatives, a boundary layer builds in all twelve conditions, "
+              "the locked coefficients turn the fields into equation errors, and one scalar loss updates "
+              "the weights. Checks and the classical reference stay outside the loss.")
 
-    s.box("setup", 46, 16, 1108, 92, "peach", 1, "One network, physics only in the loss", [
-        "the network maps a position *η* to five fields; automatic differentiation gives their derivatives; "
+    s.box("setup", 46, 16, 1108, 92, "peach", 1, "One network: equations in the loss, conditions in the output", [
+        "the network maps a position *η* to five fields; all 12 boundary conditions are built into the output; "
         "the 22 coefficients are fixed numbers, never trained",
         "same loop as the Lorenz PINN; the bottom row lists the four things that change for this boundary problem"])
 
@@ -435,7 +435,7 @@ def architecture():
     s.box("points", 66, 164, 196, 92, "blue", 2, "Input points", [
         "*N* interior points in (0, *L*)", "plus the two ends *η* = 0, *L*"])
     s.frame("net", 288, 164, 366, 92, "blue", 3, "Shared network")
-    cells = [("scale", "2*η*/*L* − 1"), ("4 tanh layers", "64 units each"), ("linear", "64 to 5 outputs")]
+    cells = [("log map", "log(1 + *η*/0.1)"), ("4 tanh layers", "40 units each"), ("linear", "40 to 5 outputs")]
     for i, (title, line) in enumerate(cells):
         x = 298 + i * 120
         s.cell(f"cell {title}", x, 196, 106, 50, title, line)
@@ -443,12 +443,12 @@ def architecture():
             s.arrow([(x - 14, 221), (x, 221)], inner=True)
     s.box("fields", 680, 164, 250, 92, "purple", 4, "Fields and derivatives", [
         "*f* to *f* ^{(4)}; *g*, *θ*, *φ*, *χ* to second order",
-        "autograd, one output at a time"], size=12)
+        "Taylor jets, one forward pass"], size=12)
     s.arrow([(262, 210), (288, 210)])
     s.arrow([(654, 210), (680, 210)])
 
-    s.box("bcs", 380, 296, 260, 72, "cyan", 6, "Boundary errors", [
-        "B1 to B6 at *η* = 0, B7 to B12 at *η* = *L*", "soft penalties, no extra conditions"], size=12)
+    s.box("bcs", 380, 296, 260, 72, "cyan", 6, "Boundary layer", [
+        "B1 to B12 exact for any weights", "end values set fixed shapes"], size=12)
     s.box("case", 666, 296, 234, 72, "peach", 7, "Locked case", [
         "22 coefficients from the supervisor", "fixed: not trained, not tuned"], size=12)
     s.box("res", 926, 296, 208, 72, "purple", 5, "Equation errors", [
@@ -461,15 +461,13 @@ def architecture():
     s.arrow([(900, 332), (926, 332)])
 
     s.box("update", 66, 296, 274, 72, "green", 9, "Backward pass and update", [
-        "*G* = ∇_{*w*}*J* through all derivatives", "Adam, then L-BFGS on frozen points"], size=12)
+        "*G* = ∇_{*w*}*J* through all derivatives", "Adam, then L-BFGS and LM"], size=12)
     s.arrow([(300, 296), (300, 256)])
     s.label("new weights", 308, 282, anchor="start")
 
     s.box("loss", 380, 408, 754, 72, "green", 8, "One scalar loss", [
-        "*J* = Σ_{*i*} *λ*_{*i*} mean(*R*_{*i*}/*s*_{*i*})^{2} + Σ_{*j*} *μ*_{*j*} (*B*_{*j*}/*t*_{*j*})^{2}"
-        "    with *i* = 1, …, 5 and *j* = 1, …, 12",
-        "fixed scales *s*, *t* and weights *λ*, *μ*; no reference data in the loss"])
-    s.arrow([(510, 368), (510, 408)])
+        "*J* = mean over points of Σ_{*i*} (*s*_{*i*}(*η*) *R*_{*i*})^{2}    with *i* = 14, …, 18",
+        "fixed scales *s*(*η*) from *η* and the locked values; no reference data in the loss"])
     s.arrow([(1030, 368), (1030, 408)])
 
     s.diamond("finite", 203, 444, 230, 72, "All finite?", ["errors, loss, gradients"])
@@ -485,11 +483,11 @@ def architecture():
     s.arrow([(66, 350), (56, 350), (56, 660), (80, 660)], dashed=True, color=GROUP)
     s.label("saved weights", 64, 584, anchor="start", color=GROUP, bold=True)
     s.box("monitor", 80, 624, 250, 72, "gray", 10, "Monitor points", [
-        "fixed dense grid, every R and B", "ranks the saved checkpoints"], size=12)
-    s.box("pick", 356, 624, 264, 72, "blue", 11, "Pick and lock", [
-        "best monitor rank, weights frozen", "no retuning after this point"], size=12)
+        "separate set, never in a gradient", "a refine stage kept only if it helps"], size=12)
+    s.box("pick", 356, 624, 264, 72, "blue", 11, "Accept or reject", [
+        "Newton-step error estimate (C++)", "decaying tail; rejects stay in tables"], size=12)
     s.box("final", 646, 624, 254, 72, "gray", 12, "Final test", [
-        "fresh points: fields, *f* ′, every R and B", "errors against the reference"], size=12)
+        "fields, wall values, every R and B", "errors against the reference"], size=12)
     s.box("ref", 926, 624, 208, 72, "cyan", 13, "Classical reference", [
         "solve_bvp, 12 first-order states", "comparison only, never a label"], size=12)
     s.arrow([(330, 660), (356, 660)])
@@ -499,8 +497,8 @@ def architecture():
     # bottom row: what changes from the Lorenz PINN
     s.frame("lorenz", 46, 732, 1108, 100, "gray", None, "Changed from the Lorenz PINN")
     changes = [("time *t* → position *η*", "one interval [0, *L*], no time windows"),
-               ("exact initial value → 12 errors", "six conditions at each end, soft"),
-               ("first derivatives → up to fourth", "nested autograd for *f* ^{(4)}"),
+               ("exact initial value → 12 conditions", "six at each end, all built in"),
+               ("first derivatives → up to fourth", "Taylor jets for *f* ^{(4)}"),
                ("3 outputs → 5 outputs", "*f*, *g*, *θ*, *φ*, *χ* from one network")]
     for i, (title, line) in enumerate(changes):
         s.cell(f"change {i + 1}", 60 + i * 274, 764, 258, 56, title, line, stroke="#a4a9b1")

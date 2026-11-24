@@ -33,3 +33,9 @@ Details: [SPEC_reference_solutions.md](../reference-solver/SPEC_reference_soluti
 7. **Target branch.** Two solutions satisfy the conditions on a finite domain. Branch A has theta(0) = 0.2502, f''(0) = -4.2033, and theta decays like (eta+kappa)^-0.24. Branch B has f(infinity) < 0, so its theta cannot decay to zero at infinity; it is not a solution of the eta -> infinity problem. We use branch A. Do you agree?
 8. **Far field.** theta and phi decay only as powers of (eta+kappa), so setting them to zero at a finite eta (as eta_inf = 7 to 12 in the papers we read) shifts the wall values by several percent. We impose asymptotic conditions at eta = 20 instead (Lentini and Keller, 1980). The wall values then agree with eta = 160 to about 1e-4, phi(0) to about 1e-3. Is this acceptable?
 9. **chi at infinity.** As printed, Eq. 18 has no chi convection term (it has kappa/(eta+kappa)*f*phi). With it, chi cannot decay to zero at infinity: chi'(0) keeps changing as the far boundary moves (-2.01 at eta = 20, -1.08 at eta = 160). We keep Eq. 18 as given and define chi by chi = 0 at eta = 20. Is Eq. 18 as intended, and is this treatment acceptable?
+
+## New question from the reference audit, 2026-11-24
+
+Details: [REFERENCE_AUDIT_2026-11-23.md](../reviews/REFERENCE_AUDIT_2026-11-23.md) check 3c (defect D1). This asks for a confirmation, not a change to any equation or value.
+
+10. **f at infinity.** f' = C/(eta+kappa) solves the homogeneous Eq. 14 exactly, so the printed conditions f' -> 0 and f'' -> 0 at infinity hold for a whole family of solutions, one for each C. The reference takes C = 0, that is f stays bounded as eta -> infinity. This is what B7 and B8 give at a finite L, and both the reference and the PINN use it. A test checks it on a fresh solve of the locked case (`test_reference_takes_f_bounded_at_infinity` in tests/test_fixed_problem.py). Do you agree that f bounded is the intended solution?

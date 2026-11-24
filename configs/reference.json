@@ -46,23 +46,6 @@
     ]
   },
   "branch_scan_note": "Smooth decaying guesses that satisfy B1, B2, B3, B5 and B6 at eta=0. Every converged solution is kept and grouped into branches by its wall values.",
-  "continuation_path": [
-    1.0,
-    0.5,
-    0.2
-  ],
-  "continuation_note": "Only if no guess converges: kappa=b=Da follow this path, theta_w stays 0.2, everything else locked. Reference-only aid; intermediate solutions are never reported.",
-  "mms": {
-    "L": 5.0,
-    "meshes": [
-      81,
-      161,
-      321,
-      641
-    ],
-    "min_order": 3.6
-  },
-  "mms_note": "Fixed uniform meshes with tol=bc_tol=1e-12 and max_nodes equal to the mesh size, so solve_bvp cannot refine the mesh but Newton still converges on it. Order from the nodal max error. At 1281 nodes the error reaches a floor near 1e-10, so that mesh is not used for the order.",
   "eval_points": 4001,
   "eval_first_step": 0.0005,
   "L_reference": 20,
@@ -75,5 +58,6 @@
     "rtol": 1e-11,
     "rtol_check": 1e-09
   },
-  "rk_note": "Second, independent reference (check V10): multiple shooting with SciPy's DOP853 Runge-Kutta on 40 wall-clustered segments, Newton on the joins and boundary conditions, started from the smooth guess only. rtol_check is a looser second solve that estimates the integrator's own error."
+  "rk_note": "Second, independent reference (check V10): multiple shooting with SciPy's DOP853 Runge-Kutta on 40 wall-clustered segments, Newton on the joins and boundary conditions, started from the smooth guess only. rtol_check is a looser second solve that estimates the integrator's own error.",
+  "fixed_problem_note": "Every solve uses Eqs. 14 to 18, B1 to B12 and the 22 locked supervisor values. There is no continuation through other parameter values, no check at other values and no forced equation (removed 2026-11-24): if a solve fails, the answer is more starting guesses or a longer L, never another value (AGENTS.md section 3)."
 }

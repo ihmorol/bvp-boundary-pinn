@@ -15,7 +15,7 @@ missing = ", ".join(case["missing_parameters"])
 status = (
     f"<strong>Physical values are incomplete.</strong> Missing: {escape(missing)}. No automatic defaults."
     if missing else
-    "<strong>All 22 physical coefficients are complete and locked.</strong> The supervisor receipt dated 2026-11-16 supplies the active values; Da=0.2 is derived from M=5. Software validation, reference, training and evaluation are pending. Numerical settings and definition questions stay separate."
+    "<strong>All 22 physical coefficients are complete and locked.</strong> The supervisor receipt dated 2026-11-16 supplies the active values; Da=0.2 is derived from M=5. The reference is built and audited; the PINN code is complete and tested for all four arms; the pilots and the 20-run campaign have not run. The state of each gate is in docs/plans/strategy.md. Numerical settings stay separate from the supervisor values."
 )
 sections = [
     ("parameters", "Parameter record", "docs/problem/parameters.md"),
@@ -78,7 +78,7 @@ html = '''<!doctype html>
 <div class="chain">
 <div class="node"><strong>1. Preserve and transcribe sources.</strong> Keep source conditions separate from selected values. Test the corrected Eq. 14 grouping.</div><div class="arrow">↓</div>
 <div class="node"><strong>2. Are all physical values known?</strong><div class="branch">No: save a blocked case and wait. Yes: check ranges and denominators. Invalid: stop with the exact reason.</div></div><div class="arrow">↓</div>
-<div class="node"><strong>3. Run software tests.</strong> Derivatives, normalization, equation signs, BCs, shapes, gradients and manufactured cases.<div class="branch">Failure: fix software and repeat. No physical simulation yet.</div></div><div class="arrow">↓</div>
+<div class="node"><strong>3. Run software tests.</strong> Derivatives, normalization, equation signs, BCs, shapes, gradients and the fixed-problem guards, all at the locked values.<div class="branch">Failure: fix software and repeat. No physical simulation yet.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>4. Build the reference.</strong> Twelve-state first-order BVP; change mesh, tolerance, initial guess and L.<div class="branch">Failure: diagnose and keep reference accuracy unverified. Never manufacture labels or conclude nonexistence from a solver failure.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>5. Train Adam for one seed.</strong> Interior and boundary calculations together; finite checks; independent monitoring and checkpoints.<div class="branch">NaN or broken gradients: stop and diagnose. Continue until the declared budget or transition rule.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>6. Freeze the objective and refine.</strong> Same points, coefficients, scales and weights for every L-BFGS closure evaluation. Keep the Adam checkpoint if refinement fails.</div><div class="arrow">↓</div>

@@ -2,6 +2,8 @@
 //
 // Build:  g++ -O2 -std=c++17 -o engine/bvp_engine engine/bvp_engine.cpp
 // Run:    engine/bvp_engine [case.json] [out_dir] [L]
+//         engine/bvp_engine --estimate <pinn.csv> <out.csv>   (one Newton step from a PINN state)
+//         engine/bvp_engine --deflate [L]                     (branch search, engine/out/engine_branches.csv)
 //         defaults: configs/physical-case-pending.json  engine/out  20
 //
 // Method (the standard scheme for boundary-layer ODEs; Keller 1970s, see engine/README.md):
@@ -312,7 +314,158 @@ int estimate(const std::string& in_path, const std::string& out_path, const Para
   return 0;
 }
 
+// Branch search by deflation (reference audit D7). Deflation: Farrell, Birkisson and Funke,
+// "Deflation techniques for finding distinct solutions of nonlinear PDEs", SIAM J. Sci. Comput. 37
+// (2015). Newton is run on G(z) = M(z) R(z) with M(z) = prod_i (|z - r_i|^-2 + 1) over the roots
+// r_i found so far. G has the same roots as R except the known ones, so from the same start Newton
+// either finds a new solution of the locked problem or fails. No parameter value is changed.
+// With d the plain Newton direction, the deflated direction is d / (1 - (grad M . d) / M).
+double rms(const std::vector<State>& a, const std::vector<State>* b = nullptr) {
+  double s = 0;
+  for (size_t j = 0; j < a.size(); ++j)
+    for (int i = 0; i < 12; ++i) {
+      double e = a[j][i] - (b ? (*b)[j][i] : 0.0);
+      s += e * e;
+    }
+  return std::sqrt(s / (12.0 * a.size()));
+}
+
+// Newton on the deflated residual. Returns the step count, or -1 if it fails to converge.
+int deflated_newton(const std::vector<double>& x, std::vector<State>& z, const Params& p,
+                    const std::vector<std::vector<State>>& roots) {
+  int N = (int)x.size();
+  double n = 12.0 * N;
+  auto deflation = [&](const std::vector<State>& s) {
+    double M = 1;
+    for (const auto& r : roots) M *= std::pow(rms(s, &r), -2) + 1.0;
+    return M;
+  };
+  try {
+    auto R = discrete_residual(x, z, p);
+    for (int it = 0; it < 100; ++it) {
+      if (max_abs(R) < 1e-10) return it;
+      Band J = jacobian(x, z, p);
+      std::vector<double> step = R;  // z_new = z - tau * lam * step
+      J.solve(step);
+      double ratio = 0;  // (grad M . d) / M with d = -step
+      for (const auto& r : roots) {
+        double e = rms(z, &r), dot = 0;
+        for (int j = 0; j < N; ++j)
+          for (int i = 0; i < 12; ++i) dot += (z[j][i] - r[j][i]) * (-step[12 * j + i]);
+        ratio += (-2 * std::pow(e, -4) * dot / n) / (std::pow(e, -2) + 1.0);
+      }
+      double tau = 1.0 / (1.0 - ratio);
+      if (!std::isfinite(tau)) return -1;
+      double merit = max_abs(R) * deflation(z), lam = 1.0;
+      bool moved = false;
+      for (int k = 0; k < 30; ++k, lam /= 2) {
+        std::vector<State> trial = z;
+        for (int j = 0; j < N; ++j)
+          for (int i = 0; i < 12; ++i) trial[j][i] -= tau * lam * step[12 * j + i];
+        auto Rt = discrete_residual(x, trial, p);
+        double mt = max_abs(Rt) * deflation(trial);
+        if (std::isfinite(mt) && mt < merit) {
+          z = trial;
+          R = Rt;
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) return -1;
+    }
+  } catch (const std::exception&) {
+    return -1;
+  }
+  return -1;
+}
+
+// Halve every interval and run plain Newton, to check that a root found on the coarse mesh
+// persists on the fine one (a discretization artifact would not).
+bool confirm(std::vector<double> x, std::vector<State> z, const Params& p, State& wall) {
+  std::vector<double> xf;
+  std::vector<State> zf;
+  for (size_t j = 0; j + 1 < x.size(); ++j) {
+    xf.push_back(x[j]);
+    zf.push_back(z[j]);
+    xf.push_back(0.5 * (x[j] + x[j + 1]));
+    State m;
+    for (int i = 0; i < 12; ++i) m[i] = 0.5 * (z[j][i] + z[j + 1][i]);
+    zf.push_back(m);
+  }
+  xf.push_back(x.back());
+  zf.push_back(z.back());
+  try {
+    newton(xf, zf, p);
+  } catch (const std::exception& e) {
+    std::printf("  refinement: %s\n", e.what());
+    return false;
+  }
+  wall = zf[0];
+  double change = 0;  // largest relative change of a wall state, scale at least 1
+  int worst = 0;
+  for (int i = 0; i < 12; ++i) {
+    double c = std::fabs(zf[0][i] - z[0][i]) / std::max(1.0, std::fabs(z[0][i]));
+    if (c > change) change = c, worst = i;
+  }
+  std::printf("  refinement: largest relative wall change %.2e (state %d)\n", change, worst);
+  return change < 1e-2;
+}
+
+int deflate(double L, const std::string& out_path, const Params& p) {
+  std::vector<double> x = wall_mesh(L, 401, 2e-3);
+  std::vector<std::vector<State>> roots;
+  std::ofstream out(out_path);
+  out.precision(12);
+  out << "root,start_rate,start_theta0,deflated_against,newton_steps,f2_0,theta_0,th1_0,phi_0,ph1_0,g1_0,ch1_0,f_L,"
+         "m_far,confirmed_801_nodes,f2_0_801\n";
+  int tried = 0;
+  for (double rate : {0.5, 1.0, 2.0, 4.0}) {
+    for (int t = 0; t <= 12; ++t) {
+      double theta0 = -0.5 + 0.25 * t;
+      for (int pass = 0; pass < 4; ++pass) {  // plain Newton first, then deflated against the roots so far
+        std::vector<State> z(x.size());
+        for (size_t j = 0; j < x.size(); ++j) z[j] = guess(x[j], p, rate, theta0);
+        ++tried;
+        int known = (int)roots.size();
+        int steps = deflated_newton(x, z, p, pass == 0 ? std::vector<std::vector<State>>{} : roots);
+        if (steps < 0) break;
+        bool is_new = true;
+        for (const auto& r : roots)
+          if (rms(z, &r) < 1e-6 * std::max(1.0, rms(r))) is_new = false;
+        if (!is_new) {
+          if (pass == 0) continue;  // plain Newton found a known root: now deflate it
+          break;
+        }
+        roots.push_back(z);
+        State wall{};
+        bool ok = confirm(x, z, p, wall);
+        double A = 1 + (p.theta_w - 1) * z.back()[6];
+        double m = p.Pr * p.kappa * z.back()[0] / (1 + p.Nr * A * A * A);
+        out << roots.size() << ',' << rate << ',' << theta0 << ',' << known << ',' << steps << ',' << z[0][2] << ','
+            << z[0][6] << ',' << z[0][7] << ',' << z[0][8] << ',' << z[0][9] << ',' << z[0][5] << ',' << z[0][11]
+            << ',' << z.back()[0] << ',' << m << ',' << (ok ? 1 : 0) << ',' << (ok ? wall[2] : NAN) << '\n';
+        std::printf("root %zu from rate %.2f theta0 %.2f (deflated against %d): f''(0) %.6f theta(0) %.6f f(L) %.6f "
+                    "m %.4f, %s on 801 nodes\n", roots.size(), rate, theta0, known, z[0][2], z[0][6], z.back()[0], m,
+                    ok ? "confirmed" : "NOT confirmed");
+      }
+    }
+  }
+  std::printf("%d Newton runs from %d starts; %zu distinct solutions; wrote %s\n", tried, 52, roots.size(),
+              out_path.c_str());
+  return 0;
+}
+
 int main(int argc, char** argv) {
+  if (argc > 1 && std::string(argv[1]) == "--deflate") {
+    try {
+      Params p = read_case(argc > 3 ? argv[3] : "configs/physical-case-pending.json");
+      std::filesystem::create_directories("engine/out");
+      return deflate(argc > 2 ? std::atof(argv[2]) : 20.0, "engine/out/engine_branches.csv", p);
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "error: %s\n", e.what());
+      return 1;
+    }
+  }
   if (argc > 1 && std::string(argv[1]) == "--estimate") {
     if (argc < 4) {
       std::fprintf(stderr, "usage: bvp_engine --estimate <pinn.csv> <out.csv> [case.json]\n");

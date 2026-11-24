@@ -4,12 +4,14 @@ This folder holds the plans that join two separate works into one journal paper.
 
 **Note, 2026-11-23:** parameter continuation or warm starts through other kappa, b, Da values are ruled out for the BVP PINN. The equations, boundary conditions and locked values are fixed as given. Read the continuation parts of these plans as history.
 
+**Note, 2026-11-24:** these plans were written on 2026-11-19, before the BVP code existed. For the BVP side, [PINN_PLAN.md](../pinn/PINN_PLAN.md) and [IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) are current and win where they differ: all 12 conditions are built into the output (not soft), every arm ends with L-BFGS and Levenberg-Marquardt, runs are accepted by a rule without the reference (not picked by training residual), and results live in `results/<campaign>/`. Links here to the 2026-11-16 strategy and training proposal point to their archived copies.
+
 ## The two works
 
 | Work | Where it is done | Its plan |
 |---|---|---|
 | Lorenz-1960 PINN (conference paper extension) | Separate repository: ihmorol/lorenz1960-pinn | [Issue 43](https://github.com/ihmorol/lorenz1960-pinn/issues/43) |
-| Five-field BVP (reference and PINN) | This repository | [../docs/PRD.md](../plans/PRD.md), [../docs/PINN_PLAN.md](../pinn/PINN_PLAN.md), [../TODO.md](../plans/TODO.md) |
+| Five-field BVP (reference and PINN) | This repository | [PRD.md](../plans/PRD.md), [PINN_PLAN.md](../pinn/PINN_PLAN.md), [TODO.md](../plans/TODO.md) |
 
 Both works test the same two structures:
 

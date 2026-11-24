@@ -21,7 +21,7 @@ In Claude Code, type `/<skill-name>` in the message box, or ask the agent to use
 | Skill | Use it for here | Invoke |
 |---|---|---|
 | `benchmark-and-mms-planner` | Planning manufactured-solution and benchmark verification with pass/fail rules. Already used for gates G1 to G6 | `/benchmark-and-mms-planner` |
-| `convergence-study` | Observed order, Richardson extrapolation and grid convergence index for the reference study (SPEC V3 to V5) | `/convergence-study` |
+| `convergence-study` | Observed order, Richardson extrapolation and grid convergence index for the reference study (SPEC V4 and V5) | `/convergence-study` |
 | `differentiation-schemes` | Choosing derivative stencils, for example in an optional finite-difference cross-check | `/differentiation-schemes` |
 | `numerical-stability` | Stiffness and conditioning checks (the large wall coefficients) | `/numerical-stability` |
 | `linear-solvers` | Conditioning of the highest-derivative matrix M | `/linear-solvers` |

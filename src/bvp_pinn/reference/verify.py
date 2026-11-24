@@ -1,4 +1,8 @@
-"""Solver-level checks from docs/reference-solver/SPEC_reference_solutions.md section 5 (V3, V8 and V12)."""
+"""Solver-level checks from docs/reference-solver/SPEC_reference_solutions.md section 5 (V8 and V12).
+
+Both work on the locked case only. The manufactured-solution check (old V3) was removed on
+2026-11-24: it solved a forced version of the equations (AGENTS.md section 3).
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -7,46 +11,6 @@ from scipy.interpolate import make_interp_spline
 
 from . import equations as eq
 from . import solver as sv
-
-# Manufactured states: smooth, keep theta in (0, 0.5) so A = 1 + c*theta stays positive.
-_A = np.array([0.2, 0.5, -0.3, 0.4, 0.1, -0.2, 0.3, -0.4, 0.2, 0.3, 0.6, -0.5])
-_R = np.array([1.0, 1.2, 0.8, 1.5, 0.9, 1.1, 1.3, 0.7, 1.0, 1.4, 0.6, 1.2])
-_C = np.array([0.1, 0, 0, 0, 0, 0, 0.1, 0, -0.05, 0, 0, 0])
-_D = np.full(12, 0.05)
-
-
-def manufactured(eta):
-    e = np.exp(-_R[:, None] * eta)
-    z = _A[:, None] * e + _C[:, None] + _D[:, None] * np.cos(eta)
-    dz = -_R[:, None] * _A[:, None] * e - _D[:, None] * np.sin(eta)
-    return z, dz
-
-
-def mms_order(p, L, meshes):
-    """V3: nodal error of solve_bvp on fixed uniform meshes against a manufactured solution.
-
-    The forcing is dz_m - F(eta, z_m), and the boundary function is shifted by its
-    value at z_m, so z_m solves the forced problem exactly. Meshes must double.
-    """
-    def fun(e, z):
-        zm, dzm = manufactured(e)
-        return eq.rhs(e, z, p) + dzm - eq.rhs(e, zm, p)
-
-    end = manufactured(np.array([0.0, L]))[0]
-    shift = eq.boundary(end[:, 0], end[:, 1], p)
-    bc = lambda za, zb: eq.boundary(za, zb, p) - shift
-
-    errors, kept = [], []
-    for n in meshes:
-        x = np.linspace(0.0, L, n)
-        res = solve_bvp(fun, bc, x, manufactured(x)[0] + 0.02 * np.exp(-x),
-                        tol=1e-12, bc_tol=1e-12, max_nodes=n)
-        kept.append(bool(res.x.size == n))
-        errors.append(float(np.max(np.abs(res.y - manufactured(res.x)[0]))))
-    orders = [float(np.log2(errors[i] / errors[i + 1])) for i in range(len(errors) - 1)]
-    return {"L": L, "meshes": list(meshes), "nodal_max_errors": errors, "observed_orders": orders,
-            "mesh_kept_fixed": all(kept)}
-
 
 def core_then_chi(p, L, tol, settings, guess, reference):
     """V8: solve the ten-state core (no chi), then chi as a linear BVP on the fixed core.

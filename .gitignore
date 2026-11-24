@@ -9,4 +9,6 @@ runs/
 *.log
 engine/out/*
 !engine/out/engine_convergence.csv
+!engine/out/engine_branches.csv
 engine/bvp_engine
+results/*-dry/

@@ -1,5 +1,5 @@
 {
-  "status": "pilot defaults, 2026-11-21; training options set on 2026-11-23 from the B0 runs in docs/pinn/IMPLEMENTATION_NOTES.md sections 7.1 and 7.2 (seed 0 only): log input map, smooth start profile with a zero last layer, the log residual scale for Adam and L-BFGS, and for B0 a final Levenberg-Marquardt stage on the balanced scale (refine lbfgs:log+lm:balanced). Runs are chosen by the Newton-step error estimate, not by their loss. best_checkpoint and resample_every stay off until a run compares them.",
+  "status": "pilot defaults of 2026-11-21, training options from the B0 runs of 2026-11-23 (docs/pinn/IMPLEMENTATION_NOTES.md sections 7.1 to 7.3): log input map, smooth start profile with a zero last layer, the log residual scale for Adam and L-BFGS, then Levenberg-Marquardt on the balanced scale. Since 2026-11-24 every arm uses the same refine chain (B1 included, through the block Levenberg-Marquardt of pinn/lm.py), so all arms end on the same objective with the same optimizer. n_points, the budgets and the window edges are still pilot values until P2b and P3 freeze them.",
   "common": {
     "L": 20.0,
     "width": 40,
@@ -35,13 +35,12 @@
     "weight_cap": 1000.0,
     "best_checkpoint": false,
     "resample_every": 0,
-    "refine": "lbfgs",
+    "refine": "lbfgs:log+lm:balanced",
     "lm_iters": 260
   },
   "arms": {
     "B0": {
-      "structure": "single",
-      "refine": "lbfgs:log+lm:balanced"
+      "structure": "single"
     },
     "B1": {
       "structure": "windows"
@@ -56,5 +55,28 @@
       "replay": "self",
       "replay_weight": 1.0
     }
+  },
+  "selection": {
+    "note": "Acceptance rule applied after training without the reference (pinn/estimate.py, PINN_PLAN section 3). Declared 2026-11-24, before the campaign; our choice. score_max: estimated relative wall error, between the converged runs of IMPLEMENTATION_NOTES 7.3 (4e-5, 3e-4) and the failed ones (0.04 and above). tail_share_max: reference A has 0.003, failed runs 0.6 and 1.8. boundary_max: exact mode meets B1 to B12 to rounding.",
+    "score_max": 0.001,
+    "tail_share_max": 0.05,
+    "boundary_max": 1e-08
+  },
+  "campaign": {
+    "note": "TODO phase P4. Run with python -m bvp_pinn.pinn.campaign; evaluate with python -m bvp_pinn.evaluation.evaluate.",
+    "name": "P4",
+    "arms": [
+      "B0",
+      "B1",
+      "B2",
+      "B3"
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
   }
 }

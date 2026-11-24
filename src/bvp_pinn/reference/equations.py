@@ -2,7 +2,10 @@
 
 Transcribed from docs/problem/equations.md. tests/test_equations_sympy.py compares
 this file with a separate SymPy transcription, so a copying error here has to
-be made twice in the same way to pass.
+be made twice in the same way to pass. Both transcriptions start from equations.md,
+so that test checks the code against equations.md, not against the source page. The
+check against the source page is the visual one recorded in equations.md (by
+eye, on the enlarged page; AGENTS.md section 3).
 
 State order (12 rows): f, f1, f2, f3, g, g1, theta, th1, phi, ph1, chi, ch1.
 Highest derivatives (5 rows): f4, g2, th2, ph2, ch2.
@@ -170,7 +173,7 @@ def b4_stable(th0, th1_0, p):
     return -th1_0 - p["Bi"] * (1 - th0) - p["Rd"] * Qw
 
 
-def far_conditions(zb, L, p):
+def far_conditions(zb, L, p, form="local"):
     """Asymptotic forms of theta(inf)=0 and phi(inf)=0, imposed at eta=L (Lentini and Keller, 1980).
 
     Where f1, f2 and g have died out (f -> f_L), Eqs. 16 and 17 reduce to
@@ -178,21 +181,27 @@ def far_conditions(zb, L, p):
     with m = Pr*kappa*f_L/(1+Nr*A^3) and mp = Le*Pr*kappa*f_L. The decaying solutions are
     theta = C*q^-m and phi = E*q^-mp + P*q^-m; these two conditions keep only them.
     They need m > 0. Dropped nonlinear and source terms leave a slow drift that the L study measures.
+
+    form "local" (the reference) takes A at theta(L); form "unit" takes A = 1, its eta -> infinity
+    limit. Both impose theta, phi -> 0 to the same order. They approach the eta -> infinity values
+    from opposite sides, so solving with both gives a far-field error bar (reference audit D2).
     """
     f, th, th1, ph, ph1 = zb[0], zb[6], zb[7], zb[8], zb[9]
     q = L + p["kappa"]
-    A = 1.0 + (p["theta_w"] - 1.0) * th
+    if form not in ("local", "unit"):
+        raise ValueError(f"unknown far-condition form {form!r}")
+    A = 1.0 + (p["theta_w"] - 1.0) * th if form == "local" else 1.0
     m = p["Pr"] * p["kappa"] * f / (1.0 + p["Nr"] * A**3)
     mp = p["Le"] * p["Pr"] * p["kappa"] * f
     return th1 + m * th / q, ph1 + (mp * ph - p["Nt"] / p["Nb"] * m * th) / q
 
 
-def boundary(za, zb, p, stable=True, L=None):
+def boundary(za, zb, p, stable=True, L=None, far_form="local"):
     """B1 to B12 as an array. za is the state at eta=0, zb at eta=L."""
-    return np.array(boundary_terms(za, zb, p, stable, L))
+    return np.array(boundary_terms(za, zb, p, stable, L, far_form))
 
 
-def boundary_terms(za, zb, p, stable=True, L=None):
+def boundary_terms(za, zb, p, stable=True, L=None, far_form="local"):
     """B1 to B12 as a list. Plain arithmetic only, so PyTorch tensors work too.
 
     With L given, B10 and B11 become the asymptotic conditions of far_conditions. chi keeps
@@ -210,5 +219,5 @@ def boundary_terms(za, zb, p, stable=True, L=None):
         zb[1], zb[2], zb[4], zb[6], zb[8], zb[10],
     ]
     if L is not None:
-        out[9], out[10] = far_conditions(zb, L, p)
+        out[9], out[10] = far_conditions(zb, L, p, far_form)
     return out

@@ -21,7 +21,7 @@ Work the phases in order. A phase is done only when its definition of done holds
 ## R1. First-order system and boundary function (done 2026-11-19)
 
 - [x] NumPy residuals R14 to R18 and boundary errors B1 to B12 (`src/bvp_pinn/reference/equations.py`)
-- [x] Independent SymPy transcription; agreement at random states with locked and altered parameters (SPEC V1)
+- [x] Independent SymPy transcription; agreement at random states at the locked values (SPEC V1; altered values removed 2026-11-24)
 - [x] Matrix M and the linear solve for H; R(H) - R(0) = M*H (SPEC V2)
 - [x] B4 stable form equals the original form
 - [x] `rhs` and `boundary` in solve_bvp's shapes
@@ -29,7 +29,9 @@ Work the phases in order. A phase is done only when its definition of done holds
 
 **Done when:** all tests pass and the other member has reviewed every term. Tests pass; review pending.
 
-## R2. Manufactured-solution verification (done 2026-11-19)
+## R2. Manufactured-solution verification (done 2026-11-19, removed 2026-11-24)
+
+Removed on 2026-11-24 with its code and test: it solved a forced version of the equations, and nothing may change Eqs. 14 to 18 (AGENTS.md section 3). The items below are history.
 
 - [x] Manufactured states, forcing and shifted boundary function (SPEC V3)
 - [x] Fixed meshes 81 to 641 with the mesh confirmed unchanged
@@ -52,8 +54,9 @@ Work the phases in order. A phase is done only when its definition of done holds
 - [x] Core plus chi cross-check (SPEC V8): pass
 - [x] Second, independent reference by Runge-Kutta multiple shooting (SPEC V10): agrees with solve_bvp to 3e-10 (branch A)
 - [x] Table TB1: [reference/study.md](../../reference/study.md)
-- [x] Known-answer checks (SPEC V11): published curved-sheet table and exact flat-sheet solutions; saved-curve slope check (SPEC V12); figures redrawn on a linear eta axis ([reference/figures/captions.md](../../reference/figures/captions.md))
-- [ ] Supervisor answers: questions 7 to 9 (target branch, far-field treatment, chi at infinity)
+- [x] Known-answer checks (old SPEC V11, removed 2026-11-24 because they solved other parameter values); saved-curve slope check (SPEC V12); figures redrawn on a linear eta axis ([reference/figures/captions.md](../../reference/figures/captions.md))
+- [ ] Supervisor answers: questions 7 to 10 (target branch, far-field treatment, chi at infinity, f bounded at infinity)
+- [x] Reference audit fixes D1 to D7 (2026-11-24): [REFERENCE_AUDIT](../reviews/REFERENCE_AUDIT_2026-11-23.md), follow-up section
 
 **Done when:** SPEC V4 to V8 pass and L is fixed with a dated note. Met for the fixed-L problem (L = 20 with asymptotic far conditions, [configs/reference.json](../../configs/reference.json)). The strict far-field check fails because of phi(0) and chi, see SPEC section 8.
 
@@ -68,7 +71,7 @@ Work the phases in order. A phase is done only when its definition of done holds
 ## P1. PINN building blocks (gate G1, done 2026-11-21)
 
 - [x] PyTorch residuals and boundary errors, by calling the same `reference/equations.py` functions; test against NumPy at identical states
-- [x] Nested autograd derivatives up to order 4 for f and order 2 for the others; test on known functions
+- [x] Derivatives up to order 4 for f and order 2 for the others (Taylor-mode jets since 2026-11-22, equal to nested autograd); test on known functions
 - [x] Network: input eta only (scaled inside the model), five outputs, tanh, float64
 - [x] Boundary layer (TFC) with soft, linear and exact modes ([docs/pinn/BC_ENFORCEMENT_REVIEW.md](../pinn/BC_ENFORCEMENT_REVIEW.md)); test that its conditions hold for random weights
 - [x] Gradient-norm loss weights (Wang et al. 2023); each of the 5 equation terms and 12 boundary errors logged separately
@@ -80,42 +83,40 @@ Details: [docs/pinn/IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md). I
 
 ## P2. Arm B0 pilot (basic single network)
 
-- [x] Wall-clustered collocation points; Adam, then L-BFGS with rollback
-- [ ] P2a: boundary mode pilot, rule declared in IMPLEMENTATION_NOTES section 5.1 (issue #3)
-- [ ] P2b: sizes and budgets in configs/pinn.json, each with a dated note (issue #4)
-- [ ] Pilot at seed 0; evaluate against the reference only after the run ends
-- [x] B0 fix ladder at seed 0 (2026-11-23): exact mode, log map, start profile, residual scale, BFGS and L-BFGS refine. Cold wall gone; heads to branch A; not converged (final run E7: theta(0) 0.197 against 0.250). [IMPLEMENTATION_NOTES](../pinn/IMPLEMENTATION_NOTES.md) section 7.1
-- [x] Checks without the reference: self check (decay powers m, mp), Newton-step error estimate, manufactured-solution tool
-- [x] B0 to the reference at seed 0 (2026-11-23): balanced scale and per-point Levenberg-Marquardt; run X3 matches the wall values to 5e-5 to 2.7e-4 relative. [IMPLEMENTATION_NOTES](../pinn/IMPLEMENTATION_NOTES.md) section 7.2
-- [x] Full pipeline from scratch, seeds 0 and 1 (2026-11-23): every wall value within 4e-4 relative of the reference, seed 0 within 6e-5. [IMPLEMENTATION_NOTES](../pinn/IMPLEMENTATION_NOTES.md) section 7.3
-- [ ] Seeds 2 to 4 with the frozen settings and 2 000 points (campaign rule G6), each chosen by the error-estimate score
-- [ ] Arms B1 to B3 with the same settings (LM needs one network, so B1 uses L-BFGS)
-- [ ] Manufactured-solution check with the new pipeline, run long enough to pass
-- [ ] Reference audit fixes D1 to D4, D6, D7 (records and tests only): [REFERENCE_AUDIT](../reviews/REFERENCE_AUDIT_2026-11-23.md)
-- [ ] Seeds 1 and 2 with the frozen B0 settings, then compare best_checkpoint and resample_every
+- [x] Wall-clustered collocation points; Adam, then refine stages with rollback
+- [x] P2a (2026-11-22): boundary mode pilot by the rule in IMPLEMENTATION_NOTES section 5.1; exact mode frozen (issue #3)
+- [x] B0 fix ladder at seed 0 (2026-11-23): exact mode, log map, start profile, residual scale, BFGS and L-BFGS refine. [IMPLEMENTATION_NOTES](../pinn/IMPLEMENTATION_NOTES.md) section 7.1
+- [x] Checks without the reference: self check (decay powers m, mp, tail fit), Newton-step error estimate
+- [x] B0 to the reference at seed 0 (2026-11-23): balanced scale and per-point Levenberg-Marquardt; run X3. Section 7.2
+- [x] Full pipeline from scratch, seeds 0 and 1 (2026-11-23), 1 000 points: every wall value except phi(0) within 4e-4 relative; phi(0) 4.3e-4 and 6.2e-3. Sections 7.3 and 7.4
+- [x] Acceptance rule declared and tested (2026-11-24); on the 13 pilot runs it accepts the three that match the reference. Section 7.4
+- [ ] Decide before the campaign whether phi(0) joins the acceptance score (section 7.4; it would reject seed 1 and X3)
+- [ ] P2b: one B0 run at 2 000 points with the campaign settings; freeze `n_points`, `adam_steps`, `lbfgs_iters` and `lm_iters` with dated notes (issue #4). LM cost is measured: 24 s per step at 2 000 points
+- [ ] Optional, after P2b: compare `best_checkpoint` and `resample_every` (both off now)
 
-**Done when:** B0 trains end to end and writes a complete run folder (CODING_RULES section 7). The pilot errors are recorded, whatever they are.
+**Done when:** B0 trains end to end and writes a complete run folder (CODING_RULES section 7), and the settings are frozen. Met for the first part; the freeze is pending.
 
 ## P3. Arms B1 to B3 and pilots
 
-- [ ] B1: K separate window networks trained together with interface continuity (PINN_PLAN section 2)
-- [ ] B2: one network, windows added from the wall outward, physics replay, all 12 boundary conditions every stage
-- [ ] B3: as B2 with self-replay of frozen outputs
-- [ ] Unit tests for interface and replay losses; pilots at seed 0; replay weight chosen from 0.1, 1, 10 by training residual only
+- [x] B1, B2, B3 in code (2026-11-21), with the same refine chain as B0 since 2026-11-24 (block Levenberg-Marquardt for B1's window networks); unit tests for the interface, replay and LM losses; every arm runs end to end in a test
+- [ ] Pilots at seed 0 (issue #5): window edges; replay weight from 0.1, 1, 10 by training residual only; B1 interface behaviour and per-window errors (FB5)
+- [ ] Freeze the window edges, budgets and replay weight in configs/pinn.json with dated notes
 
-**Done when:** all four arms run end to end, and the window edges, budgets and weights are frozen in configs.
+**Done when:** all four arms run end to end (met), and the window edges, budgets and weights are frozen in configs.
 
 ## P4. Campaign
 
-- [ ] B0 to B3 with seeds 0 to 4 (20 runs), `torch.set_num_threads(1)`
-- [ ] Failures logged in `results/failures.md` and kept in tables
+- [x] Campaign runner (2026-11-24): `python -m bvp_pinn.pinn.campaign`, tagged runs, resumable, `--jobs`; a dry campaign of all 20 runs passed
+- [ ] Colab: time one short run on CPU and on GPU in float64; check the image's Python against the pin (issue #6)
+- [ ] B0 to B3 with seeds 0 to 4 (20 runs), one thread each
+- [ ] Failed and rejected runs kept in every table, one line each in `results/P4/failures.md` (written by `evaluate`)
 
-**Done when:** all 20 run folders are complete and `results/summary.csv` rebuilds from them.
+**Done when:** all 20 run folders are complete and `results/P4/summary.csv` rebuilds from them.
 
 ## P5. Evaluation, figures and understanding
 
-- [ ] Metrics in PINN_PLAN section 4; figures and tables FB1 to FB5, TB2
-- [ ] Classical comparison: solve_bvp time to reach each arm's median error; repeat 5 times on one thread
+- [x] Code (2026-11-24): metrics in PINN_PLAN section 4; FB1 to FB5, FX1, TB2, TX1; failures.md; solve_bvp timing. Tested on the dry campaign
+- [ ] On the campaign: `bvp_pinn.evaluation.evaluate`, then `.classical` (5 repeats, one thread, the machine the runs used), then `.plots`
 - [ ] Answer the questions in PINN_PLAN section 7, each with figure and run IDs
 
 **Done when:** the results memo is written and every number traces to a run ID.

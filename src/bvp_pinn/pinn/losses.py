@@ -46,10 +46,10 @@ def equation_mse(model, groups, p, scale=None):
     """
     total, n = 0.0, 0
     for k, eta in groups:
-        eta = eta.detach().clone().requires_grad_(True)
+        eta = eta.detach()
         z, H = states(model[k], eta)
         r = residuals(eta, z, H, p)
-        s = residual_scale(eta.detach(), p, scale)
+        s = residual_scale(eta, p, scale)
         if s is not None:
             r = r * s
         total = total + r.pow(2).sum(0)
@@ -59,19 +59,24 @@ def equation_mse(model, groups, p, scale=None):
 
 def boundary_errors(model, p, L):
     """B1 to B12 as a (12,) tensor: the wall from the first network, eta = L from the last."""
-    e0 = torch.zeros(1, 1).requires_grad_(True)
-    eL = torch.full((1, 1), float(L)).requires_grad_(True)
+    e0 = torch.zeros(1, 1)
+    eL = torch.full((1, 1), float(L))
     return boundary(states(model[0], e0)[0], states(model[-1], eL)[0], p, L)
+
+
+def interface_jumps(model):
+    """B1 arm: jump of each of the 12 states at each inner window edge, as one flat tensor."""
+    jumps = []
+    for left, right in zip(model[:-1], model[1:]):
+        e = torch.full((1, 1), float(right.lo))
+        zl, zr = states(left, e)[0], states(right, e)[0]
+        jumps += [a - b for a, b in zip(zl, zr)]
+    return torch.cat(jumps).reshape(-1)
 
 
 def interface_mse(model):
     """B1 arm: mean square jump of the 12 states between neighbouring window networks."""
-    jumps = []
-    for left, right in zip(model[:-1], model[1:]):
-        e = torch.full((1, 1), float(right.lo)).requires_grad_(True)
-        zl, zr = states(left, e)[0], states(right, e)[0]
-        jumps += [a - b for a, b in zip(zl, zr)]
-    return torch.cat(jumps).pow(2).mean()
+    return interface_jumps(model).pow(2).mean()
 
 
 def self_replay_mse(model, eta, frozen):

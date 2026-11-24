@@ -6,19 +6,19 @@
   B3  as B2, but earlier windows are held to the network's own outputs from the stage before (self-replay)
 
 All 12 boundary conditions hold in every stage: built into the output, or as loss terms
-(cfg["bc_mode"], see constraints.py). Adam runs with gradient-norm weights; then a refine stage
-(cfg["refine"]: L-BFGS, full BFGS or Levenberg-Marquardt) runs on the full problem with the weights frozen, and is
-kept only if the monitor loss improves. The reference solution is never used here.
+(cfg["bc_mode"], see constraints.py). Adam runs with gradient-norm weights; then the refine
+stages (cfg["refine"]) run on the full problem with the weights frozen. Every arm ends on the
+same objective with the same refine chain. Each refine stage is kept only if its monitor loss
+improves. The reference solution is never used here.
 
-Options added on 2026-11-23 (docs/plans/LITERATURE_GAP_STRATEGY.md section 6). Each defaults to
-the old behaviour, so old configs give the same runs:
-  residual_scale   "none" or "log": fixed factor (eta + b)^order on each residual (losses.py)
+Options (all in configs/pinn.json; each defaults to the behaviour before it existed):
+  residual_scale   "none", "log" or "balanced": a fixed positive factor on each residual (losses.py)
   weight_cap       upper bound on the gradient-norm weights
   best_checkpoint  restore the Adam state with the lowest monitor loss (one-stage arms)
   resample_every   new stratified training points every this many Adam steps (one network only)
-  refine           "lbfgs", "bfgs" (dense inverse Hessian, bfgs.py) or "lm" (Levenberg-Marquardt, lm.py),
-                   or several in order joined by "+", such as "lbfgs+lm". lm_iters sets the LM steps
-  residual_scale   also "balanced" (losses.py), chosen on 2026-11-23 after runs X1 and X2
+  refine           "lbfgs", "bfgs" (dense inverse Hessian, bfgs.py) or "lm" (Levenberg-Marquardt,
+                   lm.py), or a chain joined by "+", each with an optional scale after a colon,
+                   such as "lbfgs:log+lm:balanced". lbfgs_iters and lm_iters set the budgets
 """
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ import time
 import numpy as np
 import torch
 
+from ..config import check_locked
 from . import bfgs, lm
 from .constraints import SOFT_BCS
 from .losses import GradNormWeights, boundary_errors, equation_mse, interface_mse, self_replay_mse
@@ -80,7 +81,10 @@ def weighted(terms, replay, w, cfg):
 
 
 def train(model, p, cfg, train_pts, monitor_pts, log, seed=0):
-    """Run all stages, then the refine stage. Returns a status dict; log(row) receives history rows."""
+    """Run all stages, then the refine stage. Returns a status dict; log(row) receives history rows.
+
+    p must be exactly the 22 locked supervisor values: the problem is fixed (AGENTS.md section 3)."""
+    check_locked(p)
     stages = plan_stages(cfg, train_pts)
     weights = GradNormWeights(len(loss_parts(model, p, cfg, stages[0])[0]), cfg["weight_alpha"],
                               cfg.get("weight_cap"))
@@ -102,9 +106,8 @@ def train(model, p, cfg, train_pts, monitor_pts, log, seed=0):
     # Training-side numbers that compare across arms and modes (no weights, no reference).
     monitor = full_problem(cfg, monitor_pts)["groups"]
     status["monitor_equation_mse"] = equation_mse(model, monitor, p).detach().tolist()
-    final_scale = cfg.get("refine", "lbfgs").split("+")[-1].partition(":")[2] or cfg.get("residual_scale")
-    status["final_residual_scale"] = final_scale
-    status["monitor_scaled_equation_mse"] = equation_mse(model, monitor, p, final_scale).detach().tolist()
+    status["final_residual_scale"] = final_scale(cfg)
+    status["monitor_scaled_equation_mse"] = equation_mse(model, monitor, p, final_scale(cfg)).detach().tolist()
     status["final_boundary_abs"] = boundary_errors(model, p, cfg["L"]).detach().abs().tolist()
     status["self_check"] = self_check(model, p, cfg["L"], monitor_pts)
     status["result"] = "finished"
@@ -158,25 +161,25 @@ def refine_phase(model, p, cfg, w, train_pts, monitor_pts, log, start):
     far tail into the decaying state, and the balanced scale then lets Levenberg-Marquardt
     finish. The balanced scale from the start left the tail almost flat (X4, m = 0.013)."""
     methods = cfg.get("refine", "lbfgs").split("+")
+    final = {**cfg, "residual_scale": final_scale(cfg)}
+    before = monitor_loss(model, p, final, w, monitor_pts)  # both ends on the last stage's scale
     stages = []
     for item in methods:
         method, _, scale = item.partition(":")
         c = {**cfg, "residual_scale": scale} if scale else cfg
         stages.append(refine_once(model, p, c, w, train_pts, monitor_pts, log, start, method))
-    last = methods[-1].partition(":")[2]
     out = {k: v for k, v in stages[-1].items()}
-    before = stages[0]["monitor_before_refine"]
-    after = monitor_loss(model, p, {**cfg, "residual_scale": last} if last else cfg, w, monitor_pts)
-    accepted = any(s["refine_accepted"] for s in stages)
-    seconds = sum(s["refine_seconds"] for s in stages)
-    calls = sum(s["refine_evaluations"] for s in stages)
-    out.update({"refine": "+".join(methods), "refine_stages": stages, "refine_seconds": seconds,
-                "refine_evaluations": calls, "monitor_before_refine": before, "monitor_after_refine": after,
-                "refine_accepted": accepted})
-    # Old names, so evaluate.py and earlier run folders keep working.
-    out.update({"lbfgs_evaluations": calls, "lbfgs_seconds": seconds, "monitor_before_lbfgs": before,
-                "monitor_after_lbfgs": after, "lbfgs_accepted": accepted})
+    out.update({"refine": "+".join(methods), "refine_stages": stages,
+                "refine_seconds": sum(s["refine_seconds"] for s in stages),
+                "refine_evaluations": sum(s["refine_evaluations"] for s in stages),
+                "monitor_before_refine": before, "monitor_after_refine": monitor_loss(model, p, final, w, monitor_pts),
+                "refine_accepted": any(s["refine_accepted"] for s in stages)})
     return out
+
+
+def final_scale(cfg):
+    """The residual scale of the last refine stage: the objective a finished run is judged on."""
+    return cfg.get("refine", "lbfgs").split("+")[-1].partition(":")[2] or cfg.get("residual_scale")
 
 
 def refine_once(model, p, cfg, w, train_pts, monitor_pts, log, start, method):
@@ -212,7 +215,7 @@ def refine_once(model, p, cfg, w, train_pts, monitor_pts, log, start, method):
         opt.step(closure)
         info = {}
     elif method == "lm":
-        info = lm.minimize(model, p, cfg, train_pts, cfg.get("lm_iters", cfg["lbfgs_iters"]),
+        info = lm.minimize(model, p, cfg, stage, w, cfg["lm_iters"],
                            log=lambda r: log({"stage": "refine", **r, "seconds": round(time.perf_counter() - start, 3)}))
     else:
         raise ValueError(f"unknown refine {method!r}")

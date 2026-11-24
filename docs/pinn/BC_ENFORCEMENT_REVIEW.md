@@ -1,6 +1,8 @@
 # Boundary condition enforcement: review and recommendation
 
-Date: 2026-11-21. Status: literature review and design sketch. Nothing here has been trained or run, except one small matrix check marked **[our check]**.
+Date: 2026-11-21. Status: literature review and design sketch, written before any run, except one small matrix check marked **[our check]**.
+
+**Outcome (2026-11-22):** the pilot rule of section 8 kept exact mode; soft and linear runs settled near theta = 0 at the wall. All arms use exact mode, so all 12 conditions hold by construction (issue #3; [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 7).
 
 Related files: [PINN_PLAN.md](PINN_PLAN.md) (arms B0 to B3), [equations.md](../problem/equations.md) (Eq. 19 and the B errors), [literature-synthesis.md](../literature/literature-synthesis.md) section 3, [SPEC_reference_solutions.md](../reference-solver/SPEC_reference_solutions.md) section 8.
 

@@ -2,6 +2,8 @@
 
 ## Research brief
 
+**Arm names (note of 2026-11-24):** B4, B5 and B6 in this file are the variants of the archived 2026-11-16 strategy (B4 gradient-based weights, B5 a twelve-output first-order network, B6 exact endpoint conditions). They are not the current arms. The current arms are B0 to B3 of [PINN_PLAN.md](../pinn/PINN_PLAN.md); the weighting and exact-condition ideas became shared settings ([IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) section 5.1).
+
 Questions:
 
 1. Which prior works directly help with five physical outputs, a fourth-order equation, and coupled boundary penalties?

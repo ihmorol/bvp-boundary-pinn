@@ -4,8 +4,9 @@
     uv run python -m bvp_pinn.pinn.run --arm B2 --seed 0 --dry-run
     uv run python -m bvp_pinn.pinn.run --arm B0 --set init_from=runs/<run_id> adam_steps=0 refine=bfgs
 
-Writes runs/<run_id>/. Evaluation against the reference is a separate step
-(bvp_pinn.pinn.evaluate), so nothing here can read the reference (gate G5).
+Writes runs/<run_id>/, then applies the acceptance rule (estimate.py): error_estimate.json
+and selection.json. Evaluation against the reference is a separate step
+(bvp_pinn.evaluation.evaluate), so nothing here can read the reference (gate G5).
 """
 from __future__ import annotations
 
@@ -16,8 +17,9 @@ import torch
 
 from ..config import ROOT, load_case
 from . import model as nets
+from .estimate import assess_run
 from .points import make_points
-from .runs import RunFolder, resolve
+from .runs import RUNS, RunFolder, parse_set, resolve
 from .train import train
 
 
@@ -27,14 +29,18 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true", help="tiny settings to check the pipeline")
     ap.add_argument("--device", default="cpu", help="cpu or cuda")
+    ap.add_argument("--no-estimate", action="store_true", help="skip the error estimate and the acceptance rule")
     ap.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE",
                     help="override a config value, for example --set adam_steps=2000 replay_weight=10")
     args = ap.parse_args(argv)
-    overrides = {k: _number(v) for k, v in (s.split("=", 1) for s in args.set)}
-    return run(args.arm, args.seed, args.dry_run, args.device, **overrides)
+    return run(args.arm, args.seed, args.dry_run, args.device, assess=not args.no_estimate, **parse_set(args.set))
 
 
-def run(arm, seed, dry_run=False, device="cpu", **overrides):
+def run(arm, seed, dry_run=False, device="cpu", runs_root=RUNS, assess=True, **overrides):
+    """Train, save the run folder, then judge it. Returns the run folder path.
+
+    A run always solves Eqs. 14 to 18 with B1 to B12 at the locked values: resolve() refuses any
+    setting that names a physical value or another L, and train() checks the values."""
     cfg = resolve(arm, dry_run=dry_run, **overrides)
     torch.set_default_dtype(torch.float64)
     torch.set_default_device(device)
@@ -45,26 +51,21 @@ def run(arm, seed, dry_run=False, device="cpu", **overrides):
     if cfg.get("init_from"):  # continue from a finished run of the same network and problem
         model.load_state_dict(torch.load(ROOT / cfg["init_from"] / "model.pt", map_location=device))
     train_pts, monitor_pts = make_points(cfg, seed)
-    folder = RunFolder(cfg, seed)
+    folder = RunFolder(cfg, seed, runs_root)
     print(f"{folder.path.name}: {sum(x.numel() for x in model.parameters())} parameters, "
-          f"{len(train_pts)} points, device {device}")
+          f"{len(train_pts)} points, device {device}", flush=True)
     start = time.perf_counter()
     status = train(model, p, cfg, train_pts, monitor_pts, folder.log, seed)
     status["wall_seconds"] = time.perf_counter() - start
     folder.save(model, status, {"train": train_pts, "monitor": monitor_pts},
                 {"seed": seed, "case_sha256": case_sha, "device": device})
     print(f"{status['result']} in {status['wall_seconds']:.1f} s; "
-          f"refine ({status.get('refine')}) accepted: {status.get('refine_accepted')}; wrote {folder.path}")
+          f"refine ({status.get('refine')}) accepted: {status.get('refine_accepted')}; wrote {folder.path}", flush=True)
+    if assess:
+        torch.set_default_device("cpu")
+        verdict = assess_run(folder.path)
+        print(f"acceptance: {verdict['accepted']} {'; '.join(verdict['reasons'])}", flush=True)
     return folder.path
-
-
-def _number(text):
-    for cast in (int, float):
-        try:
-            return cast(text)
-        except ValueError:
-            pass
-    return text
 
 
 if __name__ == "__main__":
