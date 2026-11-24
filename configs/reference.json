@@ -1,7 +1,7 @@
 {
   "status": "researcher_chosen_numerical_settings",
   "date": "2026-11-19",
-  "note": "Numerical settings for the classical reference only. Physical values come from physical-case-pending.json and are never changed here. Spec: docs/SPEC_reference_solutions.md.",
+  "note": "Numerical settings for the classical reference only. Physical values come from physical-case-pending.json and are never changed here. Spec: docs/reference-solver/SPEC_reference_solutions.md.",
   "solver": "scipy.integrate.solve_bvp",
   "L_start": 10,
   "L_values": [

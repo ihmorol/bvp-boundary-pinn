@@ -1,6 +1,6 @@
 """Eqs. 14 to 19 in NumPy, in the first-order form used by solve_bvp.
 
-Transcribed from docs/equations.md. tests/test_equations_sympy.py compares
+Transcribed from docs/problem/equations.md. tests/test_equations_sympy.py compares
 this file with a separate SymPy transcription, so a copying error here has to
 be made twice in the same way to pass.
 
@@ -20,6 +20,22 @@ BC_NAMES = tuple(f"B{i}" for i in range(1, 13))
 def residuals(eta, z, H, p):
     """Return R14 to R18 stacked as (5, ...). Each target is zero."""
     return np.stack(residual_terms(eta, z, H, p))
+
+
+# What each term is, and whether it can go (docs/pinn/RUNTIME_STRATEGY.md section 2 has the sizes).
+#
+# Every term below is in the supervisor-confirmed Eqs. 14 to 18, so none is removed.
+# - delta_star terms (one per equation): exactly zero at the locked case (delta_star = 0). They
+#   need no extra derivative (f3, f2, g1, th1, ph1 exist anyway), so keeping them costs almost
+#   nothing. They stay so the code still matches the printed equation for any delta_star.
+# - No other term is negligible. On the branch-A reference the smallest ones (kappa/q*f*phi in
+#   Eq. 18, the f*f1 term in Eq. 14) are 4e-4 to 1e-3 of the largest. That is still far above
+#   the residual we need (about 1e-6 or lower), and far from the wall they shape the slow tails.
+# - The derivative orders are what the physics needs: f'''' comes from removing the pressure
+#   from the two momentum equations of a curved sheet. reduced_momentum below puts it back as
+#   one first-order unknown, so f needs only f'''. g, theta, phi, chi are second order (diffusion).
+# - In Eq. 14, the dipole force 2*beta_m/h**4*(...) is about 1250 at the wall and balances
+#   (1+Delta)*f''''. That thin, strong wall layer is a training difficulty, not a code artifact.
 
 
 def residual_terms(eta, z, H, p):
@@ -63,6 +79,45 @@ def residual_terms(eta, z, H, p):
            + p["Pe"] / Pr * (ch * ph2 + ch1 * ph1)
            - ds * eta / 2 * ph1)
     return R14, R15, R16, R17, R18
+
+
+def momentum_flux(eta, z, p):
+    """Phi in q*R14 = dPhi/deta - 2*kappa*f1**2/q. Uses f up to f3 only, plus g1 and theta.
+
+    Each part of R14 times q is an exact derivative except the kappa*f1**2 part:
+      (1+Delta)*q*(f4 + 2f3/q - f2/q^2 + f1/q^3) = d/deta[(1+Delta)*(q f3 + f2 - f1/q)]
+      q*(convective terms)                      = d/deta[kappa*(f f2 - f1^2 + f f1/q)] - 2 kappa f1^2/q
+      -q*(f2 + f1/q)/Da                         = d/deta[-q f1/Da]
+      -Delta*q*(g2 + g1/q)                      = d/deta[-Delta q g1]
+      -2 beta_m q/h^4 ((1/q - 4/h) theta + th1) = d/deta[-2 beta_m q theta/h^4]
+      delta_star part                           = d/deta[-delta_star/2 (q eta f2 + 2 q f1 - eta f1/2 - f/2)]
+    tests/test_equations_sympy.py proves the identity symbolically.
+    """
+    f, f1, f2, f3, g, g1, th = z[:7]
+    kappa, Delta, ds = p["kappa"], p["Delta"], p["delta_star"]
+    q, h = eta + kappa, eta + p["b"]
+    return ((1 + Delta) * (q * f3 + f2 - f1 / q)
+            + kappa * (f * f2 - f1**2 + f * f1 / q)
+            - 0.5 * ds * (q * eta * f2 + 2 * q * f1 - 0.5 * eta * f1 - 0.5 * f)
+            - q * f1 / p["Da"]
+            - Delta * q * g1
+            - 2 * p["beta_m"] * q * th / h**4)
+
+
+def reduced_momentum(eta, z, P, P1, p):
+    """Eq. 14 as two lower-order equations, with a pressure-like unknown P(eta).
+
+      Ra = Phi(eta, f..f3, g1, theta) - P        (third order in f)
+      Rb = P' - 2*kappa*f1**2/q                  (first order in P)
+
+    Equivalent to R14 = 0: if Ra = Rb = 0 then q*R14 = Phi' - 2 kappa f1^2/q = P' - 2 kappa f1^2/q = 0,
+    and q = eta + kappa >= kappa > 0, so R14 = 0. Conversely, from a solution of R14 set P = Phi.
+    P gets no boundary condition; B1, B2, B7, B8 still fix f, so the count of conditions is unchanged.
+    Both are divided by (1+Delta)*q, so Rb equals R14/(1+Delta) (the PINN's scaling) when P = Phi.
+    """
+    q = eta + p["kappa"]
+    s = (1 + p["Delta"]) * q
+    return (momentum_flux(eta, z, p) - P) / s, (P1 - 2 * p["kappa"] * z[1] ** 2 / q) / s
 
 
 def thermal_coefficient(z, p):

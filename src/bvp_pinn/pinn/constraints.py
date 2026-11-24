@@ -2,7 +2,7 @@
 
 The output is the raw network N plus fixed smooth shapes, each times how far N misses one
 condition. So those conditions hold for any network weights. Design and sources:
-docs/BC_ENFORCEMENT_REVIEW.md section 7.
+docs/pinn/BC_ENFORCEMENT_REVIEW.md section 7.
 
 Modes:
   soft    no change; all 12 conditions are loss terms

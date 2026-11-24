@@ -1,4 +1,4 @@
-"""Solver-level checks from docs/SPEC_reference_solutions.md section 5 (V3, V8 and V12)."""
+"""Solver-level checks from docs/reference-solver/SPEC_reference_solutions.md section 5 (V3, V8 and V12)."""
 from __future__ import annotations
 
 import numpy as np

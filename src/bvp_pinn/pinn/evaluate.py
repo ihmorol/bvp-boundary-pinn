@@ -1,4 +1,4 @@
-"""Compare finished runs with the classical reference (docs/PINN_PLAN.md section 4).
+"""Compare finished runs with the classical reference (docs/pinn/PINN_PLAN.md section 4).
 
     uv run python -m bvp_pinn.pinn.evaluate
 
@@ -59,6 +59,11 @@ def evaluate_run(folder, ref, p):
                                  map(float, boundary_errors(model, p, cfg["L"]).detach().abs()))),
         "windows_by_stage": window_errors(folder, cfg, ref),
     }
+    est = folder / "error_estimate.json"  # from tools/pinn_error_estimate.py, made without the reference
+    if est.exists():
+        wall_est = json.loads(est.read_text())["wall_estimated_error"]
+        metrics["error_estimate"] = {k: {"estimated": wall_est[k], "true": metrics["wall"][k]["pinn"] - metrics["wall"][k]["reference"]}
+                                     for k in WALL if k in wall_est}
     np.savez(folder / "pred_eval.npz", eta=eta, z=z, H=H)
     return metrics
 

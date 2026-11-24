@@ -7,3 +7,6 @@ runs/
 .DS_Store
 .zcode/
 *.log
+engine/out/*
+!engine/out/engine_convergence.csv
+engine/bvp_engine

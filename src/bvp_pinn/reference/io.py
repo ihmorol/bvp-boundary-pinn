@@ -1,4 +1,4 @@
-"""Write and load reference data (docs/SPEC_reference_solutions.md section 6).
+"""Write and load reference data (docs/reference-solver/SPEC_reference_solutions.md section 6).
 
 PINN evaluation code calls load_reference after model selection. Training and
 selection code must not import this module (gate G5).

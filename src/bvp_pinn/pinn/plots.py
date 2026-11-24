@@ -1,4 +1,4 @@
-"""Result figures FB1 to FB5 and table TB2 (docs/PINN_PLAN.md section 6).
+"""Result figures FB1 to FB5 and table TB2 (docs/pinn/PINN_PLAN.md section 6).
 
     uv run python -m bvp_pinn.pinn.plots
 

@@ -1,0 +1,83 @@
+"""Time one PINN training step, so speed claims can be checked on any machine.
+
+    uv run python tools/time_pinn_step.py                 # B0, configs/pinn.json, 1 thread
+    uv run python tools/time_pinn_step.py --threads 4 --points 1000 --mode soft
+    uv run python tools/time_pinn_step.py --profile       # torch.profiler table of the slowest ops
+
+Prints the median time of: the equation loss forward, the boundary errors, and a full step
+(loss and backward), for the forward-jet engine and the old nested-autograd engine. The first
+calls are warm-up and not counted. Close other heavy programs first: the timings are noisy.
+"""
+from __future__ import annotations
+
+import argparse
+import statistics
+import sys
+import time
+from pathlib import Path
+
+import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from bvp_pinn.config import load_case  # noqa: E402
+from bvp_pinn.pinn import jets, losses  # noqa: E402
+from bvp_pinn.pinn import model as nets  # noqa: E402
+from bvp_pinn.pinn import train as tr  # noqa: E402
+from bvp_pinn.pinn.points import make_points  # noqa: E402
+from bvp_pinn.pinn.runs import resolve  # noqa: E402
+
+JETS = jets.supports
+
+
+def median_seconds(fn, reps, warm=2):
+    for _ in range(warm):
+        fn()
+    out = []
+    for _ in range(reps):
+        t = time.perf_counter()
+        fn()
+        out.append(time.perf_counter() - t)
+    return statistics.median(out)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--arm", default="B0")
+    ap.add_argument("--mode", default=None, help="bc_mode override: soft, linear or exact")
+    ap.add_argument("--points", type=int, default=None)
+    ap.add_argument("--threads", type=int, default=1)
+    ap.add_argument("--reps", type=int, default=5)
+    ap.add_argument("--float32", action="store_true")
+    ap.add_argument("--profile", action="store_true")
+    a = ap.parse_args()
+    torch.set_default_dtype(torch.float32 if a.float32 else torch.float64)
+    torch.set_num_threads(a.threads)
+    p = load_case()[0]
+    cfg = resolve(a.arm, **({"bc_mode": a.mode} if a.mode else {}), **({"n_points": a.points} if a.points else {}))
+    torch.manual_seed(0)
+    model = nets.build(cfg, p)
+    stage = tr.plan_stages(cfg, make_points(cfg, 0)[0])[0]
+
+    def full_step():
+        terms, *_ = tr.loss_parts(model, p, cfg, stage)
+        model.zero_grad()
+        sum(terms).backward()
+
+    print(f"{a.arm}, bc_mode {cfg['bc_mode']}, {cfg['n_points']} points, width {cfg['width']}, depth {cfg['depth']}, "
+          f"{a.threads} thread(s), {torch.get_default_dtype()}")
+    for name in ("jets", "autograd"):
+        jets.supports = JETS if name == "jets" else (lambda net: False)
+        eq = median_seconds(lambda: losses.equation_mse(model, stage["groups"], p), a.reps)
+        bc = median_seconds(lambda: losses.boundary_errors(model, p, cfg["L"]), a.reps)
+        step = median_seconds(full_step, a.reps)
+        print(f"  {name:8s} equation loss {eq * 1e3:7.1f} ms   boundary errors {bc * 1e3:6.1f} ms   "
+              f"full step {step * 1e3:7.1f} ms")
+        if a.profile:
+            with torch.profiler.profile() as prof:
+                full_step()
+            print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=12))
+    jets.supports = JETS
+
+
+if __name__ == "__main__":
+    main()

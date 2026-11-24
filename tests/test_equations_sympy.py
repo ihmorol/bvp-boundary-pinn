@@ -1,4 +1,4 @@
-"""SPEC V1: compare equations.py with a separate SymPy transcription of docs/equations.md."""
+"""SPEC V1: compare equations.py with a separate SymPy transcription of docs/problem/equations.md."""
 import numpy as np
 import sympy as sp
 
@@ -69,3 +69,30 @@ def test_boundary_matches_hand_formulas():
         zb[1], zb[2], zb[4], zb[6], zb[8], zb[10],
     ]
     np.testing.assert_allclose(eq.boundary(za, zb, p), expected, rtol=1e-12, atol=1e-13)
+
+
+def test_reduced_momentum_is_an_exact_rewrite_of_eq14():
+    """q*R14 = dPhi/deta - 2*kappa*f1**2/q for any functions f, g, theta (symbolic, all parameters free)."""
+    x = sp.Symbol("x")
+    F, G, T = (sp.Function(n)(x) for n in ("F", "G", "T"))
+    d = lambda u, k=1: sp.diff(u, x, k)
+    sub = {eta: x, f: F, f1: d(F), f2: d(F, 2), f3: d(F, 3), f4: d(F, 4), g: G, g1: d(G), g2: d(G, 2),
+           th: T, th1: d(T)}
+    R14 = R[0].subs(sub, simultaneous=True)
+    z = [F, d(F), d(F, 2), d(F, 3), G, d(G), T]
+    Phi = eq.momentum_flux(x, z, P)
+    assert sp.simplify(sp.expand((x + kappa) * R14 - (d(Phi) - 2 * kappa * d(F) ** 2 / (x + kappa)))) == 0
+
+
+def test_reduced_momentum_holds_on_the_reference():
+    """Independent of R14: the finite-difference slope of Phi on the branch-A reference equals 2*kappa*f1**2/q.
+
+    Phi uses only f..f3, g1 and theta, so this checks the rewrite on real data. The 2e-5 gap at the
+    wall is the error of second-order differences on the 4001-point grid, not of the identity.
+    """
+    from bvp_pinn.config import ROOT
+    p = load_case()[0]
+    data = np.load(ROOT / "reference" / "locked-branchA-L20-tol1e-08" / "reference.npz")
+    e, z = data["eta"], data["z"]
+    slope = np.gradient(eq.momentum_flux(e, z, p), e, edge_order=2)
+    np.testing.assert_allclose(slope, 2 * p["kappa"] * z[1] ** 2 / (e + p["kappa"]), atol=1e-4)

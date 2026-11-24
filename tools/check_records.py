@@ -94,7 +94,10 @@ if training["reference"]["used_as_training_labels"]:
     errors.append("Baseline reference cannot be used as training labels.")
 if training["model"]["output_fields"] != ["f", "g", "theta", "phi", "chi"]:
     errors.append("Output order does not match the equation sheet.")
-for path in [ROOT / "README.md", ROOT / "TODO.md", *sorted((ROOT / "docs").glob("*.md")), *sorted((ROOT / "journal").glob("*.md"))]:
+# Every working doc: README, AGENTS and docs/ with its subfolders. docs/archive keeps
+# superseded files as they were, so it is left out of these checks.
+DOCS = [path for path in sorted((ROOT / "docs").rglob("*.md")) if "archive" not in path.relative_to(ROOT / "docs").parts]
+for path in [ROOT / "README.md", *DOCS]:
     text = path.read_text()
     if "<!--" in text:
         errors.append(f"Unfilled marker in {path.relative_to(ROOT)}.")
@@ -114,7 +117,7 @@ PROTECTED_PHRASES = [
     "A comprehensive study of non-adaptive and residual-based adaptive sampling for physics-informed neural networks",
     "PINNacle: A Comprehensive Benchmark of Physics-Informed Neural Networks for Solving PDEs",
 ]
-for path in [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "TODO.md", *sorted((ROOT / "docs").glob("*.md")), *sorted((ROOT / "journal").glob("*.md"))]:
+for path in [ROOT / "README.md", ROOT / "AGENTS.md", *DOCS]:
     text = path.read_text()
     cleaned = re.sub(r"```.*?```", " ", text, flags=re.S)
     cleaned = re.sub(r"`[^`]*`", " ", cleaned)
