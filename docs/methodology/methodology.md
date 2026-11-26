@@ -2,7 +2,7 @@
 
 **Status (2026-11-24):** the diagrams show the method as the code in `src/bvp_pinn/` runs it. The reference is built and audited. The PINN code is complete and tested, and B0 reached the reference in two seeds (IMPLEMENTATION_NOTES section 7.3). The pilots P2b and P3 and the 20-run campaign have not run, so the diagrams show no results.
 
-Two diagrams show the method. Both are one A4 landscape page in the style of [methodology-flowchart-a4.pdf](figures/methodology-flowchart-a4.pdf).
+Two one-page diagrams show the method, a one-page compact methodology gives the reduced equations and the whole run in 13 steps, and a six-page detailed methodology shows every step (below). All are A4 landscape pages in the style of [methodology-flowchart-a4.pdf](figures/methodology-flowchart-a4.pdf).
 
 | Diagram | What it shows | Files |
 |---|---|---|
@@ -48,6 +48,31 @@ The four stages are the gates of [strategy.md](../plans/strategy.md). A later st
 | Diamond, 9 | If every value is finite, backpropagate and update the weights (Adam, then L-BFGS and Levenberg-Marquardt). If not, stop and save the first bad term. |
 | 10 to 13 | Monitor points decide whether a refine stage is kept. The acceptance rule judges the finished run without the reference. Then the run is compared with the classical reference. |
 | Bottom row | What changed from the Lorenz PINN: position instead of time, twelve conditions built in instead of one initial value, derivatives to fourth order, five outputs. |
+
+## Compact methodology, one page
+
+[bvp-methodology-compact.pdf](figures/bvp-methodology-compact.pdf) ([SVG](figures/bvp-methodology-compact.svg), [HTML](figures/bvp-methodology-compact.html)): the six detailed pages on one page. Top: the reduced Eqs. 14 to 18 and B1 to B12 with the locked values put in (the same checked forms as page 1 of the detailed version). Then 13 steps: reference (1 to 3), PINN with the four arms, exact conditions, loss, Adam, refine and the acceptance rule (4 to 10), test, rule G6, report and the Colab main run (11 to 13). Rebuild only this page with `--only compact`.
+
+## Detailed methodology, six pages
+
+Every step the code takes, numbered 1 to 72, at the same page size and in the same style. The equations are the reduced forms with the locked values put in ([simplified-equations.md](../problem/simplified-equations.md)); on 2026-11-26 each was checked against `src/bvp_pinn/reference/equations.py` at random states (largest difference 3e-16). One PDF: [bvp-methodology-detailed.pdf](figures/bvp-methodology-detailed.pdf); single pages (PDF, SVG, HTML, PNG) are in [figures/detailed/](figures/detailed/).
+
+| Page | Steps | What it shows | Code |
+|---|---|---|---|
+| 1 The fixed problem | 1 to 5 | Locked values, substitutions, the reduced Eqs. 14 to 18, B1 to B12, which conditions are linear, one transcription and its guards | `config.py`, `reference/equations.py`, `pinn/runs.py` |
+| 2 The classical reference | 6 to 22 | First-order form, mesh and start, branch scan, tolerance and domain ladders, far decay, checks V7 to V12, gate G3, export, the C++ box scheme, branch search, error bars, L study | `reference/`, `engine/`, `tools/reference_error_bars.py`, `tools/l_choice.py` |
+| 3 The PINN model | 23 to 36 | Points, input map, network, start profile, the exact boundary layer in build order, Taylor jets, residual rows, residual scales, loss | `pinn/points.py`, `model.py`, `start.py`, `constraints.py`, `jets.py`, `physics.py`, `losses.py` |
+| 4 Training one run | 37 to 46 | The four arms, Adam stages with gradient-norm weights, stage checkpoints, L-BFGS and Levenberg-Marquardt with rollback, self check, run folder | `pinn/train.py`, `lm.py`, `selfcheck.py`, `runs.py` |
+| 5 Acceptance and evaluation | 47 to 59 | Newton-step estimate, score and rule; the test against reference A; rule G6; tables and figures | `pinn/estimate.py`, `evaluation/` |
+| 6 The main run | 60 to 72 | The Colab notebook, pins, device, the resumable steps, failures and restarts | `tools/colab_main_run.ipynb`, `tools/main_run.py`, `pinn/campaign.py` |
+
+Rebuild only these pages:
+
+```bash
+uv run --no-project --with fonttools --with pymupdf python -I tools/build_diagrams.py --only detailed
+```
+
+Not drawn: the options that are in the code but off in the run settings (full BFGS refine, best checkpoint, resampling, the soft and linear boundary modes), and the analysis tools that do not feed the run (`tools/marching_growth.py`, `tools/time_pinn_step.py` outside the timing step).
 
 ## What the diagrams leave out on purpose
 
