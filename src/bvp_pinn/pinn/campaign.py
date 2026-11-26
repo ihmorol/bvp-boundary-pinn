@@ -9,6 +9,8 @@
 Every run gets campaign=<name> in its config, so evaluation reads campaign runs only, never the
 pilots. A run whose folder already has meta.json is skipped, so a campaign split over several
 sessions resumes where it stopped. A failed run is a result too: it is kept, not re-run.
+A run that finished training but lost its verdict (the session stopped during the acceptance
+rule) is judged on the next start; it is never trained again.
 """
 from __future__ import annotations
 
@@ -16,7 +18,7 @@ import argparse
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from .estimate import ensure_engine
+from .estimate import assess_run, ensure_engine, is_judged
 from .run import run
 from .runs import RUNS, is_finished, parse_set, read_config, resolve, run_id
 
@@ -36,6 +38,11 @@ def planned(arms, seeds, dry_run=False, runs_root=RUNS, **overrides):
             folder = runs_root / run_id(cfg, seed)
             out.append((arm, seed, folder, is_finished(folder)))
     return out
+
+
+def unjudged(plan):
+    """Finished runs with a model but no verdict yet."""
+    return [folder for _, _, folder, done in plan if done and (folder / "model.pt").exists() and not is_judged(folder)]
 
 
 def _one(arm, seed, dry_run, device, overrides):
@@ -66,9 +73,16 @@ def main(argv=None):
     todo = [(arm, seed) for arm, seed, _, done in plan if not done]
     for arm, seed, folder, done in plan:
         print(f"{arm} seed {seed}: {'finished' if done else 'to run'} ({folder.name})")
-    if args.list or not todo:
+    if args.list:
         return plan
-    ensure_engine()  # the acceptance rule needs it after every run
+    late = unjudged(plan)
+    if late or todo:
+        ensure_engine()  # the acceptance rule needs it after every run
+    for folder in late:
+        verdict = assess_run(folder)
+        print(f"{folder.name}: judged late, accepted {verdict['accepted']} {'; '.join(verdict['reasons'])}", flush=True)
+    if not todo:
+        return plan
     print(f"campaign {campaign_name(args.dry_run)}: {len(todo)} runs, {args.jobs} at a time", flush=True)
     if args.jobs == 1:
         for arm, seed in todo:

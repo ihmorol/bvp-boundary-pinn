@@ -13,26 +13,39 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import json
 import math
+import os
+import platform
 from pathlib import Path
 
 import numpy as np
+import scipy
 import torch
 
-from ..config import ROOT, load_case
+from ..config import ROOT, load_case, load_reference_settings
 from ..pinn.model import predict
 from ..pinn.losses import boundary_errors
 from ..pinn.physics import residuals
-from ..pinn.runs import RUNS, is_finished, load_run, read_config
+from ..pinn.runs import RUNS, git_commit, is_finished, load_run, read_config, write_json
 from ..reference.equations import HIGH_NAMES, STATE_NAMES
 from ..reference.io import load_reference
 
-REFERENCES = {"A": ROOT / "reference" / "locked-branchA-L20-tol1e-08",
-              "B": ROOT / "reference" / "locked-branchB-L20-tol1e-08"}
+
+def reference_folders():
+    """The reference folder of each branch at the reference L and the final tolerance of
+    configs/reference.json, named as bvp_pinn.reference.run names them."""
+    s = load_reference_settings()
+    tag = f"L{float(s['L_reference']):g}-tol{float(s['tol_values'][-1]):.0e}"
+    return {b: ROOT / "reference" / f"locked-branch{b}-{tag}" for b in ("A", "B")}
+
+
+REFERENCES = reference_folders()
 FIELDS = {"f": 0, "g": 4, "theta": 6, "phi": 8, "chi": 10}
 WALL = {"f2_0": 2, "theta_0": 6, "th1_0": 7, "phi_0": 8, "ph1_0": 9, "g1_0": 5, "ch1_0": 11}
-RESULTS = ROOT / "results"
+# BVP_RESULTS_DIR moves the campaign results, for example to Google Drive on Colab.
+RESULTS = Path(os.environ.get("BVP_RESULTS_DIR") or ROOT / "results")
 
 
 def results_dir(campaign):
@@ -40,7 +53,29 @@ def results_dir(campaign):
 
 
 def load_references():
-    return {k: load_reference(v)[0] for k, v in REFERENCES.items()}
+    """Reference arrays by branch. Branch A is the target. It must exist, sit at the reference L,
+    pass its fixed-L checks (G3) and decay in the far field (m > 0), or nothing is compared with it.
+    Branch B is only used to name the nearest branch, so it may be missing."""
+    L = float(load_reference_settings()["L_reference"])
+    out = {}
+    for name, folder in REFERENCES.items():
+        if name != "A" and not folder.exists():
+            continue
+        arrays, meta = load_reference(folder)
+        if name == "A":
+            checks = meta.get("checks", {})
+            if float(meta["L"]) != L or not checks.get("G3_fixed_L_pass") or not checks.get("far_field_valid"):
+                raise ValueError(f"{folder.name} is not a usable target: L {meta['L']} (want {L:g}), "
+                                 f"G3 fixed-L pass {checks.get('G3_fixed_L_pass')}, "
+                                 f"decaying far field {checks.get('far_field_valid')}")
+        out[name] = arrays
+    return out
+
+
+def worst(values):
+    """The largest of the values, or NaN if any is NaN. Python's max() is order-dependent with NaN,
+    so a diverged run could otherwise show a finite "largest error"."""
+    return float(np.max(np.fromiter(values, dtype=float)))
 
 
 def rel_l2(got, want, eta):
@@ -63,6 +98,8 @@ def evaluate_run(folder, refs, p):
     cfg, model = load_run(folder)
     ref = refs["A"]
     eta = ref["eta"]
+    if float(cfg["L"]) != float(eta[-1]):
+        raise ValueError(f"{Path(folder).name} was trained on L = {cfg['L']}, the reference ends at {eta[-1]:g}")
     z, H = (a.numpy() for a in predict(model, torch.tensor(eta).reshape(-1, 1)))
     got, want = np.vstack([z, H]), np.vstack([ref["z"], ref["H"]])
     cols = [torch.tensor(r).reshape(-1, 1) for r in z]
@@ -72,12 +109,13 @@ def evaluate_run(folder, refs, p):
         "fields": {n: {"rel_l2": rel_l2(g, w, eta), "max_abs": float(np.max(np.abs(g - w)))}
                    for n, g, w in zip(STATE_NAMES + HIGH_NAMES, got, want)},
         "wall": wall,
-        "wall_rel_max": max(v["rel_error"] for v in wall.values()),
+        "wall_rel_max": worst(v["rel_error"] for v in wall.values()),
         "residual_mse": dict(zip(("R14", "R15", "R16", "R17", "R18"), map(float, res.pow(2).mean(0)))),
         "boundary_abs": dict(zip([f"B{i}" for i in range(1, 13)],
                                  map(float, boundary_errors(model, p, cfg["L"]).detach().abs()))),
         "nearest_branch": nearest_branch(z, refs),
         "windows_by_stage": window_errors(folder, cfg, ref),
+        "after_adam": after_adam(folder, refs),
     }
     est = Path(folder) / "error_estimate.json"  # made without the reference, by pinn/estimate.py
     if est.exists():
@@ -101,6 +139,23 @@ def window_errors(folder, cfg, ref):
             rows[f"{a:g}-{b:g}"] = {n: float(np.max(np.abs(z[i, m] - ref["z"][i, m]))) for n, i in FIELDS.items()}
         out.append(rows)
     return out
+
+
+def after_adam(folder, refs):
+    """Accuracy of the state after the last Adam stage, before L-BFGS and Levenberg-Marquardt.
+
+    Every arm ends on the same refine chain, which may hide arm differences (TRAINING_WALKTHROUGH
+    section 7), so each arm is also reported here, before it."""
+    stages = sorted(Path(folder).glob("stage*.pt"), key=lambda q: int(q.stem[5:]))
+    if not stages:
+        return None
+    ref = refs["A"]
+    _, model = load_run(folder, stages[-1].name)
+    z = predict(model, torch.tensor(ref["eta"]).reshape(-1, 1))[0].numpy()
+    wall = wall_errors(z[:, 0], ref)
+    return {"checkpoint": stages[-1].name, "wall_rel_max": worst(v["rel_error"] for v in wall.values()),
+            "max_field_rel_l2": worst(rel_l2(z[i], ref["z"][i], ref["eta"]) for i in FIELDS.values()),
+            "nearest_branch": nearest_branch(z, refs)}
 
 
 def nearest_branch(z, refs):
@@ -127,13 +182,17 @@ def summary_row(folder, metrics):
            "result": meta.get("result"), "accepted": selection.get("accepted"),
            "reasons": "; ".join(selection.get("reasons", [])), "estimate_score": estimate.get("score"),
            "nearest_branch": metrics["nearest_branch"], "wall_rel_max": metrics["wall_rel_max"],
-           "max_field_rel_l2": max(f[n]["rel_l2"] for n in FIELDS)}
+           "max_field_rel_l2": worst(f[n]["rel_l2"] for n in FIELDS)}
+    adam = metrics.get("after_adam") or {}
+    row.update({"after_adam_wall_rel_max": adam.get("wall_rel_max"),
+                "after_adam_max_field_rel_l2": adam.get("max_field_rel_l2"),
+                "after_adam_nearest_branch": adam.get("nearest_branch")})
     row.update({f"rel_l2_{n}": f[n]["rel_l2"] for n in FIELDS})
     row.update({f"max_abs_{n}": f[n]["max_abs"] for n in FIELDS})
     row.update({f"wall_rel_{k}": v["rel_error"] for k, v in metrics["wall"].items()})
     row["max_boundary_abs"] = max(metrics["boundary_abs"].values())
     row["mean_residual_mse"] = float(np.mean(list(metrics["residual_mse"].values())))
-    row.update({"parameters": meta.get("parameters"), "threads": meta.get("threads"), "device": meta.get("device"),
+    row.update({"parameters": meta.get("parameters"), "threads": meta.get("threads"), "device": meta.get("device"), "gpu": meta.get("gpu"),
                 "wall_seconds": meta.get("wall_seconds"), "adam_seconds": meta.get("adam_seconds"),
                 "refine_seconds": meta.get("refine_seconds"), "refine_accepted": meta.get("refine_accepted",
                                                                                           meta.get("lbfgs_accepted")),
@@ -181,9 +240,25 @@ def failure_lines(rows, folders, name):
     return lines
 
 
-def write_campaign(name, rows, lines):
+def settings_record(name, folders):
+    """Everything that produced this campaign's results, saved next to them (settings.json)."""
+    import matplotlib
+    case_sha = load_case()[1]
+    refs = {b: {"folder": f.name, "sha256sums": (f / "SHA256SUMS").read_text().splitlines(),
+                "case_sha256_matches": json.loads((f / "meta.json").read_text())["case_sha256"] == case_sha}
+            for b, f in REFERENCES.items() if (f / "SHA256SUMS").exists()}
+    return {"campaign": name, "written": datetime.datetime.now().isoformat(timespec="seconds"),
+            "case_sha256": case_sha, "pinn_config": read_config(), "reference_settings": load_reference_settings(),
+            "reference": refs, "git": git_commit(),
+            "versions": {"python": platform.python_version(), "numpy": np.__version__, "scipy": scipy.__version__,
+                         "torch": torch.__version__, "matplotlib": matplotlib.__version__},
+            "run_folders": [x.name for x in folders]}
+
+
+def write_campaign(name, rows, lines, folders=()):
     out = results_dir(name)
     out.mkdir(parents=True, exist_ok=True)
+    write_json(out / "settings.json", settings_record(name, folders))
     if rows:
         with open(out / "summary.csv", "w", newline="") as fh:
             writer = csv.DictWriter(fh, list(rows[0]))
@@ -200,7 +275,7 @@ def evaluate_folders(folders, refs, p):
     rows = []
     for folder in folders:
         metrics = evaluate_run(folder, refs, p)
-        (folder / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+        write_json(folder / "metrics.json", metrics)
         rows.append(summary_row(folder, metrics))
         print(f"{folder.name}: largest wall error {metrics['wall_rel_max']:.2e} relative, "
               f"nearest branch {metrics['nearest_branch']}, accepted {rows[-1]['accepted']}")
@@ -219,7 +294,7 @@ def main(argv=None):
         return evaluate_folders([f for f in args.runs if is_finished(f) and (f / "model.pt").exists()], refs, p)
     folders = campaign_folders(args.campaign)
     rows = evaluate_folders([f for f in folders if is_finished(f) and (f / "model.pt").exists()], refs, p)
-    out = write_campaign(args.campaign, rows, failure_lines(rows, folders, args.campaign))
+    out = write_campaign(args.campaign, rows, failure_lines(rows, folders, args.campaign), folders)
     print(f"{len(rows)} runs of campaign {args.campaign} in {out / 'summary.csv'}; failures in {out / 'failures.md'}")
     return rows
 

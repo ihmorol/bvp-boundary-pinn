@@ -4,7 +4,8 @@
     uv run python -m bvp_pinn.evaluation.plots --campaign P4-dry
 
 Reads only results/<campaign>/summary.csv, classical_timing.json (if built) and the saved run
-files, after evaluate.py. Writes results/<campaign>/figures/, wall_values.md (TB2) and cost.md (TX1).
+files, after evaluate.py. Writes results/<campaign>/figures/, wall_values.md (TB2), accuracy.md
+(TB3: per arm after Adam and final, with the paired-seed counts of rule G6) and cost.md (TX1).
 Same style and colours as the reference figures (bvp_pinn/figstyle.py).
 """
 from __future__ import annotations
@@ -26,7 +27,7 @@ ARMS = {"B0": (OI["blue"], "-", "o"), "B1": (OI["vermillion"], "--", "s"),
         "B2": (OI["green"], "-.", "^"), "B3": (OI["purple"], ":", "D")}
 PANELS = [("f", 0), ("f'", 1), ("g", 4), (r"\theta", 6), (r"\phi", 8), (r"\chi", 10)]
 NUMBERS = ("max_field_rel_l2", "wall_rel_max", "wall_seconds", "adam_seconds", "refine_seconds", "lm_steps",
-           "parameters", "threads")
+           "parameters", "threads", "after_adam_wall_rel_max", "after_adam_max_field_rel_l2")
 
 
 def load_summary(campaign):
@@ -47,7 +48,8 @@ def metrics(rid):
 
 def median_run(rows, arm):
     """The run with the median error for one arm, so a figure shows a typical seed, not the best."""
-    runs = sorted((r for r in rows if r["arm"] == arm), key=lambda r: r["max_field_rel_l2"])
+    finite = lambda v: v if np.isfinite(v) else np.inf  # a failed run sorts last, never in the middle
+    runs = sorted((r for r in rows if r["arm"] == arm), key=lambda r: finite(r["max_field_rel_l2"]))
     return runs[(len(runs) - 1) // 2]["run_id"] if runs else None
 
 
@@ -165,10 +167,58 @@ def fig_cost(rows, timing, path):
         for r in ok:
             ax.annotate(f"{r['tol']:g}", (r["median_seconds"], r["wall_rel_max"]), textcoords="offset points",
                         xytext=(4, 3), fontsize=6)
-    ax.set(xscale="log", yscale="log", xlabel="wall time (s, one thread)", ylabel="largest relative wall error")
+    ax.set(xscale="log", yscale="log", xlabel=f"wall time (s); PINN on {devices(rows)}, solve_bvp on one CPU thread",
+           ylabel="largest relative wall error")
     ax.legend(frameon=False)
     fig.suptitle("FX1: error against wall time")
     save(fig, path)
+
+
+def devices(rows):
+    """The devices the runs trained on, as text, for labels."""
+    names = {(r.get("device") or "unknown") + (f" ({r['gpu']})" if r.get("gpu") else "") for r in rows}
+    return ", ".join(sorted(names)) or "unknown"
+
+
+def accuracy_table(rows, out):
+    """TB3: accuracy of each arm after Adam and after the refine chain, median and range over seeds,
+    and the paired-seed counts that rule G6 needs ("arm X beats arm Y" only if it holds in every
+    paired seed). A run with a missing or non-finite error never counts as the better one."""
+    keys = [("wall_rel_max", "largest relative wall error"), ("max_field_rel_l2", "largest field relative L2")]
+    fmt = lambda v: f"{v:.2e}" if np.isfinite(v) else "n/a"
+    lines = ["| Arm | Runs | Accepted | " + " | ".join(f"{label}, after Adam | {label}, final" for _, label in keys) + " |",
+             "|---|---:|---:|" + "---|---|" * len(keys)]
+    by_arm = {arm: [r for r in rows if r["arm"] == arm] for arm in ARMS}
+    for arm, rs in by_arm.items():
+        if not rs:
+            continue
+        cells = []
+        for k, _ in keys:
+            for col in (f"after_adam_{k}", k):
+                v = np.array([r[col] for r in rs], dtype=float)
+                v = v[np.isfinite(v)]
+                cells.append("n/a" if not v.size else f"{fmt(np.median(v))} ({fmt(v.min())} to {fmt(v.max())})")
+        lines.append(f"| {arm} | {len(rs)} | {sum(r['accepted'] == 'True' for r in rs)} | " + " | ".join(cells) + " |")
+    pairs = ["", "## Paired seeds (rule G6)", "",
+             "Each cell: in how many paired seeds the row arm has the smaller final error than the column arm, "
+             "out of the seeds both arms have. A claim needs every paired seed.", ""]
+    arms = [a for a, rs in by_arm.items() if rs]
+    for k, label in keys:
+        pairs += [f"**{label}**", "", "| Row beats column | " + " | ".join(arms) + " |", "|---|" + "---:|" * len(arms)]
+        for a in arms:
+            cells = []
+            for b in arms:
+                if a == b:
+                    cells.append("")
+                    continue
+                ea = {r["seed"]: float(r[k]) for r in by_arm[a]}
+                eb = {r["seed"]: float(r[k]) for r in by_arm[b]}
+                both = sorted(set(ea) & set(eb))
+                wins = sum(bool(np.isfinite(ea[s]) and (not np.isfinite(eb[s]) or ea[s] < eb[s])) for s in both)
+                cells.append(f"{wins} of {len(both)}")
+            pairs.append(f"| {a} | " + " | ".join(cells) + " |")
+        pairs.append("")
+    (out / "accuracy.md").write_text("# TB3: accuracy per arm, median (range) over seeds\n\n" + "\n".join(lines + pairs))
 
 
 def wall_table(rows, out):
@@ -191,20 +241,22 @@ def wall_table(rows, out):
 
 def cost_table(rows, timing, out):
     """TX1: cost per arm (medians over seeds) and the solve_bvp time to reach each arm's median error."""
-    lines = ["| Arm | Runs | Accepted | Wall s | Adam s | Refine s | LM steps | Parameters | Threads | "
-             "Median wall error | solve_bvp s to the same error |", "|---|" + "---:|" * 10]
+    lines = ["| Arm | Runs | Accepted | Device | Wall s | Adam s | Refine s | LM steps | Parameters | Threads | "
+             "Median wall error | solve_bvp s to the same error |", "|---|---:|---:|---|" + "---:|" * 8]
     for arm in ARMS:
         rs = [r for r in rows if r["arm"] == arm]
         if not rs:
             continue
         med = {k: float(np.nanmedian([r[k] for r in rs])) for k in NUMBERS}
         reach = time_to_reach(timing, med["wall_rel_max"]) if timing else None
-        lines.append(f"| {arm} | {len(rs)} | {sum(r['accepted'] == 'True' for r in rs)} | {med['wall_seconds']:.0f} | "
+        lines.append(f"| {arm} | {len(rs)} | {sum(r['accepted'] == 'True' for r in rs)} | {devices(rs)} | "
+                     f"{med['wall_seconds']:.0f} | "
                      f"{med['adam_seconds']:.0f} | {med['refine_seconds']:.0f} | {med['lm_steps']:.0f} | "
                      f"{med['parameters']:.0f} | {med['threads']:.0f} | {med['wall_rel_max']:.2e} | "
                      f"{'not built' if timing is None else ('n/a' if reach is None else f'{reach:.3f}')} |")
-    note = ("solve_bvp times come from classical_timing.json (median of its repeats, one thread). "
-            "Compare only times measured on the same machine.")
+    note = ("solve_bvp times come from classical_timing.json (median of its repeats, one CPU thread). "
+            "PINN times are on the device in the Device column. Compare only times measured on the same machine, "
+            "and say which device each side used.")
     (out / "cost.md").write_text("# TX1: cost per arm, median over seeds\n\n" + "\n".join(lines) + f"\n\n{note}\n")
 
 
@@ -227,8 +279,9 @@ def main(argv=None):
         fig_windows(rows, figs / "FB5_windows")
         fig_cost(rows, timing, figs / "FX1_error_vs_time")
     wall_table(rows, out)
+    accuracy_table(rows, out)
     cost_table(rows, timing, out)
-    print(f"Figures in {figs}; tables in {out / 'wall_values.md'} and {out / 'cost.md'}")
+    print(f"Figures in {figs}; tables in {out / 'wall_values.md'}, {out / 'accuracy.md'} and {out / 'cost.md'}")
 
 
 if __name__ == "__main__":

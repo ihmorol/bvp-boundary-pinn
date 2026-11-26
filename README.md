@@ -37,7 +37,7 @@ The root holds only rules, code, configs and data. Every document is under [docs
 | docs/archive/ | Superseded documents, history only |
 | src/bvp_pinn/ | Code: config loader, classical reference (`reference/`), PINN training and acceptance (`pinn/`, never reads the reference), evaluation against the reference (`evaluation/`). See src/bvp_pinn/README.md |
 | tests/ | pytest tests; run `uv run pytest` |
-| tools/ | Record check, guide and diagram builders, PINN step timer, PINN error estimate for older runs, reference error bars |
+| tools/ | The main run (`main_run.py`) and its Colab notebook (`colab_main_run.ipynb`), record check, guide and diagram builders, PINN step timer, PINN error estimate for older runs, reference error bars, L study |
 | engine/ | Small C++ box-scheme solver of Eqs. 14 to 19, with a one-Newton-step error estimate for a PINN and a deflated branch search |
 | configs/ | Locked case (`physical-case-pending.json`, hash-locked, so its name and status string stay as written), reference settings, PINN settings with the acceptance rule and the campaign |
 | reference/ | Generated reference data, figures, study tables and error bars; rebuild with `uv run python -m bvp_pinn.reference.run` |
@@ -62,6 +62,6 @@ Private remote: `ihmorol/bvp-boundary-pinn`. The supervisor documents and papers
 ## Next work
 
 1. Pilot P2b: one B0 run at 2 000 points to freeze the point count and the budgets; pilot P3 for the window edges and the replay weight.
-2. The campaign: `uv run python -m bvp_pinn.pinn.campaign`, then `bvp_pinn.evaluation.evaluate`, `.classical` and `.plots`.
+2. The campaign: on Colab, open [tools/colab_main_run.ipynb](tools/colab_main_run.ipynb) and run all cells; it runs tests, reference, campaign and evaluation in order and keeps everything in Drive ([readiness review](docs/reviews/MAIN_RUN_READINESS_2026-11-26.md)). On a laptop: `uv run python tools/main_run.py`, or step by step `uv run python -m bvp_pinn.pinn.campaign`, then `bvp_pinn.evaluation.evaluate`, `.classical` and `.plots`.
 
 Every run is judged by the acceptance rule in configs/pinn.json (decaying far field, no constant tail, the Newton-step error estimate) before the reference is read. The supervisor said on 2026-11-19 that the physical meaning of the values is not needed: use them as given, compute a numerical reference, train the PINN on eta and test it against the reference.

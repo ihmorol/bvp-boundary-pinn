@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import platform
 import subprocess
 from pathlib import Path
@@ -22,7 +23,9 @@ from ..config import PARAMETER_NAMES, ROOT, load_case, load_reference_settings
 from .model import build
 
 CONFIG_PATH = ROOT / "configs" / "pinn.json"
-RUNS = ROOT / "runs"
+# BVP_RUNS_DIR moves the run folders, for example to Google Drive on Colab, so finished runs
+# survive a disconnect. Unset, they stay in runs/.
+RUNS = Path(os.environ.get("BVP_RUNS_DIR") or ROOT / "runs")
 
 # A dry run checks the whole pipeline in under a minute per arm. Its results mean nothing.
 DRY_RUN = {"adam_steps": 40, "lbfgs_iters": 5, "lm_iters": 3, "n_points": 120, "n_monitor": 60,
@@ -101,6 +104,15 @@ def run_id(cfg, seed):
     return f"bvp-{cfg['arm']}-s{seed}-{digest}"
 
 
+def write_json(path, data):
+    """Write JSON through a temporary file and a rename. A crash or a lost connection mid-write
+    then leaves the old file or none, never half a file that a resumed campaign would trust."""
+    path = Path(path)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, default=str) + "\n")
+    os.replace(tmp, path)
+
+
 def git_commit():
     out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
     dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True)
@@ -133,13 +145,13 @@ class RunFolder:
                 "torch": torch.__version__, "numpy": np.__version__, "machine": platform.machine(),
                 "processor": platform.processor(), "threads": torch.get_num_threads(),
                 "parameters": sum(x.numel() for x in model.parameters())}
-        (self.path / "meta.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
+        write_json(self.path / "meta.json", meta)  # last: its presence marks the run finished
 
     def save_failure(self, result, seconds, meta):
         """meta.json for a run that crashed: no model, so it is reported, never evaluated or re-run."""
         meta = {**meta, "result": result, "wall_seconds": seconds, "git": git_commit(),
                 "python": platform.python_version(), "torch": torch.__version__}
-        (self.path / "meta.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
+        write_json(self.path / "meta.json", meta)
 
 
 def is_finished(folder):

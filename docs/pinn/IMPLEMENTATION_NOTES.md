@@ -286,8 +286,9 @@ What changed in the code is listed in the [gap report](../reviews/IMPLEMENTATION
 
 ## 8. Colab
 
-- Colab gives float64 on its CPUs and GPUs, but consumer GPUs run float64 far slower than float32. Measure one short run on each before the campaign. **[judgment]**
-- `pyproject.toml` pins Python 3.12. If the Colab image moves to a newer Python, install with `pip install --no-deps -e .` and the listed packages, or relax the pin with a dated note.
+- **The main run has one entry point (2026-11-26):** [tools/colab_main_run.ipynb](../../tools/colab_main_run.ipynb). It mounts Drive, installs the exact versions of `uv.lock` in their own environment (Python 3.12.13; torch 2.15.0, the CUDA 13.2 build on a GPU), checks out one commit, and runs `tools/main_run.py`: tests, the reference from scratch, a dry run on the device, measured step times with a run-time estimate, the campaign, and the evaluation. Run folders and results go to Drive (`BVP_RUNS_DIR`, `BVP_RESULTS_DIR`), so a disconnect loses at most the run in progress. Details and the run-time estimate: [MAIN_RUN_READINESS_2026-11-26.md](../reviews/MAIN_RUN_READINESS_2026-11-26.md).
+- Colab gives float64 on its CPUs and GPUs, but consumer GPUs run float64 far slower than float32. The notebook's timing step measures the Adam and Levenberg-Marquardt step on the session's device before the campaign starts. **[judgment]**
+- `pyproject.toml` pins Python 3.12. The notebook installs Python 3.12.13 with uv, whatever Python the Colab image has.
 - The campaign is 4 arms x 5 seeds: `python -m bvp_pinn.pinn.campaign`. It skips finished runs, so it can be split across sessions (`--arms`, `--seeds`) and merged by copying `runs/` back before `evaluate`. `--jobs N` runs N at once; budget about 2.1 GB per B0 run and 1.6 GB per B1 run at 2000 points.
 - The acceptance rule needs `engine/bvp_engine`. It is built with g++ on first use (`bvp_pinn.pinn.estimate.ensure_engine`); Colab images include g++.
 - Run `bvp_pinn.evaluation.classical` on the same machine type as the runs, so the times in FX1 and TX1 compare.

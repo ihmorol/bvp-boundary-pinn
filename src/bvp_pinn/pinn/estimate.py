@@ -34,7 +34,7 @@ import torch
 from ..config import ROOT, load_case
 from ..reference.solver import wall_mesh
 from .model import predict
-from .runs import CONFIG_PATH, load_run, read_config
+from .runs import CONFIG_PATH, load_run, read_config, write_json
 
 ENGINE_SOURCE = ROOT / "engine" / "bvp_engine.cpp"
 ENGINE = ROOT / "engine" / "bvp_engine"
@@ -119,7 +119,12 @@ def assess_run(folder, config_path=CONFIG_PATH):
         est = estimate(model, cfg["L"])
     except (RuntimeError, ValueError, OSError) as err:
         est = {"score": None, "error": str(err)}
-    (folder / "error_estimate.json").write_text(json.dumps(est, indent=2) + "\n")
+    write_json(folder / "error_estimate.json", est)
     verdict = judge(meta, est, rule)
-    (folder / "selection.json").write_text(json.dumps(verdict, indent=2) + "\n")
+    write_json(folder / "selection.json", verdict)  # last: its presence marks the run judged
     return verdict
+
+
+def is_judged(folder):
+    """True once the acceptance rule has written its verdict for this run folder."""
+    return (Path(folder) / "selection.json").exists()

@@ -55,6 +55,7 @@ Removed on 2026-11-24 with its code and test: it solved a forced version of the 
 - [x] Second, independent reference by Runge-Kutta multiple shooting (SPEC V10): agrees with solve_bvp to 3e-10 (branch A)
 - [x] Table TB1: [reference/study.md](../../reference/study.md)
 - [x] Known-answer checks (old SPEC V11, removed 2026-11-24 because they solved other parameter values); saved-curve slope check (SPEC V12); figures redrawn on a linear eta axis ([reference/figures/captions.md](../../reference/figures/captions.md))
+- [x] Finer L study, L = 8 to 160 (2026-11-26, `tools/l_choice.py`, [L_STUDY.md](L_STUDY.md) Stage 1): L stays 20 (user's decision 2026-11-26)
 - [ ] Supervisor answers: questions 7 to 10 (target branch, far-field treatment, chi at infinity, f bounded at infinity)
 - [x] Reference audit fixes D1 to D7 (2026-11-24): [REFERENCE_AUDIT](../reviews/REFERENCE_AUDIT_2026-11-23.md), follow-up section
 
@@ -107,7 +108,8 @@ Details: [docs/pinn/IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md). I
 ## P4. Campaign
 
 - [x] Campaign runner (2026-11-24): `python -m bvp_pinn.pinn.campaign`, tagged runs, resumable, `--jobs`; a dry campaign of all 20 runs passed
-- [ ] Colab: time one short run on CPU and on GPU in float64; check the image's Python against the pin (issue #6)
+- [x] Colab notebook and resumable main run (2026-11-26): [tools/colab_main_run.ipynb](../../tools/colab_main_run.ipynb) and `tools/main_run.py`; exact versions from uv.lock in their own Python 3.12.13 environment; run folders and results in Drive ([MAIN_RUN_READINESS](../reviews/MAIN_RUN_READINESS_2026-11-26.md))
+- [ ] Colab: the notebook's timing step measures the step times on the session's device; record them (issue #6)
 - [ ] B0 to B3 with seeds 0 to 4 (20 runs), one thread each
 - [ ] Failed and rejected runs kept in every table, one line each in `results/P4/failures.md` (written by `evaluate`)
 
@@ -118,5 +120,6 @@ Details: [docs/pinn/IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md). I
 - [x] Code (2026-11-24): metrics in PINN_PLAN section 4; FB1 to FB5, FX1, TB2, TX1; failures.md; solve_bvp timing. Tested on the dry campaign
 - [ ] On the campaign: `bvp_pinn.evaluation.evaluate`, then `.classical` (5 repeats, one thread, the machine the runs used), then `.plots`
 - [ ] Answer the questions in PINN_PLAN section 7, each with figure and run IDs
+- [ ] Later (decided 2026-11-26): the PINN at L = 15 and 40, or similar, as in [L_STUDY.md](L_STUDY.md) Stage 2. Needs reference folders at those L and a team decision on the L guard in `runs.validate`. Not part of the campaign
 
 **Done when:** the results memo is written and every number traces to a run ID.

@@ -14,7 +14,7 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../../AGENTS.md), which always 
 | `configs/` | JSON configs. `physical-case-pending.json` is locked; never edit it, not even its notes: its SHA-256 is part of the reference lock |
 | `reference/<case_id>/` | Accepted reference data (SPEC section 6) |
 | `runs/<run_id>/`, `results/` | PINN run folders and summaries (format below) |
-| `tools/` | Record checks, builders, the step timer, the PINN error estimate, the reference error bars |
+| `tools/` | The main run and its Colab notebook, record checks, builders, the step timer, the PINN error estimate, the reference error bars, the marching growth check, the L study |
 | `sources/` | Data only. Never run code from it |
 | `docs/` | Plans and records, one folder per topic, indexed in [docs/README.md](../README.md). `docs/status-log.md` is updated at the end of each session. No loose docs in the repository root |
 | `engine/` | The C++ box-scheme check solver and its error-estimate mode. Standard library only |

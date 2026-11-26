@@ -28,7 +28,7 @@ import numpy as np  # noqa: E402
 from ..config import load_case, load_reference_settings  # noqa: E402
 from ..pinn.runs import read_config  # noqa: E402
 from ..reference import solver as sv  # noqa: E402
-from .evaluate import FIELDS, load_references, rel_l2, results_dir, wall_errors  # noqa: E402
+from .evaluate import FIELDS, load_references, rel_l2, results_dir, wall_errors, worst  # noqa: E402
 
 TOLERANCES = (1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8)
 GUESS = {"rate": 1.0, "theta0": 0.3}  # the start that reaches branch A in the reference scan
@@ -50,8 +50,8 @@ def time_solves(repeats=5, tolerances=TOLERANCES):
         if res.ok:
             z = res.sol(ref["eta"])
             wall = wall_errors(z[:, 0], ref)
-            row.update({"wall_rel_max": max(v["rel_error"] for v in wall.values()),
-                        "max_field_rel_l2": max(rel_l2(z[i], ref["z"][i], ref["eta"]) for i in FIELDS.values()),
+            row.update({"wall_rel_max": worst(v["rel_error"] for v in wall.values()),
+                        "max_field_rel_l2": worst(rel_l2(z[i], ref["z"][i], ref["eta"]) for i in FIELDS.values()),
                         "theta_0": float(z[6, 0])})
         rows.append(row)
         print(f"tol {tol:g}: status {res.status}, {row['median_seconds']:.3f} s, "

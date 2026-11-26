@@ -49,7 +49,7 @@
   "eval_points": 4001,
   "eval_first_step": 0.0005,
   "L_reference": 20,
-  "L_reference_note": "Smallest L whose f, g, theta, phi wall values agree with the next L to 1e-4 relative under asymptotic far conditions (study 2026-11-19). chi has no L-independent limit, so chi is defined by chi(L)=0 at this L.",
+  "L_reference_note": "Our choice; kept by the user on 2026-11-26 (docs/plans/L_STUDY.md). From L = 20 to 40 the wall values of f, g and theta change by at most 7e-5 relative, phi(0) by 3.9e-4 (reference/study.json, check V5, which therefore fails its 1e-4 bar). Distance of the L = 20 values from the eta -> infinity limit: 1.6e-4 to 3.3e-4 relative, phi(0) 1.8e-3 (reference/l_choice.md). PINN and reference both solve the L = 20 problem, so this L error is reported beside the PINN error, not inside it. chi has no L-independent limit, so chi is defined by chi(L)=0 at this L. Corrected 2026-11-26: the earlier note said every f, g, theta, phi wall value agreed with the next L to 1e-4.",
   "far_field": "asymptotic",
   "far_field_note": "theta(inf)=0 and phi(inf)=0 are imposed at eta=L as asymptotic conditions (Lentini and Keller 1980, doi:10.1137/0717049), derived in equations.far_conditions. f1, f2, g keep zero values at L (they decay exponentially). chi keeps chi(L)=0 because Eq. 18 as printed has no decaying far-field solution for chi. Set to 'dirichlet' for the old truncation.",
   "rk": {

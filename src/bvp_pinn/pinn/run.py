@@ -36,6 +36,18 @@ def main(argv=None):
     return run(args.arm, args.seed, args.dry_run, args.device, assess=not args.no_estimate, **parse_set(args.set))
 
 
+PROGRESS_EVERY = {"adam": 2000, "lbfgs": 1000, "bfgs": 500, "lm": 20}
+
+
+def progress(name):
+    """A history-row callback that prints a short line now and then, so a run of hours shows it is alive."""
+    def show(row):
+        phase, step = row.get("phase"), row.get("step", 0)
+        if phase in PROGRESS_EVERY and step % PROGRESS_EVERY[phase] == 0:
+            print(f"  {name}: {phase} step {step}, loss {row['loss']:.3e}, {row.get('seconds', 0):.0f} s", flush=True)
+    return show
+
+
 def run(arm, seed, dry_run=False, device="cpu", runs_root=RUNS, assess=True, **overrides):
     """Train, save the run folder, then judge it. Returns the run folder path.
 
@@ -52,18 +64,20 @@ def run(arm, seed, dry_run=False, device="cpu", runs_root=RUNS, assess=True, **o
         model.load_state_dict(torch.load(ROOT / cfg["init_from"] / "model.pt", map_location=device))
     train_pts, monitor_pts = make_points(cfg, seed)
     folder = RunFolder(cfg, seed, runs_root)
+    gpu = torch.cuda.get_device_name(torch.device(device)) if torch.device(device).type == "cuda" else None
     print(f"{folder.path.name}: {sum(x.numel() for x in model.parameters())} parameters, "
-          f"{len(train_pts)} points, device {device}", flush=True)
+          f"{len(train_pts)} points, device {device}{f' ({gpu})' if gpu else ''}", flush=True)
+    show = progress(folder.path.name)
     start = time.perf_counter()
     try:
-        status = train(model, p, cfg, train_pts, monitor_pts, folder.log, seed)
+        status = train(model, p, cfg, train_pts, monitor_pts, lambda row: (folder.log(row), show(row)), seed)
     except Exception as err:  # a crash is a result too: record it, so a resumed campaign does not repeat it
         folder.save_failure(f"error: {type(err).__name__}: {err}", time.perf_counter() - start,
-                            {"seed": seed, "case_sha256": case_sha, "device": device})
+                            {"seed": seed, "case_sha256": case_sha, "device": device, "gpu": gpu})
         raise
     status["wall_seconds"] = time.perf_counter() - start
     folder.save(model, status, {"train": train_pts, "monitor": monitor_pts},
-                {"seed": seed, "case_sha256": case_sha, "device": device})
+                {"seed": seed, "case_sha256": case_sha, "device": device, "gpu": gpu})
     print(f"{status['result']} in {status['wall_seconds']:.1f} s; "
           f"refine ({status.get('refine')}) accepted: {status.get('refine_accepted')}; wrote {folder.path}", flush=True)
     if assess:
