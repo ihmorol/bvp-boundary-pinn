@@ -2,7 +2,7 @@
 
 This sheet restates [Eqs. 14 to 19](equations.md) with the [locked 2026-11-16 values](parameters.md#supervisor-confirmation-2026-11-16) substituted. It is a reading aid, not a new specification. The authoritative calculation sheet stays [equations.md](equations.md). The locked values stay in [parameters.md](parameters.md) and [the case config](../../configs/physical-case-pending.json).
 
-Every number below is arithmetic on locked values. No solver, reference, training or evaluation ran. The five functions f, g, theta, phi, chi are still unknown.
+Every number below is arithmetic on locked values. Nothing here comes from a solver; the computed solutions are in [the reference](../reference-solver/SPEC_reference_solutions.md).
 
 ## Replacements used
 
@@ -139,12 +139,12 @@ Far away, at the numerical endpoint eta=L used for infinity:
 f'(L) = 0,  f''(L) = 0,  g(L) = 0,  theta(L) = 0,  phi(L) = 0,  chi(L) = 0
 ```
 
-L itself is not set. The received L=0.5 is lambda_m, not this endpoint. Endpoint trials in [training-proposal.json](../../configs/training-proposal.json) remain proposals.
+The received L=0.5 is lambda_m, not this endpoint. The numerical endpoint is L = 20, our choice from the L study, with asymptotic far conditions for theta and phi there ([configs/reference.json](../../configs/reference.json), SPEC section 8). The zero values above are the conditions as printed.
 
 ## What this sheet does not do
 
-- It does not replace [equations.md](equations.md), change [the locked case](../../configs/physical-case-pending.json) or touch [training-proposal.json](../../configs/training-proposal.json).
-- It does not solve anything. f, g, theta, phi, chi remain unknown. No software test, reference calculation, training run or evaluation exists.
+- It does not replace [equations.md](equations.md) or change [the locked case](../../configs/physical-case-pending.json).
+- It does not solve anything. Solutions and their checks are in the [reference SPEC](../reference-solver/SPEC_reference_solutions.md).
 - It does not settle the open definitions (epsilon, Lb, B, fw, H, Prm) listed in [questions-for-supervisor.md](questions-for-supervisor.md). If a definition answer changes a locked value, this sheet must be recomputed from the new record.
 
 ## How this sheet was checked

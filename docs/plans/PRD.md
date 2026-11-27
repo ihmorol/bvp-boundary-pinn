@@ -146,7 +146,7 @@ Non-goals:
 
 | Metric | Success means |
 |---|---|
-| Reference gate G3 | Wall values plateau across L and tolerance; manufactured-solution order check passes; all initial guesses reach one solution, or every branch is reported |
+| Reference gate G3 | Wall values plateau across L and tolerance; independent solvers agree; all initial guesses reach one solution, or every branch is reported. Every check uses the locked case only |
 | Code gate G1 | Derivative tests up to order 4 and residual tests against an independent SymPy evaluation pass |
 | PINN completion | All 20 runs (4 arms x 5 seeds) finished and reported, failures included |
 | PINN accuracy | Reported, not pre-set: relative L2 and max error per field and derivative, residual per equation, error per boundary condition. The supervisor set no accuracy target |
@@ -158,5 +158,6 @@ Non-goals:
 - **Checked 2026-11-19:** the locked case has at least two smooth solutions (branches A and B); solve_bvp finds both without continuation ([SPEC](../reference-solver/SPEC_reference_solutions.md) section 8).
 - **Checked 2026-11-19:** theta and phi decay only as powers of (eta+kappa), and chi has no decaying solution as Eq. 18 is printed. The reference uses L = 20 with asymptotic far conditions for theta and phi; chi is defined by chi(L) = 0. The PINN uses the same conditions.
 - **Checked 2026-11-19:** only branch A decays at infinity; branch B is flagged.
-- **Open:** supervisor questions 7 to 9 (target branch, far-field treatment, chi at infinity).
+- **Checked 2026-11-24:** a deflated Newton search from 52 starts finds only branches A and B; the L = 20 wall values sit inside a two-form far-field bracket at L = 10 240 ([SPEC](../reference-solver/SPEC_reference_solutions.md) sections 8.4 and 8.6).
+- **Open:** supervisor questions 7 to 10 (target branch, far-field treatment, chi at infinity, f bounded at infinity).
 - **Open:** author order with Uddin and Hasan. It does not block implementation.

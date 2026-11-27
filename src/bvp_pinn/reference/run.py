@@ -6,6 +6,9 @@ Run from the repository root:
 Writes reference/study.json, reference/study.md and one folder per solution
 branch, reference/<case_id>/, holding reference.npz, meta.json, SHA256SUMS and
 figures/. Steps follow docs/reference-solver/SPEC_reference_solutions.md section 5.
+
+Every solve here is the locked case: Eqs. 14 to 18, B1 to B12 and the 22 supervisor values
+(AGENTS.md section 3). There is no check at other parameter values and no forced equation.
 """
 from __future__ import annotations
 
@@ -17,9 +20,9 @@ import subprocess
 import numpy as np
 import scipy
 
-from ..config import ROOT, load_case, load_reference_settings
+from ..config import ROOT, check_locked, load_case, load_reference_settings
 from . import equations as eq
-from . import benchmark, io, plots, shooting, verify
+from . import io, plots, shooting, verify
 from . import solver as sv
 
 
@@ -81,7 +84,7 @@ def export(p, case_sha, s, branch, final, study_branch, out_root, extra):
     case_id = f"locked-branch{branch['name']}-L{final.L:g}-tol{final.tol:.0e}"
     meta = {
         "case_id": case_id, "branch": branch["name"], "case_sha256": case_sha,
-        "physical_parameters": p, "solver": "scipy.integrate.solve_bvp", "scipy_version": scipy.__version__,
+        "physical_parameters": dict(p), "solver": "scipy.integrate.solve_bvp", "scipy_version": scipy.__version__,
         "numpy_version": np.__version__, "python_version": platform.python_version(),
         "L": final.L, "tol": final.tol, "bc_tol": final.tol, "max_nodes": s["max_nodes"],
         "initial_nodes": s["initial_nodes"], "final_nodes": int(final.x.size), "status": final.status,
@@ -103,15 +106,14 @@ def main():
     out_root = ROOT / "reference"
 
     p, case_sha = load_case()
+    check_locked(p)
     s = load_reference_settings()
+    if s.get("far_form", "local") != "local" or s.get("far_field") != "asymptotic":
+        raise ValueError("the reference imposes B10 and B11 with the asymptotic conditions in their local form")
     bar, L0, tol0 = s["agreement_rel"], s["L_start"], s["tol_values"][0]
     extra = {"git": git_state(), "created": datetime.datetime.now().isoformat(timespec="seconds")}
     study = {"case_sha256": case_sha, "settings": s, **extra}
 
-    mms = verify.mms_order(p, s["mms"]["L"], s["mms"]["meshes"])
-    mms["pass"] = bool(mms["mesh_kept_fixed"] and mms["observed_orders"][-1] >= s["mms"]["min_order"])
-    study["V3_mms"] = mms
-    print(f"V3 manufactured solution: orders {np.round(mms['observed_orders'], 2)}, pass={mms['pass']}")
 
     branches, failures = scan_branches(p, L0, tol0, s)
     study["branch_scan"] = {"L": L0, "tol": tol0, "failed": failures,
@@ -174,7 +176,7 @@ def main():
         c["V9_min_thermal_coefficient"] = min_coeff
         c["V12_slope_check"] = verify.slope_check(arrays["eta"], arrays["z"], arrays["H"])
         c["V12_pass"] = bool(max(c["V12_slope_check"].values()) <= final.tol)
-        c["G3_fixed_L_pass"] = bool(mms["pass"] and c["V4_tol_two_tightest"] and c["V7_pass"] and c["V8_pass"]
+        c["G3_fixed_L_pass"] = bool(c["V4_tol_two_tightest"] and c["V7_pass"] and c["V8_pass"]
                                     and c["V10_pass"] and c["V12_pass"]
                                     and min_coeff > 0)
         c["G3_far_field_pass"] = c["V5_core_L_independent"]
@@ -187,16 +189,6 @@ def main():
 
     out_root.mkdir(parents=True, exist_ok=True)
     np.savez(out_root / "l_study.npz", **profiles)
-    bench = benchmark.main()
-    study["V11_benchmarks"] = {
-        "abbas_max_rel_dev_L10": max(abs(r["L10"] / r["published"] - 1) for r in bench["abbas"]),
-        "flat_max_rel_dev": max(abs(r["code"] / r["exact"] - 1) for r in bench["flat"]),
-        "slip_darcy_rel_dev": abs(bench["slip_darcy"]["code_f2_0"] / bench["slip_darcy"]["exact_f2_0"] - 1),
-    }
-    # Pass: the published table to one unit of its 5th decimal; exact solutions to 1e-5 (O(1/kappa) at 1e6).
-    v = study["V11_benchmarks"]
-    study["V11_pass"] = bool(all(abs(r["L10"] - r["published"]) <= 1e-5 for r in bench["abbas"])
-                             and v["flat_max_rel_dev"] <= 1e-5 and v["slip_darcy_rel_dev"] <= 1e-5)
     (out_root / "study.json").write_text(json.dumps(study, indent=2, default=float) + "\n")
     (out_root / "study.md").write_text(plots.study_markdown(study))
     if exported:

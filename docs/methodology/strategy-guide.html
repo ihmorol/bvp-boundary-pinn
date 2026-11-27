@@ -9,7 +9,7 @@
 </style></head><body><main>
 <h1>Five-variable boundary PINN</h1>
 <p>The locked supervisor values, source equations and proposed numerical settings are kept separate below. This guide contains no trained result. Read the <a href="figures/bvp-methodology.pdf">one-page methodology diagram</a> and the <a href="figures/bvp-pinn-architecture.pdf">architecture diagram</a>.</p>
-<div class="status"><strong>All 22 physical coefficients are complete and locked.</strong> The supervisor receipt dated 2026-11-16 supplies the active values; Da=0.2 is derived from M=5. Software validation, reference, training and evaluation are pending. Numerical settings and definition questions stay separate.</div>
+<div class="status"><strong>All 22 physical coefficients are complete and locked.</strong> The supervisor receipt dated 2026-11-16 supplies the active values; Da=0.2 is derived from M=5. The reference is built and audited; the PINN code is complete and tested for all four arms; the pilots and the 20-run campaign have not run. The state of each gate is in docs/plans/strategy.md. Numerical settings stay separate from the supervisor values.</div>
 <nav><a href="#parameters">Parameter record</a><a href="#equations">Equation calculation sheet</a><a href="#strategy">Architecture and training strategy</a><a href="#papers">Papers, evidence and research comparisons</a><a href="#flows">Editable flowchart source</a></nav>
 <h2>Architecture: what goes in and what comes out</h2>
 <div class="chain">
@@ -29,7 +29,7 @@
 <div class="chain">
 <div class="node"><strong>1. Preserve and transcribe sources.</strong> Keep source conditions separate from selected values. Test the corrected Eq. 14 grouping.</div><div class="arrow">↓</div>
 <div class="node"><strong>2. Are all physical values known?</strong><div class="branch">No: save a blocked case and wait. Yes: check ranges and denominators. Invalid: stop with the exact reason.</div></div><div class="arrow">↓</div>
-<div class="node"><strong>3. Run software tests.</strong> Derivatives, normalization, equation signs, BCs, shapes, gradients and manufactured cases.<div class="branch">Failure: fix software and repeat. No physical simulation yet.</div></div><div class="arrow">↓</div>
+<div class="node"><strong>3. Run software tests.</strong> Derivatives, normalization, equation signs, BCs, shapes, gradients and the fixed-problem guards, all at the locked values.<div class="branch">Failure: fix software and repeat. No physical simulation yet.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>4. Build the reference.</strong> Twelve-state first-order BVP; change mesh, tolerance, initial guess and L.<div class="branch">Failure: diagnose and keep reference accuracy unverified. Never manufacture labels or conclude nonexistence from a solver failure.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>5. Train Adam for one seed.</strong> Interior and boundary calculations together; finite checks; independent monitoring and checkpoints.<div class="branch">NaN or broken gradients: stop and diagnose. Continue until the declared budget or transition rule.</div></div><div class="arrow">↓</div>
 <div class="node"><strong>6. Freeze the objective and refine.</strong> Same points, coefficients, scales and weights for every L-BFGS closure evaluation. Keep the Adam checkpoint if refinement fails.</div><div class="arrow">↓</div>
@@ -314,7 +314,7 @@ bm := beta_m, dt := delta*, Dt = Delta,  L := lambda_m; tw = theta_w, M:= 1/Da
 <p>In <a href="../problem/equations.md#highest-derivative-system-for-the-reference">the reference calculation sheet</a>, <code>M</code> is a local highest-derivative matrix and <code>H</code> is a local derivative vector. Those meanings are separate from the received scalars M=5 and H=1. The received L=0.5 means lambda_m=0.5, not the numerical far endpoint L used in the strategy.</p>
 <h2>Lock policy</h2>
 <p>No automatic changes or tuning of the locked target are allowed. Any change needs an explicit user or supervisor update, with its date and source recorded. Do not replace a supplied number to enforce a conditional definition. The earlier proposals and Pr=6.8 are superseded, not fallback defaults.</p>
-<p>Eqs. 14 to 19 stay unchanged. The numerical/training proposal in <a href="../../configs/training-proposal.json">training-proposal.json</a> also stays unchanged, including its eight null settings. These are numerical/training choices, not missing physical coefficients.</p>
+<p>Eqs. 14 to 19 stay unchanged. Numerical and training settings are our choices, kept apart from these values: <a href="../../configs/reference.json">configs/reference.json</a> for the reference and <a href="../../configs/pinn.json">configs/pinn.json</a> for the PINN, each with dated notes. They are not physical coefficients.</p>
 <h2>Coefficient sizes for the locked target</h2>
 <p>The following arithmetic uses the locked values above, not a computed solution. With <code>q=eta+kappa</code>, <code>h=eta+b</code>, kappa=b=Da=0.2 and beta_m=0.2, the wall eta=0 gives:</p>
 <ul>
@@ -325,11 +325,11 @@ bm := beta_m, dt := delta*, Dt = Delta,  L := lambda_m; tw = theta_w, M:= 1/Da
 <li>The magnetic bracket in Eq. 14 contains (1/kappa-4/b)=-15 at the wall.</li>
 </ul>
 <p>These are coefficient sizes, not predicted solution values. They explain why an allowed number can still make the numerical problem difficult. They do not prove that the case has no solution.</p>
-<p>With theta_w=0.2, <code>A=1+(theta_w-1)*theta</code> becomes <code>1-0.8*theta</code>. The effective coefficient of theta'' in Eq. 16 is <code>(1+0.5*A^3)/8.8</code>, using the received Nr=0.5 and Pr=8.8. Theta is still unknown. Check this coefficient along any future computed solution; do not assume regularity from the parameter values alone.</p>
-<h2>Two cases, kept separate</h2>
-<p><strong>Target:</strong> the locked 22-field case above. It is numerically complete. It is not yet a validated physical result.</p>
-<p><strong>Optional debug starting case:</strong> kappa=1, b=1, Da=1 and theta_w=1.5, with the other target coefficients unchanged. These overrides are researcher-proposed numerical choices, not supervisor-supplied values. Keep them in a separate case that never mutates the locked target. A debug result cannot replace or validate the target result.</p>
-<p>Do not choose theta_w=1 merely because it is a rounded number: the printed boundary condition divides by theta_w-1. A stable algebraic limit can be studied later, but it does not automatically define the full physical normalization. Any continuation from the debug case towards the target must keep this issue explicit.</p>
+<p>With theta_w=0.2, <code>A=1+(theta_w-1)*theta</code> becomes <code>1-0.8*theta</code>. The effective coefficient of theta'' in Eq. 16 is <code>(1+0.5*A^3)/8.8</code>, using the received Nr=0.5 and Pr=8.8. It must stay away from zero along the solution; the check is below.</p>
+<h2>One case only</h2>
+<p><strong>Target:</strong> the locked 22-field case above. Every reference solve and every PINN run uses it.</p>
+<p><strong>Retired debug case (2026-11-23):</strong> the case file still holds an <code>auxiliary_debug_case</code> (kappa=1, b=1, Da=1, theta_w=1.5), proposed on 2026-11-12 as a numerical stepping stone. It is not used. AGENTS.md section 3 says we never solve or train through other parameter values; only the way the fixed problem is imposed and solved may change. The block stays in the file because the file is locked and its hash is part of every reference folder. The code reads only the <code>physical_parameters</code> block, refuses the file if its hash changes, and refuses any value set other than the locked one (<code>config.load_case</code>, <code>config.check_locked</code>).</p>
+<p>Effective coefficient check: along the computed branch A, theta stays in [0.068, 0.250], so <code>(1+0.5*A^3)/8.8</code> stays at or above 0.1427, well away from zero (<a href="../reviews/REFERENCE_AUDIT_2026-11-23.md">reference audit</a>, check 2).</p>
 <h2>Open definitions, not missing numbers</h2>
 <p>These conditional checks use the recorded definitions and the locked values. They are not supervisor-confirmed derived values and do not authorize changes to the target.</p>
 <ul>
@@ -498,9 +498,9 @@ bm := beta_m, dt := delta*, Dt = Delta,  L := lambda_m; tw = theta_w, M:= 1/Da
 </ol>
 <p>The crossed-out line near the radiation entries was not a reliable numerical instruction. Keep its appearance in the source PDF as history; use the new receipt for Nr and Nb.</p>
 <h2>Machine-readable record</h2>
-<p><a href="../../configs/physical-case-pending.json">physical-case-pending.json</a> now holds the numerically complete, locked physical case with status <code>parameters_complete_validation_pending</code>. Its filename is retained only for link compatibility; it no longer means that physical numbers are missing. The record keeps the receipt, mappings, derived Da, excluded H/Prm and proposed debug overrides separate. No physical coefficient is null.</p>
+<p><a href="../../configs/physical-case-pending.json">physical-case-pending.json</a> now holds the numerically complete, locked physical case with status <code>parameters_complete_validation_pending</code>. Its filename is retained only for link compatibility; it no longer means that physical numbers are missing. The record keeps the receipt, mappings, derived Da, excluded H/Prm and the retired debug block separate. No physical coefficient is null. Its status string <code>parameters_complete_validation_pending</code> is part of the locked file and its hash, so it is left as it is; the state of the work is in <a href="../plans/strategy.md">strategy.md</a> section 2.</p>
 <p>The record checker compares the equation coefficients with the dated receipt and its mappings. A SHA-256 checksum guards the received values against unrecorded changes. Any authorized future update must update the dated record and checksum together; it cannot silently replace the locked target.</p>
-<p>The classical reference was built on 2026-11-19 (<a href="../../reference/study.md">reference study</a>). No PINN training or evaluation has occurred. The next gate is software validation, followed by reference, training and evaluation as set out in <a href="../plans/strategy.md">strategy.md</a>. Denominator and regularity checks remain required. The record checker checks record consistency; it is not proof of solver correctness or convergence.</p></section>
+<p>Where the work stands is in <a href="../plans/strategy.md">strategy.md</a> section 2 and the <a href="../status-log.md">status log</a>. The record checker checks record consistency; it is not proof of solver correctness or convergence.</p></section>
 <section id="equations"><h1>Equations and boundary calculation sheet</h1>
 <p>Working target: the supervisor-confirmed Eqs. 14–19 in <a href="../../sources/project-draft/project3Nov_2026.docx">the source draft</a>. We are solving the given numerical specification. We are not correcting its physical model by copying a related paper.</p>
 <p>A reading version of these equations with the locked numbers substituted is <a href="../problem/simplified-equations.md">the substituted sheet</a>. It is derived from this sheet and does not replace it.</p>
@@ -695,309 +695,65 @@ H = [f4, g2, th2, ph2, ch2]
 </tbody>
 </table>
 <p>The parameter values are pinned to the receipt text by <code>tests/test_config.py</code>, which parses the received block verbatim and applies the stated mappings and aliases.</p></section>
-<section id="strategy"><h1>PINN strategy and implementation plan</h1>
-<p>Status: <strong>parameters complete; validation pending</strong> (<code>parameters_complete_validation_pending</code>). All 22 physical coefficients are locked from <a href="../problem/parameters.md#supervisor-confirmation-2026-11-16">the user's 2026-11-16 message reporting direct supervisor values</a>, with Da derived from M. The classical reference was built on 2026-11-19 (<a href="../../reference/study.md">reference study</a>, <a href="../reference-solver/SPEC_reference_solutions.md">SPEC</a> section 8). No PINN training or evaluation has occurred.</p>
-<p>The numerical/training proposal in <a href="../../configs/training-proposal.json">training-proposal.json</a> is unchanged, including its eight null settings. The name <a href="../../configs/physical-case-pending.json">physical-case-pending.json</a> is kept only for link compatibility; its physical values are complete. The generated <a href="strategy-guide.html">strategy-guide.html</a> is rebuilt from the current records. The <a href="figures/bvp-pinn-architecture.html">PINN architecture</a> shows the Lorenz-style computational graph adapted to this BVP; <a href="lorenz-to-bvp-methodology.md">the comparison</a> records what is kept and replaced.</p>
-<p>Start with <a href="../problem/parameters.md">the parameter record</a>, <a href="../problem/equations.md">the exact equation sheet</a>, and <a href="../literature/reading-list.md">the checked reading list</a>. The source equations are confirmed as written. A copying error in the older strategy is corrected here; the original Lorenz file remains unchanged.</p>
-<h2>1. What we will solve</h2>
-<p>The network takes one position, eta, and returns five predictions: f, g, theta, phi and chi. All physical coefficients remain fixed during that case. Predictions form smooth functions, so automatic differentiation gives the needed eta derivatives.</p>
-<p>The complete check uses:</p>
-<ul>
-<li>Five equation residuals, one from each of Eqs. 14–18, at interior points.</li>
-<li>Twelve boundary errors from Eq. 19, evaluated at eta=0 and a finite far endpoint eta=L.</li>
-<li>No labeled reference solution in the baseline loss.</li>
-</ul>
-<p>Here L is the numerical far endpoint. The received L=0.5 maps to lambda_m, not to this endpoint. The received M=5 defines Da=1/M=0.2. The local matrix M and derivative vector H in the reference calculation are separate from the received scalar symbols. H=1 and Prm=0.1 remain recorded outside the 22 physical coefficients; do not add terms or assume a magnetic Prandtl mapping.</p>
-<p>A single network serves the whole interval. We do not carry a guessed state from one spatial window to the next using the old Lorenz time-rollout method.</p>
-<h2>2. Separate the target from an easier numerical check</h2>
-<p>The locked target uses kappa=b=Da=0.2 and beta_m=0.2, from <a href="../problem/parameters.md#supervisor-confirmation-2026-11-16">the dated parameter record</a>. With q=eta+kappa and h=eta+b, wall eta=0 gives 1/q=5, 1/q^3=125, 1/Da=5, 2*beta_m/h^4=250 and (1/kappa-4/b)=-15. These are coefficient sizes, not solution results or proof that the case is invalid.</p>
-<p>The received theta_w=0.2 gives A=1-0.8<em>theta. With Nr=0.5 and Pr=8.8, the thermal highest-derivative coefficient is (1+0.5</em>A^3)/8.8. It must be checked along the computed solution; numerical completeness does not establish regularity.</p>
-<p>An optional debug case uses kappa=b=Da=1 and theta_w=1.5, keeping the other target coefficients. These are researcher-proposed overrides in a separate case, not changes to the locked target. First test the solver and PINN on this less extreme case. If needed, proposed kappa/b/Da continuation stages are 1, 0.5 and 0.2. Keep theta_w's target separate; crossing theta_w=1 requires the stable radiation expression and confirmation that the full normalization permits the limit. Do not claim a continuous physical branch through that point automatically.</p>
-<p>No automatic target changes or physical-parameter tuning are allowed. A change needs an explicit user or supervisor update with a date and source. The debug case is never relabeled as the requested result. Both cases still need software and reference checks; neither has been run. Open definition questions do not permit replacing the supplied values.</p>
-<h2>3. Architecture and module responsibilities</h2>
+<section id="strategy"><h1>Strategy and gates</h1>
+<p>Date: 2026-11-24. This replaces the pre-implementation plan of 2026-11-16, which is kept in <a href="../archive/strategy-2026-11-16.md">archive/strategy-2026-11-16.md</a>. That plan proposed a 64-wide network, soft boundary penalties, a debug case with other parameter values and arms B0 to B6. None of that is current, and the debug case is against the fixed-problem rule in <a href="../../AGENTS.md">AGENTS.md</a>.</p>
+<h2>1. What we solve</h2>
+<p>One problem, fixed as the supervisor gave it: Eqs. 14 to 18 with boundary conditions B1 to B12 (<a href="../problem/equations.md">equations.md</a>) at the 22 locked values (<a href="../problem/parameters.md">parameters.md</a>). Only the way the conditions are imposed and the way the problem is solved may change. Every result is checked on the original equations.</p>
+<p>The task (supervisor, 2026-11-19): a classical reference, a PINN trained on eta only, and a test of the PINN against the reference. The reference is for checking. It never feeds training or the choice of a run.</p>
+<h2>2. Gates, in order</h2>
+<p>A gate opens only when the one before it holds.</p>
 <table>
 <thead>
 <tr>
-<th>Module to implement later</th>
-<th>Input</th>
-<th>Output</th>
-<th>Main test</th>
+<th>Gate</th>
+<th>What must hold</th>
+<th>State on 2026-11-24</th>
+<th>Detail</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Parameter validation</td>
-<td>Complete physical case and numerical settings</td>
-<td>Validated case or clear failure</td>
-<td>Missing values, range membership, denominators</td>
+<td>1 Parameters</td>
+<td>All 22 values locked, none filled from papers</td>
+<td>Done 2026-11-16</td>
+<td><a href="../problem/parameters.md">parameters.md</a></td>
 </tr>
 <tr>
-<td>Network</td>
-<td>Eta tensor, shape N by 1</td>
-<td>Five physical predictions, N by 5</td>
-<td>Shape and dependence on each input row</td>
+<td>2 Software tests</td>
+<td><code>uv run pytest</code> passes: equations against SymPy, derivatives to order 4, built-in conditions, losses, optimizers, the acceptance rule, an end-to-end run of every arm, the no-leakage check, and the fixed-problem guards (<code>tests/test_fixed_problem.py</code>)</td>
+<td>Pass, 60 tests</td>
+<td><a href="../pinn/IMPLEMENTATION_NOTES.md">IMPLEMENTATION_NOTES.md</a> section 6</td>
 </tr>
 <tr>
-<td>Derivatives</td>
-<td>Network predictions and eta</td>
-<td>f1–f4; other first/second derivatives</td>
-<td>Analytic derivatives and chain rule</td>
+<td>3 Reference</td>
+<td>SPEC checks V1, V2, V4 to V10, V12, all at the locked case; L chosen; branches found</td>
+<td>Pass. Audited 2026-11-23; audit defects closed 2026-11-24</td>
+<td><a href="../reference-solver/SPEC_reference_solutions.md">SPEC</a>, <a href="../reviews/REFERENCE_AUDIT_2026-11-23.md">audit</a></td>
 </tr>
 <tr>
-<td>Torch equations</td>
-<td>Eta, predictions, derivatives, fixed parameters</td>
-<td>R14–R18, N by 5</td>
-<td>Independent transcription and signs</td>
+<td>4 Training</td>
+<td>Pilots P2b and P3 freeze <code>configs/pinn.json</code> with dated notes; then the campaign, 4 arms x 5 seeds</td>
+<td>Code ready; pilots and campaign not run</td>
+<td><a href="../pinn/PINN_PLAN.md">PINN_PLAN.md</a> sections 2, 3 and 8</td>
 </tr>
 <tr>
-<td>Boundary checker</td>
-<td>Prediction/derivative traces at 0 and L</td>
-<td>B1–B12, length 12</td>
-<td>All twelve conditions and no extras</td>
-</tr>
-<tr>
-<td>Loss</td>
-<td>Original residuals, fixed scales, positive weights</td>
-<td>Scalar and component diagnostics</td>
-<td>Scaling/weight application and gradient connection</td>
-</tr>
-<tr>
-<td>Classical reference</td>
-<td>Same complete coefficients, original equations and BCs</td>
-<td>Mesh-refined twelve-state BVP solution</td>
-<td>Tolerance/domain/guess sensitivity</td>
-</tr>
-<tr>
-<td>Trainer</td>
-<td>Model, points, loss, optimizer settings</td>
-<td>Checkpoints and explicit run status</td>
-<td>Deterministic closure and resume</td>
-</tr>
-<tr>
-<td>Evaluation</td>
-<td>Selected model, fresh points, approved reference</td>
-<td>Profiles, residuals, BCs, errors and wall quantities</td>
-<td>Independent grids and derivative accuracy</td>
+<td>5 Evaluation</td>
+<td>Metrics, figures and the answers to PINN_PLAN section 7, every number traced to a run ID</td>
+<td>Code ready and tested on a dry campaign; no campaign result yet</td>
+<td><a href="../pinn/PINN_PLAN.md">PINN_PLAN.md</a> sections 4 to 7</td>
 </tr>
 </tbody>
 </table>
-<p>Proposed solver structure, not existing implementation:</p>
-<pre><code class="language-text">src/bvp_pinn/
-    config.py       complete case and training settings
-    model.py        one smooth five-output network
-    derivatives.py  reusable componentwise eta differentiation
-    equations.py    Torch residuals from the checked specification
-    boundaries.py   exactly twelve errors
-    losses.py       scales, positive weights and diagnostics
-    reference.py    separately coded NumPy BVP and convergence checks
-    sampling.py     interior, endpoint, monitor and final sets
-    train.py        Adam and L-BFGS stages
-    evaluate.py     original residuals, profiles and wall errors
-    io.py           source/case hashes, checkpoints, result tables
-    tests/          analytic, algebraic and manufactured tests
-</code></pre>
-<p>Do not introduce a second trainable “physics network.” The physics part is the fixed equation calculation. Physical parameter values are not in the optimizer parameter list.</p>
-<h2>4. Network and derivatives</h2>
-<p>The starting model is a pointwise multilayer perceptron: one input, four hidden tanh layers of width 64, five linear outputs. Use float64, Xavier-style weight initialization, zero biases and recorded seeds. This is a testable starting choice, not an optimal architecture claim.</p>
-<p>Normalize the coordinate inside the model with x=2*eta/L-1. Differentiate the complete model with respect to eta, so the factor 2/L is included once by autograd. If differentiating with respect to x instead, the kth eta derivative needs (2/L)^k. Test up to order four; do not apply both methods at once.</p>
-<p>Extract columns separately as N by 1 tensors. Compute f1, f2, f3, f4 and two derivatives for each other field. Keep the graph through the highest derivative so the final loss can differentiate with respect to NN weights. This nested differentiation is the key change from our old first-order Lorenz PINN.</p>
-<p>Do not sum all five outputs before asking for their derivatives. A vector-Jacobian product with all ones over every output sums their contributions. Summing samples for a single column gives the desired pointwise derivatives only when sample rows are independent.</p>
-<p>Avoid ReLU, dropout and training-mode BatchNorm for this direct high-order baseline. Do not constrain all outputs between zero and one. Do not multiply every output by a factor vanishing at L: f itself is not prescribed zero there.</p>
-<h2>5. Boundary enforcement and loss</h2>
-<p>Use all twelve source boundary errors in <a href="../problem/equations.md">equations.md</a>. At every step, run the model at eta=0 and eta=L, differentiate the required fields there, and calculate B1–B12. Square each error and include it in the same loss used for the interior equations.</p>
-<p>This is soft enforcement. We reduce the error by updating NN weights; we do not replace an output with its required value. Each final error must be checked individually.</p>
-<p>For example, B3=g(0)+ell*f2(0). There is no fixed label for g(0); the given relation itself supplies the target zero. B6=chi(0)-1 directly checks a known endpoint value. These two types of constraints both work in the loss.</p>
-<p>Define fixed positive equation scales s_i and boundary scales t_j. Let r_i=R_i/s_i and b_j=B_j/t_j. The full loss is:</p>
-<pre><code class="language-text">J = sum over the 5 equations of lambda_i * mean(r_i**2)
-    + sum over the 12 boundaries of mu_j * b_j**2
-</code></pre>
-<p><strong>Read:</strong> square each scaled equation error and average over the interior positions. Multiply each equation average by its weight. Add the twelve weighted squared boundary errors.</p>
-<p>All weights start positive. Begin with weights of one after documenting characteristic scales; this does not guarantee the gradients are balanced. Scales must come from declared field/derivative magnitudes and equation terms, not a denominator equal to the current residual. An absolute loss threshold changes meaning when a scale changes, so save both the original and scaled errors.</p>
-<p>The target's 250-sized wall coefficient above may call for scaling that equation by a fixed characteristic magnitude. It must still report the original equation error. Dividing an equation by a tiny supplied parameter can also amplify numerical gradients. Record the scaling choice rather than hiding it.</p>
-<p>No initial-value term, temporal causal weights, Lorenz invariants or solution-data term belongs in this baseline. Do not train unconstrained loss weights that can reduce the objective by shrinking to zero.</p>
-<h2>6. Classical reference simulation</h2>
-<p>Before quantitative accuracy claims, solve the same BVP conventionally. Use the twelve first-order states and the highest-derivative matrix documented in <a href="../problem/equations.md">equations.md</a>. Solve the matrix system, do not form its inverse. Check its scaled conditioning and effective theta-second-derivative coefficient along the state.</p>
-<p>Use SciPy solve_bvp, or MATLAB bvp4c if requested. The regular first-order representation requires nonzero highest-derivative coefficients; the direct PINN's residual form does not remove a mathematical degeneracy when they vanish.</p>
-<p>Reference steps:</p>
-<ol>
-<li>Reject null or invalid parameters and ensure valid eta+kappa and eta+b denominators.</li>
-<li>Construct a nonuniform initial mesh with wall coverage. A trial L=10 and 200 initial nodes are software starting choices, not certified far-field values.</li>
-<li>Use smooth initial guesses and consistent derivative-state guesses. Try more than one wall-temperature/flow guess.</li>
-<li>Solve and record success status, final mesh, original BC errors and residual estimates.</li>
-<li>Tighten tolerance, for example from 1e-5 to 1e-7, and compare wall quantities and profiles. These values are pilots, not guaranteed error bounds.</li>
-<li>Increase L, for example 10, 15 and 20, extending the previous guess smoothly. Compare only the common interval and the wall quantities.</li>
-<li>Increase mesh resolution independently of L. If solutions change materially, the reference is not converged yet.</li>
-<li>Keep all converged branches found and name them. A converged solver does not prove uniqueness or temporal stability.</li>
-</ol>
-<p>There is an optional structural cross-check: solve the first four fields as a ten-state core, then solve chi as a linear BVP with those fixed curves, using the printed Eq. 18. Compare this with the monolithic twelve-state reference. Errors from interpolation and core residuals must also be checked. This hierarchy is not a reason to leave chi out of the PINN's full loss.</p>
-<p>Do not differentiate a piecewise-cubic interpolant for f four times and call that a reference f4. Use the appropriate derivative-state interpolants and check compatibility. Do not obtain every derivative from the RHS and then claim an independent residual check by substituting it back into the same RHS.</p>
-<p>If the reference fails, diagnose guesses, transcription, singularity, branch and domain. Failure is not a proof of nonexistence. A PINN could still be explored, but reference-based accuracy then remains unverified. No reference values enter the baseline training loss.</p>
-<h2>7. Point sets and near-wall coverage</h2>
-<p>Maintain four separate sets:</p>
+<p>The task list for each gate is <a href="../plans/TODO.md">TODO.md</a>.</p>
+<h2>3. Rules that hold at every gate</h2>
 <ul>
-<li>Interior training coordinates.</li>
-<li>Endpoint coordinates, always checked separately.</li>
-<li>Fixed monitoring points used to select a model and diagnose fitting.</li>
-<li>Fresh final evaluation coordinates after design choices stop.</li>
+<li><strong>The problem is fixed.</strong> Eqs. 14 to 18, B1 to B12 and the 22 supervisor values are the same in every run, tool and use case. No debug case, no continuation, no warm start from another value, no check at other values and no forced equation. The code refuses a changed case file, any setting that names a physical value and an L other than the reference's (<a href="../../AGENTS.md">AGENTS.md</a> section 3).</li>
+<li><strong>No claim without a run.</strong> Pending, blocked and failed are written down as such. A failed run stays in every table.</li>
+<li><strong>No reference in training or selection.</strong> Training and the acceptance rule live in <code>src/bvp_pinn/pinn/</code>, which never imports the reference data or the evaluation code (gate G5, tested). Only <code>src/bvp_pinn/evaluation/</code> reads the reference, after acceptance.</li>
+<li><strong>Our choices are marked as ours.</strong> Numerical settings, pass bars and the acceptance rule are our choices, each with a dated note in the config or the doc that uses it. Supervisor values are kept apart.</li>
+<li><strong>Claims across arms need all 5 paired seeds</strong> (gate G6). Otherwise the result is "no consistent effect".</li>
 </ul>
-<p>For the first pilot, use about 1024 interior points. Half can cover the full interval using a seeded stratified uniform design; half can cover a wall subinterval chosen from min(kappa,b), while still preserving outer coverage. For the locked kappa=b=0.2, a trial wall region of a few multiples of 0.2 is reasonable to test, not a claimed layer thickness. The reference and residual plots should guide changes.</p>
-<p>An unweighted mean over deliberately wall-biased points changes the emphasis of the objective. Say so. If the objective should approximate a uniform-domain integral, use appropriate quadrature/importance weights. Do not call these objectives identical.</p>
-<p>Use at least a dense monitoring grid and a fresh random final set, with extra checks between training points near the wall. Endpoint value agreement cannot show that an entire curve is correct.</p>
-<h2>8. Testing before any long run</h2>
-<p>Use manufactured fixtures where possible, clearly marked as synthetic test coefficients. They isolate software tests from the target case. Such fixtures are not the locked case and cannot silently become real-run defaults. None of the required software tests below has been run.</p>
-<p>Required tests:</p>
-<ol>
-<li>Parameter schema: exactly 22 physical coefficients, missing/null rejection, finite values and documented ranges.</li>
-<li>Source transcription: corrected R14 convective and unsteady brackets, all signs, printed R18 terms and all twelve source BCs.</li>
-<li>Analytic derivatives: exponentials and polynomial functions through fourth order; handle mathematically constant/zero derivatives deliberately. Do not mask a graph break by treating an unused input as zero automatically.</li>
-<li>Coordinate scaling: a known function evaluated with internal normalization has the same eta derivatives as its analytic formula.</li>
-<li>Batch independence: adding another coordinate does not change previous rows' predictions.</li>
-<li>Shapes: every residual is N by 1 before stacking; prevent N by N broadcasting.</li>
-<li>Algebraic rearrangement: R(H)-R(0)=M*H at finite artificial states; independent NumPy and Torch evaluations agree.</li>
-<li>Boundary examples: value, derivative, slip, flux and nonlinear radiation tests, including nonzero slopes that cancel.</li>
-<li>Gradient connectivity: representative loss components produce finite gradients on NN parameters. Never NumPy-convert or detach values that enter training loss.</li>
-<li>Manufactured solution: smooth known curves, matching source forcing and boundary targets, recovered to declared test tolerances. This tests implementation, not original physical assumptions.</li>
-<li>L-BFGS closure: repeated evaluation at unchanged weights/points returns the same objective, and reevaluation creates a new graph.</li>
-<li>Checkpoint round-trip: predictions and optimizer/RNG state are restored under matching configuration.</li>
-<li>Short smoke run: finite updates, component logs and intentional early-stop behavior. No physical result claim.</li>
-</ol>
-<h2>9. Adam training flow</h2>
-<p>For each seed:</p>
-<ol>
-<li>Create the model, complete case, fixed scales/weights and point sets. Save all settings and source hashes.</li>
-<li>Create Adam with a trial learning rate 1e-3; no weight decay for the baseline. A declared decay towards 1e-4 and a budget around 20000 steps are pilots to test, not accuracy guarantees.</li>
-<li>At every step, clear previous NN gradients.</li>
-<li>Make fresh eta coordinate leaves requiring gradients.</li>
-<li>Predict fields at interior points; compute the needed derivatives once and reuse them.</li>
-<li>Calculate R14–R18 from the confirmed source specification.</li>
-<li>Predict endpoints and required derivatives; calculate all twelve boundary errors.</li>
-<li>Scale, square and combine the loss components.</li>
-<li>Check residuals and loss for NaN/infinity before backpropagation.</li>
-<li>Backpropagate through the derivatives and equation arithmetic to the network weights.</li>
-<li>Check gradients and record the unmodified norm. Then update weights.</li>
-<li>At a fixed monitoring interval, evaluate all original errors on independent points and save an eligible checkpoint.</li>
-<li>Continue until the declared budget or transition condition is reached. A flat loss is a reason to diagnose scaling or graph connection, not assume convergence.</li>
-</ol>
-<p>History stores detached numbers, not live graphs. Use weighted deterministic chunks if full-batch fourth-order autograd runs out of memory. Each chunk contributes its residual sum divided by the total training count; add boundaries once. Do not give a tiny final chunk the same aggregate weight as a full chunk accidentally.</p>
-<p>If any value is nonfinite, stop the update and record the first failing term. Do not hide it with nan_to_num, arbitrary epsilons or zero residual substitution. Gradient clipping in Adam is a separately recorded option if justified; never clip physical outputs to conceal an invalid solution.</p>
-<h2>10. L-BFGS refinement flow</h2>
-<p>Save the Adam checkpoint and freeze parameters, domain, points, scales and weights. Create a fresh L-BFGS optimizer with a deterministic closure.</p>
-<p>The closure clears NN gradients, creates fresh coordinates, recomputes predictions/derivatives/residuals/boundaries/loss, checks finite values, backpropagates and returns the loss. The optimizer can call it multiple times for a single step. Count function evaluations and accepted progress separately from Adam steps.</p>
-<p>A trial strong-Wolfe line search and a history of about 50 vectors can be tested. Its memory cost and installed-library settings must be recorded. Keep all parameters on one device in PyTorch's standard implementation.</p>
-<p>Do not resample or change weights/scheduler inside the closure. Do not give line search clipped gradients that no longer match the objective. If the objective changes, reset the optimizer history. Recompute post-step diagnostics; the returned step loss need not describe the final weights.</p>
-<p>If refinement fails, preserve the Adam result and failure reason. Compare it honestly instead of automatically declaring the hybrid run better.</p>
-<h2>11. Optional improvements, in a controlled order</h2>
-<ol>
-<li>Fix equations, scaling, graph or sampling mistakes first. Larger models do not fix wrong arithmetic.</li>
-<li>Compare fixed points with periodic uniform resampling during Adam; freeze the selected set for refinement.</li>
-<li>Compare custom residual enrichment: score scaled errors on a candidate pool, add difficult coordinates, retain uniform coverage. Include scoring time. Do not call it RAD/RAR-D without following their checked definitions.</li>
-<li>Compare fixed and gradient-balanced positive weights during Adam. Bound extreme updates, stop gradient through weight estimates, freeze for refinement, retain original errors.</li>
-<li>Compare five-output direct and twelve-output first-order formulations using the same soft BCs. The first-order method adds seven derivative helpers and seven agreement errors. Naming a helper f2 does not make it the physical second derivative. Check original equations/BCs with the physical-head derivatives.</li>
-<li>Compare a proven simple exact endpoint construction, such as chi=1-x+x(1-x)*N_chi(x) with x=eta/L, separately from other changes. This enforces two chi values exactly, not all twelve coupled nonlinear BCs.</li>
-<li>Only after a verified fixed-parameter baseline, consider a parametric input vector [eta,p1,...] for many cases. Every parameter sample must be admissible, boundaries apply to every sample, and held-out parameter cases need independent reference checks. This is not the first implementation.</li>
-</ol>
-<p>No causal time-window rollout, multi-expert architecture or mixed precision is an automatic requirement for this small eta BVP. Fourth-order accuracy and measured cost decide whether to investigate them.</p>
-<h2>12. Final evaluation and results</h2>
-<p>The trained output is a function on the tested interval. Input an eta and obtain five predictions; differentiate when needing velocity f-prime and wall quantities. No accuracy claim outside the tested domain or for unseen physical parameter sets.</p>
-<p>Save:</p>
-<ul>
-<li>eta and all five PINN curves, reference curves and absolute errors;</li>
-<li>f-prime velocity-related curve and derivative error;</li>
-<li>RMS/max original and scaled residuals for each equation;</li>
-<li>every signed original and scaled boundary error;</li>
-<li>required wall derivatives and approved derived quantities;</li>
-<li>independent dense-grid and random-point results;</li>
-<li>L/mesh/point-count sensitivity;</li>
-<li>all seed outcomes, time, evaluations, memory and stopping reasons;</li>
-<li>weights, config, source/case hashes and checkpoints.</li>
-</ul>
-<p>Use absolute or scale-normalized errors when reference fields/quantities approach zero. Use quadrature weights for nonuniform-grid norms. Reference discrepancies should be interpreted against estimated numerical uncertainty of the reference itself.</p>
-<p>Eq. 23's physical output formulas are a separate checked post-processing task. Do not copy a possibly inconsistent wall-shear formula into the loss, and do not claim wall-transfer accuracy merely because the profiles look smooth. Ask which derived quantities the supervisor needs before those acceptance targets are fixed.</p>
-<p>Candidate pilot targets could include scaled boundary max &lt;=1e-4 and field L2 error &lt;=1e-3 where a reliable reference exists. These are proposed numerical goals, not supplied requirements or promises. Choose final tolerances before interpreting experiments and keep reference error appreciably smaller than the reported PINN error. All acceptance thresholds must be tied to recorded scales.</p>
-<h2>13. Controlled research comparisons</h2>
-<table>
-<thead>
-<tr>
-<th>ID</th>
-<th>What changes</th>
-<th>What is held comparable</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>B0</td>
-<td>Five outputs, fixed scaled soft BCs, wall/full-domain points, Adam then L-BFGS</td>
-<td>Confirmed equations, case, precision, evaluation sets, seeds</td>
-</tr>
-<tr>
-<td>B1</td>
-<td>Adam only</td>
-<td>Same declared wall-time/evaluation budget, not equal method names</td>
-</tr>
-<tr>
-<td>B2</td>
-<td>Uniform resampling during Adam</td>
-<td>Architecture, scales, budget and final grid</td>
-</tr>
-<tr>
-<td>B3</td>
-<td>Residual enrichment</td>
-<td>Coverage, objective definition, budget including scoring</td>
-</tr>
-<tr>
-<td>B4</td>
-<td>Gradient-based weights</td>
-<td>Same sampling/formulation; freeze weights for refinement</td>
-</tr>
-<tr>
-<td>B5</td>
-<td>Twelve-output first-order method</td>
-<td>Original BCs, precision and declared matching budget/parameter-count policy</td>
-</tr>
-<tr>
-<td>B6</td>
-<td>Selected exact simple endpoint values</td>
-<td>Other architecture/training choices unchanged</td>
-</tr>
-</tbody>
-</table>
-<p>First compare one change at a time. Report median/spread and failures over at least three pilot seeds, with more for serious quantitative comparisons. Exact reproducibility depends on hardware/libraries; record deterministic settings rather than promise bit-for-bit identity across machines.</p>
-<p>Our research question is which change improves reliable solution accuracy and cost on the tested cases, especially the inverse-power wall region. It is not a predeclared claim that the PINN outperforms solve_bvp. Classical collocation may remain faster for a single 1D case.</p>
-<h2>14. Algorithm</h2>
-<pre><code class="language-text">INPUT: confirmed equations and BCs; complete parameter case;
-       proposed network, point, scale, optimizer and acceptance settings
-OUTPUT: verified solution record or explicit failed/blocked run
-
-if any physical coefficient is null:
-    return BLOCKED_MISSING_PARAMETERS
-validate source specification, ranges and denominators
-run analytic, algebraic, boundary, gradient and checkpoint tests
-if tests fail:
-    return FAILED_IMPLEMENTATION_TESTS
-
-build classical reference; vary guesses, mesh, tolerance and L
-if reference unavailable:
-    record UNVERIFIED_REFERENCE (do not manufacture target curves)
-
-for seed in the declared seed list:
-    initialize one five-output network and point sets
-    train Adam:
-        predict interiors -&gt; derivatives -&gt; original equation errors
-        predict endpoints -&gt; derivatives -&gt; all twelve BC errors
-        scale/square/weight -&gt; total loss
-        check finite -&gt; backprop -&gt; check gradients -&gt; update NN weights
-        monitor independently -&gt; checkpoint -&gt; transition/budget rule
-    freeze objective and refine with fresh deterministic L-BFGS
-    keep a valid checkpoint even if refinement fails
-    evaluate original equations, all BCs, fields and f-prime on fresh points
-    compare approved wall quantities and same-branch reference if available
-    check acceptance and save explicit status/settings/errors
-
-repeat domain and sample sensitivity; report all failures
-compare controlled method variants; claim only measured improvements
-</code></pre>
-<p>No physical computation is executed by this document. The record-check tool in this repository checks documentation/config integrity, not solver correctness, BVP convergence or NN correctness.</p>
-<h2>15. Failure handling and implementation gates</h2>
+<h2>4. When something fails</h2>
 <table>
 <thead>
 <tr>
@@ -1007,50 +763,34 @@ compare controlled method variants; claim only measured improvements
 </thead>
 <tbody>
 <tr>
-<td>Missing coefficients</td>
-<td>Stop; obtain supervisor values; no auto-defaults</td>
+<td>A test fails</td>
+<td>Fix the code before any run. Never loosen a test to pass it without a written reason</td>
 </tr>
 <tr>
-<td>Invalid denominator or thermal derivative coefficient</td>
-<td>Diagnose specified case/normalization; no epsilon patches</td>
+<td>NaN or infinite value in training</td>
+<td>The run stops and is saved with its first bad term; the refine stage rolls back to the last finite state. Nothing is masked</td>
 </tr>
 <tr>
-<td>NaN, infinite derivative or disconnected graph</td>
-<td>Identify first failing expression and restore known-good state</td>
+<td>Small loss, wrong solution</td>
+<td>The acceptance rule checks the far tail and the Newton-step error estimate, not the loss alone (run E8, IMPLEMENTATION_NOTES 7.1)</td>
 </tr>
 <tr>
-<td>Small combined loss, one large boundary error</td>
-<td>Inspect separate components, scales and gradients</td>
+<td>A run lands on branch B or no branch</td>
+<td>Reported as such; never averaged with branch A runs</td>
 </tr>
 <tr>
-<td>Good endpoints, poor interior/fluxes</td>
-<td>Improve independent checking and wall resolution</td>
+<td>Every arm fails at the locked case</td>
+<td>Report the failure with its logs. No other parameter values are tried</td>
 </tr>
 <tr>
-<td>Large L sensitivity</td>
-<td>Re-solve on longer domain and verify coverage</td>
-</tr>
-<tr>
-<td>Different seeds/reference branches</td>
-<td>Keep branches separate; no averaging as one solution</td>
-</tr>
-<tr>
-<td>L-BFGS instability</td>
-<td>Check frozen objective, closure gradients and line search</td>
-</tr>
-<tr>
-<td>Good helpers, bad physical derivatives</td>
-<td>Check original derivatives and compatibility gradients</td>
-</tr>
-<tr>
-<td>Reference fails</td>
-<td>Diagnose; do not claim no solution or fake accuracy</td>
+<td>The reference fails a check</td>
+<td>Diagnose. A failed reference is never replaced by a guess or a paper value</td>
 </tr>
 </tbody>
-</table>
-<p>Implementation should proceed in stages: parameter/schema and source fixtures; tested original residuals; reference simulation; direct PINN smoke test; full fixed-case runs; controlled improvements. User approval for this strategy does not mean publishing a remote repository, committing or starting expensive runs without the required input.</p></section>
+</table></section>
 <section id="papers"><h1>Reading list and research strategy</h1>
 <h2>Research brief</h2>
+<p><strong>Arm names (note of 2026-11-24):</strong> B4, B5 and B6 in this file are the variants of the archived 2026-11-16 strategy (B4 gradient-based weights, B5 a twelve-output first-order network, B6 exact endpoint conditions). They are not the current arms. The current arms are B0 to B3 of <a href="../pinn/PINN_PLAN.md">PINN_PLAN.md</a>; the weighting and exact-condition ideas became shared settings (<a href="../pinn/IMPLEMENTATION_NOTES.md">IMPLEMENTATION_NOTES.md</a> section 5.1).</p>
 <p>Questions:</p>
 <ol>
 <li>Which prior works directly help with five physical outputs, a fourth-order equation, and coupled boundary penalties?</li>
@@ -1631,142 +1371,72 @@ compare controlled method variants; claim only measured improvements
 <li>Citation counts quoted above are search-side estimates, not verified publisher counts. They are context only, not claims.</li>
 </ul></section>
 <section id="flows"><h1>Flowcharts</h1>
-<p>The browser-readable <a href="strategy-guide.html">strategy guide</a> renders these flows as labeled steps and branches. Mermaid source below is editable documentation, not code that trains a network.</p>
+<p>Editable Mermaid text versions of the method, updated 2026-11-24 to the code in <code>src/bvp_pinn/</code>. The browser-readable <a href="strategy-guide.html">strategy guide</a> renders them; rebuild it with <code>python3 -I tools/build_guide.py</code>. The one-page diagrams are in <a href="methodology.md">methodology.md</a>.</p>
 <h2>Methodology overview</h2>
-<p>Same numbers as the <a href="figures/bvp-methodology.pdf">methodology diagram</a> and <a href="methodology.md">its guide</a>.</p>
+<p>Same numbers as the <a href="figures/bvp-methodology.pdf">methodology diagram</a>.</p>
 <pre><code class="language-mermaid">flowchart TD
-  S1[1. Locked case] --&gt; S2[2. Wall coefficient sizes and loss scales]
-  S2 --&gt; S3[3. Software tests]
+  S1[1. Locked case] --&gt; S2[2. Wall coefficient sizes, fixed residual scales]
+  S2 --&gt; S3[3. Software tests: uv run pytest]
   S3 --&gt; T{All tests pass?}
   T --&gt;|No: fix the code| S3
   T --&gt;|Yes| S4[4. First-order system with solve_bvp]
-  S4 --&gt; S5[5. Convergence checks: tolerance, mesh, L, guesses]
+  S4 --&gt; S5[5. Checks: tolerance, three solvers, L to 10 240, branch search]
   S5 --&gt; C{Converged?}
   C --&gt;|Yes| REF[Reference curves, check only]
   C --&gt;|No| UNV[Unverified reference: no accuracy claim]
-  S5 --&gt;|then train| S6[6. Point sets, half near the wall]
-  S6 --&gt; S7[7. Network and loss]
-  S7 --&gt; S8[8. Adam training]
-  S8 --&gt; S9[9. L-BFGS refinement]
+  S5 --&gt;|then train| S6[6. Points stretched to the wall, monitor set apart]
+  S6 --&gt; S7[7. Network; B1 to B12 built in; loss R14 to R18]
+  S7 --&gt; S8[8. Adam, smooth start profile, log scale]
+  S8 --&gt; S9[9. Refine: L-BFGS, then Levenberg-Marquardt]
   S9 --&gt; F{All values finite?}
   F --&gt;|No| STOP[Stop and save the first bad term]
-  F --&gt;|Yes| S10[10. Pick the checkpoint on monitor points]
-  S10 -.-&gt;|next seed| S6
-  S10 --&gt;|after 3 seeds| S11[11. Final test vs reference]
+  F --&gt;|Yes| S10[10. Accept or reject: error estimate and tail check]
+  S10 -.-&gt;|next run| S6
+  S10 --&gt;|after 20 runs| S11[11. Test against the reference]
   REF --&gt; S11
-  S11 --&gt; A{Targets met?}
-  A --&gt;|Yes| S12[12. Sensitivity, then variants B1 to B6]
+  S11 --&gt; A{Same in all 5 seeds?}
+  A --&gt;|Yes| S12[12. Compare arms B1 to B3 against B0]
   S12 --&gt; S13[13. Report]
-  A --&gt;|No: reported as failed| S13
+  A --&gt;|No: no consistent effect| S13
 </code></pre>
-<h2>Lorenz-style BVP computational graph</h2>
-<p>Text version of the <a href="figures/bvp-pinn-architecture.pdf">architecture diagram</a>. It follows the Lorenz PINN's loop, changed for this two-ended BVP. See <a href="lorenz-to-bvp-methodology.md">the comparison</a>. One shared network, no separate trainable physics network.</p>
+<h2>One training step</h2>
+<p>Text version of the <a href="figures/bvp-pinn-architecture.pdf">architecture diagram</a>.</p>
 <pre><code class="language-mermaid">flowchart TD
-  I[Fixed interior eta coordinates: N by 1] --&gt; X[Normalize x = 2 eta / L - 1]
-  X --&gt; NN[One shared MLP: 1 to 64 to 64 to 64 to 64 to 5]
-  NN --&gt; U[Physical fields: f g theta phi chi]
-  U --&gt; D[Componentwise eta derivatives: f through order 4; others through order 2]
-  U --&gt; R[Original R14 to R18]
-  D --&gt; R
-  P[Locked physical coefficients] --&gt; R
-  E[Endpoint coordinates: 0 and L] --&gt; EN[Evaluate the same NN and endpoint derivatives]
-  EN --&gt; B[All twelve original boundary errors]
-  P --&gt; B
-  R --&gt; JR[Scaled weighted equation loss]
-  B --&gt; JB[Scaled weighted boundary loss]
-  JR --&gt; J[One total loss]
-  JB --&gt; J
-  J --&gt; FIN{Finite values and connected gradients?}
-  FIN --&gt;|No| FAIL[Save failure; stop invalid update]
-  FIN --&gt;|Yes| G[Backpropagate to NN weights and biases]
-  G --&gt; OPT[Adam then deterministic fixed-objective L-BFGS]
-  OPT -.-&gt;|Update NN only| NN
-  OPT --&gt; MON[Independent monitoring and eligible checkpoints]
-  MPTS[Fixed monitoring coordinates] --&gt; MON
-  MON --&gt; LOCK[Select and lock checkpoint; retain Adam fallback]
-  LOCK --&gt; TEST[Open withheld coordinates; evaluate fields derivatives R and B]
-  REF[Checked twelve-state solve_bvp reference] -.-&gt;|Comparison only| TEST
-  TEST --&gt; SEN[Domain sample and seed sensitivity]
-  SEN --&gt; REPORT[Errors uncertainty costs status and all failures]
+  I[Training points eta, N by 1] --&gt; X[Log input map]
+  X --&gt; NN[tanh network 40 x 4, five outputs]
+  ST[Smooth start profile, fixed] --&gt; NN
+  NN --&gt; BL[Boundary layer: B1 to B12 exact for any weights]
+  P[Locked coefficients] --&gt; BL
+  BL --&gt; J[Taylor jets: f to order 4, g theta phi chi to order 2]
+  J --&gt; R[R14 to R18, original equations]
+  P --&gt; R
+  R --&gt; S[Fixed scale s of eta, from eta and the locked values]
+  S --&gt; L[One scalar loss: mean of scaled squares]
+  L --&gt; FIN{Finite?}
+  FIN --&gt;|No| FAIL[Stop and save the failure]
+  FIN --&gt;|Yes| G[Backward pass to the network weights]
+  G --&gt; OPT[Adam, then L-BFGS and Levenberg-Marquardt with weights frozen]
+  OPT -.-&gt;|new weights| NN
 </code></pre>
-<p>Reference values and final-test errors feed neither the training loss nor checkpoint ranking. Coordinate differentiation keeps a graph for the later loss-to-weight backward pass. The baseline has no Lorenz initial-value lift, time windows, endpoint handoff or causal weighting.</p>
-<h2>Architecture and gradient flow</h2>
-<pre><code class="language-mermaid">flowchart TD
-  X[Eta coordinates] --&gt; N[One smooth five-output NN]
-  N --&gt; U[f g theta phi chi predictions]
-  U --&gt; D[Componentwise eta derivatives: f1 to f4; other first and second derivatives]
-  U --&gt; E[Five original equation residuals R14 to R18]
-  D --&gt; E
-  P[Fixed complete physical parameter case] --&gt; E
-  P --&gt; B[All twelve original boundary residuals B1 to B12]
-  N --&gt; B
-  D --&gt; B
-  E --&gt; JE[Scaled weighted equation means]
-  B --&gt; JB[Scaled weighted boundary squares]
-  JE --&gt; J[One scalar loss]
-  JB --&gt; J
-  J --&gt; G[Backpropagation through equations and derivatives]
-  G --&gt; O[Optimizer changes NN weights only]
-  O --&gt; N
-</code></pre>
-<p>Physical parameters feed the equation and boundary arithmetic only. They are not in the optimizer's parameter list. The network, equations and boundary checks share one differentiable computation.</p>
-<h2>Full run with blocking and failure paths</h2>
-<pre><code class="language-mermaid">flowchart TD
-  S[Preserve source and record approved equations] --&gt; P{All physical coefficients supplied?}
-  P --&gt;|No| WAIT[Save pending case and wait for supervisor]
-  P --&gt;|Yes| V{Ranges, denominators and numerical settings valid?}
-  V --&gt;|No| STOP[Stop and report the exact invalid input]
-  V --&gt;|Yes| T{Analytic, equation, BC and graph tests pass?}
-  T --&gt;|No| FIX[Fix software then repeat tests]
-  FIX --&gt; T
-  T --&gt;|Yes| REF[Build and refine classical reference; vary L, mesh, guesses, tolerance]
-  REF --&gt; RQ{Reliable same-case reference available?}
-  RQ --&gt;|No| RD[Diagnose reference; retain unverified-reference status]
-  RQ --&gt;|Yes| N[Initialize direct five-output NN for one seed]
-  RD --&gt; N
-  N --&gt; A[Adam: equations and boundaries together; finite checks; monitor and checkpoint]
-  A --&gt; AQ{Finite loss and gradients?}
-  AQ --&gt;|No| FAIL[Save failure; diagnose first bad term]
-  AQ --&gt;|Yes| SW{Declared switch or budget rule met?}
-  SW --&gt;|No| A
-  SW --&gt;|Yes| F[Freeze points, physical parameters, scales and loss weights]
-  F --&gt; L[L-BFGS with deterministic recomputing closure]
-  L --&gt; EV[Select checkpoint; fresh-point original residuals, BCs, fields and derivatives]
-  EV --&gt; ACC{Declared accuracy checks met?}
-  ACC --&gt;|No| BAD[Record failed validation; controlled diagnosis and new run]
-  ACC --&gt;|Yes| SEN[Repeat domain, sample density and seed checks]
-  SEN --&gt; SC{Sensitivity acceptable?}
-  SC --&gt;|No| BAD
-  SC --&gt;|Yes| OUT[Verified tested-case record and measured comparisons]
-  BAD --&gt; DONE[Save all outcomes including failures; no hidden retuning of final test]
-  FAIL --&gt; DONE
-  OUT --&gt; DONE
-</code></pre>
-<h2>One Adam update</h2>
-<pre><code class="language-mermaid">flowchart TD
-  Z[Clear old NN gradients] --&gt; I[Fresh interior coordinate leaves]
-  I --&gt; N[NN fields and component derivatives]
-  N --&gt; R[Original R14 to R18]
-  Z --&gt; B[Fresh endpoint coordinates 0 and L]
-  B --&gt; BN[Same NN and required endpoint derivatives]
-  BN --&gt; BR[B1 to B12]
-  R --&gt; LOSS[Fixed scales and positive weights; one combined loss]
-  BR --&gt; LOSS
-  LOSS --&gt; FIN{All values finite?}
-  FIN --&gt;|No| STOP[Stop update and diagnose]
-  FIN --&gt;|Yes| BP[Backward through residual calculation]
-  BP --&gt; FG{Gradients finite and connected?}
-  FG --&gt;|No| STOP
-  FG --&gt;|Yes| STEP[Update NN weights]
-  STEP --&gt; MON[Independent monitoring and checkpoint at declared intervals]
-</code></pre>
-<h2>Reference check is not training data</h2>
+<p>The locked coefficients are never in the optimizer's parameter list. In exact mode the boundary conditions hold by construction, so the loss holds only the equations.</p>
+<h2>The four arms</h2>
 <pre><code class="language-mermaid">flowchart LR
-  SPEC[Same approved equations and parameter case] --&gt; REF[Twelve-state classical BVP]
-  SPEC --&gt; PINN[Physics-only PINN training]
-  REF --&gt; COMP[Independent comparison]
-  PINN --&gt; COMP
-  COMP --&gt; OUT[Errors, wall quantities, domain sensitivity and status]
+  B0[B0: one network on 0 to L] --&gt; END[Same final objective and refine chain]
+  B1[B1: four window networks with interface continuity] --&gt; END
+  B2[B2: one network, windows added from the wall, physics replay] --&gt; END
+  B3[B3: as B2, self-replay of frozen outputs] --&gt; END
+  END --&gt; ACC[Acceptance rule, then evaluation]
 </code></pre>
-<p>There is no arrow from reference values to the training loss. A separate supervised or reference-pretrained variant would need a different diagram and an explicit report of data use.</p></section>
+<p>Window edges 0, 0.5, 2, 6, 20 are pilot values until pilot P3 freezes them (<a href="../pinn/PINN_PLAN.md">PINN_PLAN.md</a> section 2).</p>
+<h2>After training: acceptance, then evaluation</h2>
+<pre><code class="language-mermaid">flowchart TD
+  RUN[Finished run folder] --&gt; SC[Self check: decay powers, tail share, boundary errors]
+  RUN --&gt; EST[C++ engine: one Newton step from the PINN state]
+  SC --&gt; RULE{Acceptance rule in configs/pinn.json}
+  EST --&gt; RULE
+  RULE --&gt;|accepted or rejected, both kept| EVAL[bvp_pinn.evaluation: metrics, summary, failures]
+  REFD[Reference A and B] -.-&gt;|read only here| EVAL
+  EVAL --&gt; FIG[Figures FB1 to FB5, FX1; tables TB2, TX1]
+</code></pre>
+<p>There is no arrow from the reference to training or to acceptance. <code>src/bvp_pinn/pinn/</code> never imports the reference data or the evaluation package, and a test checks it.</p></section>
 </main></body></html>

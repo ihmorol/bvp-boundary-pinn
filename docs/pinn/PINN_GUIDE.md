@@ -1,8 +1,8 @@
 # How our PINN works: a reading guide
 
-Date: 2026-11-21. Audience: the team. Read it top to bottom once. Each section answers one question.
+Date: 2026-11-21, updated 2026-11-24. Audience: the team. Read it top to bottom once. Each section answers one question.
 
-The code described here is in `src/bvp_pinn/pinn/` on the branch `bvp/pinn` (not yet committed on 2026-11-21). The equations come from `src/bvp_pinn/reference/equations.py`, which the PINN shares with the classical solver.
+The training code is in `src/bvp_pinn/pinn/`; the comparison with the reference is in `src/bvp_pinn/evaluation/`. The equations come from `src/bvp_pinn/reference/equations.py`, which the PINN shares with the classical solver. File-by-file details: [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md).
 
 ---
 
@@ -45,19 +45,21 @@ A PINN (physics-informed neural network) is a small neural network that takes et
 ## 4. The big picture
 
 ```text
-configs/pinn.json ──> run.py ──> model.py (network)
+configs/pinn.json ──> campaign.py / run.py ──> model.py (network, start profile, boundary layer)
                                     │
                                     ▼
-                points.py ──> train.py ──> losses.py ──> physics.py ──> reference/equations.py
-                                    │                        ▲
-                                    │                  constraints.py (boundary layer)
+                points.py ──> train.py ──> losses.py, lm.py ──> physics.py ──> reference/equations.py
+                                    │
                                     ▼
                              runs/<run_id>/  (model, history, meta)
                                     │
-reference/locked-branch*/ ──> evaluate.py ──> metrics.json, results/summary.csv ──> plots.py
+                                    ▼
+                             estimate.py ──> selection.json   (acceptance, no reference)
+                                    │
+reference/locked-branch*/ ──> evaluation/evaluate.py ──> metrics.json, results/<campaign>/ ──> evaluation/plots.py
 ```
 
-Training never reads the reference. Only `evaluate.py` and `plots.py` load it, after training ends. A test checks this.
+Training and acceptance never read the reference. Only the `evaluation` package loads it, after both. A test reads every import of the training package to check this.
 
 ## 5. Input and output of the network
 
@@ -83,28 +85,25 @@ return self.net(2 * s - 1)
 
 ## 6. How we get the derivatives
 
-The equations need f', f'', f''', f'''' and the first and second derivatives of the other four fields. PyTorch can differentiate the network output with respect to its input exactly. This is **autograd**. We apply it again and again:
+The equations need f', f'', f''', f'''' and the first and second derivatives of the other four fields. These are exact derivatives of the network, not finite differences.
+
+The network has one input, so the derivatives can be pushed forward through the layers with the chain rule, all orders at once. This is **Taylor mode** (`jets.py`). A linear layer passes every order through the same matrix; a tanh layer uses the known derivatives of tanh:
 
 ```python
-# model.py, states
-ORDERS = (4, 2, 2, 2, 2)            # f needs 4 derivatives, the others 2
-u = net(eta)
-for k, order in enumerate(ORDERS):
-    d = [u[:, k:k + 1]]              # the field itself
-    for _ in range(order):
-        d.append(torch.autograd.grad(d[-1].sum(), eta, create_graph=True)[0])
-    z += d[:-1]                      # field and lower derivatives
-    H.append(d[-1])                  # the highest derivative
+# jets.py, tanh_jet (orders 0 to 2 shown)
+t = torch.tanh(a[0])
+D = 1 - t * t
+out = [t, D * a[1], -2 * t * D * a[1] ** 2 + D * a[2]]
 ```
 
-**Read:**
+**Read:** `a[k]` is the k-th derivative of the layer's input with respect to eta; `out[k]` is the k-th derivative after tanh. One forward pass gives all five fields and all orders.
 
-- `z` is a list of 12 columns: f, f', f'', f''', g, g', theta, theta', phi, phi', chi, chi'.
-- `H` is a list of 5 columns: f'''', g'', theta'', phi'', chi''.
-- `.sum()` is a trick. Each output only depends on its own eta, so the derivative of the sum gives every point's own derivative in one call.
-- `create_graph=True` keeps the derivative itself differentiable. We need that, because we take a derivative of a derivative, and later the optimizer needs the derivative of the loss with respect to the weights.
+The result is two lists:
 
-These are exact derivatives of the network, not finite differences. A test checks them against sin, exp and other known functions up to order 4.
+- `z`, 12 columns: f, f', f'', f''', g, g', theta, theta', phi, phi', chi, chi'.
+- `H`, 5 columns: f'''', g'', theta'', phi'', chi''.
+
+The older way, nested `torch.autograd.grad` calls, gives the same numbers and is about four times slower ([RUNTIME_STRATEGY.md](RUNTIME_STRATEGY.md)). It stays in `model.states_autograd`, and a test checks that both give the same values and the same weight gradients. A test also checks the derivatives against sin, exp and other known functions up to order 4.
 
 ## 7. How the physics is enforced
 
@@ -249,7 +248,7 @@ What each part gives:
 
 Why exact boundary conditions should help: with soft conditions, the optimizer must trade the equations against 12 extra terms, and their sizes differ a lot. With exact conditions, every network the optimizer can reach already meets all 12. The optimizer only has to make the equation residual small. The search space is smaller and the loss has one job.
 
-The cost: exact mode is slower per step (see the review), and the extra correction shapes can make the loss harder to minimise near the ends. That is why the team runs a pilot to choose the mode.
+The cost: exact mode is slower per step, and the extra correction shapes can make the loss harder to minimise near the ends. So the team ran a pilot to choose the mode. Pilot P2a (2026-11-22) kept exact mode: soft and linear runs settled near theta = 0 at the wall. All arms now use it.
 
 ## 10. The total loss and the loss weights
 
@@ -275,16 +274,20 @@ w_i <- 0.9 * w_i + 0.1 * lambda_hat_i
 
 ## 11. Training steps
 
-1. **Adam** (a gradient method with momentum), learning rate from 1e-3 down to 1e-4, 20 000 steps by default.
-2. **L-BFGS** (a quasi-Newton method that uses curvature), up to 5000 iterations, with the weights frozen.
-3. **Rollback:** if L-BFGS makes the monitor loss worse, or gives NaN, we keep the Adam result instead.
+1. **Start profile.** A fixed smooth curve, the same analytic guess the reference solvers start from, sits under the network. The last layer starts at zero, so training starts on that curve, not on a random one.
+2. **Adam** (a gradient method with momentum), learning rate from 1e-3 down to 1e-4, 20 000 steps by default, on the log residual scale.
+3. **L-BFGS** (a quasi-Newton method that uses curvature), up to 5000 iterations, weights frozen, still on the log scale.
+4. **Levenberg-Marquardt** (a Gauss-Newton method for sums of squares), 260 steps, on the balanced scale. In exact mode the loss is a plain sum of squares, which this method uses directly. For B1 it works on four networks at once, one block each.
+5. **Rollback:** each refine stage is kept only if the monitor loss improves and stays finite.
 
 ```python
-# train.py, lbfgs_phase
+# train.py, refine_once
 accepted = after == after and after <= before   # after == after is False for NaN
 if not accepted:
     model.load_state_dict(saved)
 ```
+
+Why two scales: the log scale brings the far tail of theta into the decaying shape; the balanced scale then lets Levenberg-Marquardt finish near the wall. The balanced scale from the start left the tail flat (run X4, IMPLEMENTATION_NOTES section 7.2).
 
 ## 12. The four arms (training set-ups we compare)
 
@@ -297,44 +300,45 @@ The domain is cut into windows, by default [0, 0.5], [0.5, 2], [2, 6], [6, 20]. 
 | B2 | One | Window by window from the wall outward. Earlier windows keep their equation residual in the loss (physics replay) |
 | B3 | One | Window by window. Earlier windows are held to the network's own outputs from the stage before (self-replay) |
 
-All arms meet all 12 boundary conditions at every step, and all end with L-BFGS on the full problem. So differences between arms come from the training path.
+All arms meet all 12 boundary conditions at every step, and all end with the same refine chain (L-BFGS, then Levenberg-Marquardt) on the full problem. So differences between arms come from the training path, not from the optimizer.
 
 ## 13. What comes out, and how we judge it
 
 Each run writes `runs/<run_id>/` with the config, every loss term per step (`history.csv`), the model, and `meta.json` (versions, times, final weights).
 
-After training, `evaluate.py` compares with the reference (branch A, L = 20):
+**First, without the reference: accept or reject.** `estimate.py` checks the finished run:
+
+- the far decay powers m and mp must be positive, or theta and phi cannot reach zero;
+- theta must have no constant part on [10, 20] (the tail share);
+- every boundary error must be tiny;
+- the C++ engine takes one Newton step of a classical solver from the PINN's curves. That step is close to the PINN's error, so its size estimates how wrong the wall values are. The score must be below 1e-3.
+
+A small loss alone is never enough: one run had a very small loss and a wrong solution (run E8). Rejected runs are kept and reported. The rule is in `configs/pinn.json`.
+
+**Then, against the reference.** `evaluation/evaluate.py` compares with the reference (branch A, L = 20):
 
 - **Relative L2 error** of each field and derivative: the size of the error curve divided by the size of the reference curve, measured over [0, 20].
-- **Wall values:** f''(0), g'(0), theta'(0), phi'(0), chi'(0). These are the numbers engineers care about.
+- **Wall values:** f''(0), theta(0), theta'(0), phi(0), phi'(0), g'(0), chi'(0), each with its relative error.
 - **Residuals** R14 to R18 and boundary errors B1 to B12, each on its own.
 - **Nearest branch:** whether the run is closer to reference branch A or B.
 - For B2 and B3, the error in each window after each stage, to see if old windows are forgotten.
+- **Cost:** wall time, and how long solve_bvp needs to reach the same error.
 
 The reference wall values we aim for (branch A):
 
-| f''(0) | g'(0) | theta(0) | theta'(0) | phi'(0) | chi'(0) |
-|---:|---:|---:|---:|---:|---:|
-| -4.2033 | -2.8713 | 0.2502 | -1.2594 | 3.7783 | -2.0087 |
+| f''(0) | g'(0) | theta(0) | theta'(0) | phi(0) | phi'(0) | chi'(0) |
+|---:|---:|---:|---:|---:|---:|---:|
+| -4.2033 | -2.8713 | 0.2502 | -1.2594 | -0.1202 | 3.7783 | -2.0087 |
 
 ## 14. Where we stand
 
-**Update, 2026-11-23.** Four changes now sit in the default config. None changes an equation, a boundary condition or a value; they change how the same problem is trained.
+**2026-11-24.** All four arms train end to end with the same refine chain, every run is judged without the reference, and evaluation builds every planned table and figure. 60 tests pass.
 
-- A fixed start profile under the network: the same analytic guess the reference solvers start from. The network's last layer starts at zero, so training starts from a warm, decaying profile.
-- The log input map, so the thin wall layer gets about a third of the network's input range.
-- A fixed residual scale: each equation times (eta + b) to the power of its order. That is the same equation written in the variable log(eta + b), where the wall layer and the slow tails both have size one.
-- Checks that need no reference: the far decay powers m and mp (they must be positive for theta and phi to reach zero), and a one-Newton-step error estimate from the C++ engine.
+**Result so far (B0 only, two seeds, 1 000 points):** from scratch, every wall value except phi(0) within 4e-4 of the reference (seed 0: theta(0) 0.2501906 against 0.2501853); phi(0) is off by 4.3e-4 in seed 0 and 6.2e-3 in seed 1. The acceptance rule, applied to all 13 pilot runs, accepts exactly the three that match the reference. Numbers and run IDs: [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 7.
 
-Result: with one more change, the PINN now matches the reference. Training runs Adam and L-BFGS on the log scale, then Levenberg-Marquardt (a Gauss-Newton method for sums of squares) on a balanced scale built from the equation coefficients. From scratch, seeds 0 and 1 give every wall value within 4e-4 of the reference (seed 0: theta(0) 0.2501906 against 0.2501853). A warning from the same runs: a very small loss on the plain residual still gave a wrong solution, so a run is judged by the checks above, not by its loss. Numbers and run IDs: [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) section 7.1.
+**Not run yet:** the pilots that fix the point count, budgets and windows, and the 20-run campaign.
 
-**As of 2026-11-21:**
-
-
-- All building blocks are tested: derivatives, equations, boundary layer, weights, no leakage. 23 tests pass.
-- Two short pilots (3000 Adam steps) finished. Neither reached the reference. Both ended with theta near 0 at the wall and B4 missed by about 2.3. The exact-mode pilot was still running.
-- The likely difficulty is the thin wall layer: f'''' drops from -1728 at the wall to -0.09 at eta = 1.
-- Details and fixes: [PINN_REVIEW_2026-11-21.md](../reviews/PINN_REVIEW_2026-11-21.md).
+How we got here: the first pilots (2026-11-21) ended with theta near 0 at the wall ([PINN_REVIEW_2026-11-21.md](../reviews/PINN_REVIEW_2026-11-21.md)). The start profile, the log input map, the residual scales and Levenberg-Marquardt fixed that, one change at a time (IMPLEMENTATION_NOTES sections 7.1 to 7.3). None of them changes an equation, a boundary condition or a value.
 
 ## 15. Short glossary
 
@@ -344,12 +348,14 @@ Result: with one more change, the PINN now matches the reference. Training runs 
 | residual | Left side of an equation for the current guess; zero when exact |
 | collocation points | The eta values where we check the residuals during training |
 | monitor points | Extra eta values used only to watch for overfitting |
-| autograd | PyTorch's exact derivative of the network |
+| jets (Taylor mode) | All derivatives of the network in one forward pass |
+| autograd | PyTorch's exact derivative of the network, by repeated backward passes (kept as a check) |
 | soft condition | A boundary condition added to the loss as a squared error |
 | exact (hard) condition | A boundary condition built into the output so it always holds |
 | TFC | Theory of functional connections: the method behind the exact conditions |
 | miss | Target value minus the raw network value at a boundary |
-| Adam, L-BFGS | The two optimizers, used one after the other |
+| Adam, L-BFGS, Levenberg-Marquardt | The three optimizers, used one after the other |
+| acceptance rule | The checks without the reference that accept or reject a finished run |
 | arm | One training set-up (B0, B1, B2, B3) |
 | branch | One of the solutions the reference found (A is the valid one) |
 | reference | The classical solve_bvp solution, used only for checking |

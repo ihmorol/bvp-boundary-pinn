@@ -49,7 +49,10 @@ CORE_KEYS = tuple(k for k in WALL_KEYS if k != "ch1_0")  # chi has no L-independ
 
 
 def far_L(L, settings):
-    """L for eq.boundary when asymptotic far conditions are on, else None."""
+    """L for eq.boundary when asymptotic far conditions are on, else None.
+
+    settings["far_form"] ("local", the default, or "unit") picks the form of those conditions
+    (equations.far_conditions); only the far-field error bar uses "unit"."""
     return L if settings.get("far_field") == "asymptotic" else None
 
 
@@ -96,10 +99,11 @@ def solve_case(p, L, tol, settings, *, label, x=None, y=None, guess=None):
         x = wall_mesh(L, settings["initial_nodes"], settings["first_step"])
         y = smooth_guess(x, p, guess["rate"], guess["theta0"])
     start = time.perf_counter()
-    res = solve_bvp(lambda e, z: eq.rhs(e, z, p), lambda a, b: eq.boundary(a, b, p, L=far_L(L, settings)),
+    form = settings.get("far_form", "local")
+    res = solve_bvp(lambda e, z: eq.rhs(e, z, p), lambda a, b: eq.boundary(a, b, p, L=far_L(L, settings), far_form=form),
                     x, y, tol=tol, bc_tol=tol, max_nodes=settings["max_nodes"])
     seconds = time.perf_counter() - start
-    bc = eq.boundary(res.y[:, 0], res.y[:, -1], p, L=far_L(L, settings))
+    bc = eq.boundary(res.y[:, 0], res.y[:, -1], p, L=far_L(L, settings), far_form=form)
     wall = {k: float(v) for k, v in wall_values(res.sol, L).items()} if res.status == 0 else {}
     return Result(L=float(L), tol=float(tol), label=label, status=int(res.status), message=str(res.message),
                   x=res.x, y=res.y, sol=res.sol, seconds=seconds,

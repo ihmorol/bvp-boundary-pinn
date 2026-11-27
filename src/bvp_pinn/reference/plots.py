@@ -4,47 +4,26 @@ Rebuild all figures without solving anything:
     uv run python -m bvp_pinn.reference.plots
 
 Main figures plot profiles against eta on a linear axis, the way similarity-solution papers show
-them, and put every correctness check next to a known answer or a tolerance. Style follows Rougier,
-Droettboom and Bourne (2014), "Ten simple rules for better figures" (doi:10.1371/journal.pcbi.1003833)
-and Wilke, Fundamentals of Data Visualization, ch. 20: one message per figure, the Okabe-Ito
-colour-blind-safe palette, a second cue (line style or marker) wherever colour separates series.
+them, and put every correctness check next to a known answer or a tolerance. The shared style
+(palette, sizes, saving, panel letters) is in bvp_pinn/figstyle.py.
 """
 from __future__ import annotations
 
 import json
 import re
 
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-OI = {"blue": "#0072B2", "vermillion": "#D55E00", "green": "#009E73", "purple": "#CC79A7",
-      "orange": "#E69F00", "sky": "#56B4E9", "black": "#000000", "grey": "#7F7F7F"}
+from ..figstyle import MM, OI, STYLE, WIDE
+from ..figstyle import letters as _letters
+from ..figstyle import save as _save
+
 PANELS = [(0, "f", OI["blue"]), (1, "f'", OI["blue"]), (4, "g", OI["vermillion"]),
           (6, r"\theta", OI["green"]), (8, r"\phi", OI["purple"]), (10, r"\chi", OI["orange"])]
 TEX = {"f": "f", "f1": "f'", "f2": "f''", "f3": "f'''", "f4": "f''''", "g": "g", "g1": "g'", "g2": "g''",
        "theta": r"\theta", "th1": r"\theta'", "th2": r"\theta''", "phi": r"\phi", "ph1": r"\phi'",
        "ph2": r"\phi''", "chi": r"\chi", "ch1": r"\chi'", "ch2": r"\chi''"}
-STYLE = {"font.size": 8, "axes.titlesize": 8, "axes.labelsize": 8, "legend.fontsize": 7,
-         "xtick.labelsize": 7, "ytick.labelsize": 7, "axes.linewidth": 0.6, "lines.linewidth": 1.2,
-         "axes.spines.top": False, "axes.spines.right": False, "savefig.facecolor": "white",
-         "pdf.fonttype": 42, "figure.dpi": 100}
-MM = 1 / 25.4
-WIDE = 180 * MM
-
-
-def _save(fig, path):
-    fig.savefig(path.with_suffix(".png"), dpi=300)
-    fig.savefig(path.with_suffix(".pdf"))
-    plt.close(fig)
-
-
-def _letters(axes):
-    for i, ax in enumerate(np.ravel(axes)):
-        ax.text(-0.02, 1.02, f"({chr(97 + i)})", transform=ax.transAxes, ha="right", va="bottom",
-                fontweight="bold")
 
 
 def fig_profiles(data, path, title, other=None, xmax=None):
@@ -81,58 +60,6 @@ def fig_profiles(data, path, title, other=None, xmax=None):
                    plt.Line2D([], [], color=OI["grey"], ls="--", label="branch B (no decay at infinity)")]
     fig.legend(handles=handles, loc="outside lower center", ncol=2, frameon=False)
     fig.suptitle(title)
-    _save(fig, path)
-
-
-def fig_benchmarks(bench, prof, path):
-    """Same code on limits with known answers: a published table and exact flat-sheet solutions."""
-    from .benchmark import FLAT_KAPPA, theta_exact
-
-    fig, axes = plt.subplots(1, 3, figsize=(WIDE, 66 * MM), layout="constrained")
-    ax = axes[0]
-    k = np.array([r["kappa"] for r in bench["abbas"]], float)
-    pub = np.array([r["published"] for r in bench["abbas"]])
-    ax.fill_between(k, 1e-9, 1e-5 / pub, color="0.88", lw=0, label="within 1 unit of the 5th decimal")
-    for key, col, mk, ls in (("L10", OI["blue"], "o", "-"), ("L80", OI["vermillion"], "^", "--")):
-        dev = np.abs(np.array([r[key] for r in bench["abbas"]]) / pub - 1)
-        ax.loglog(k, np.maximum(dev, 1e-9), color=col, marker=mk, ms=4, ls=ls,
-                  label=rf"this code, $L={key[1:]}$")
-    ax.set_ylim(1e-9, 1)
-    ax.set(xlabel=r"curvature $\kappa$", ylabel="|relative difference from table|",
-           title="curved sheet vs published table")
-    ax.legend(frameon=False, loc="upper right")
-    ax = axes[1]
-    eta = prof["eta"]
-    every = slice(0, None, 6)
-    ax.plot(eta, np.exp(-eta), color="k", lw=0.8)
-    ax.plot(eta[every], prof["f1"][every], ls="none", marker="o", ms=3.5, mfc="none", mec=OI["vermillion"],
-            label=r"$f'$")
-    sd = bench["slip_darcy"]
-    ax.plot(eta, sd["c"] * np.exp(-sd["a"] * eta), color="k", lw=0.8)
-    ax.plot(eta[every], prof["f1_slip_darcy"][every], ls="none", marker="D", ms=3, mfc="none", mec=OI["purple"],
-            label=rf"$f'$, Da = {sd['Da']:g}, $N_1$ = {sd['N1']:g}")
-    cols = plt.cm.viridis(np.linspace(0.0, 0.8, len(bench["flat"])))
-    for r, c in zip(bench["flat"], cols):
-        ax.plot(eta, theta_exact(eta, r["Pr"]), color="k", lw=0.8)
-        ax.plot(eta[every], prof[f"theta_Pr{r['Pr']:g}"][every], ls="none", marker="s", ms=2.5, color=c,
-                label=rf"$\theta/\theta(0)$, Pr = {r['Pr']:g}")
-    ax.set_xlim(0, 6)
-    ax.set(xlabel=r"$\eta$", title=rf"flat limit ($\kappa=10^{{{np.log10(FLAT_KAPPA):.0f}}}$); black: exact")
-    ax.legend(frameon=False, fontsize=6.5)
-    ax = axes[2]
-    sweep = bench["kappa_sweep"]
-    ks = np.array([r["kappa"] for r in sweep])
-    ax.loglog(ks, [r["f1_max_err"] for r in sweep], color=OI["vermillion"], marker="o", ms=3.5,
-              label=r"max $|f'-e^{-\eta}|$")
-    ax.loglog(ks, [r["theta_max_err"] for r in sweep], color=OI["green"], marker="s", ms=3.5, ls="--",
-              label=r"max $|\theta/\theta(0)-$exact$|$, Pr = 1")
-    ax.loglog(ks, 0.3 / ks, color="k", lw=0.8, ls=(0, (1, 1)), label=r"slope $-1$")
-    ax.set(xlabel=r"curvature $\kappa$", ylabel=r"max error on $0\leq\eta\leq 10$",
-           title=r"distance to the flat exact solution")
-    ax.set_ylim(1e-8, 1e-2)
-    ax.legend(frameon=False, loc="lower left")
-    fig.suptitle("Code checks against known answers (limits of Eqs. 14 and 16)")
-    _letters(axes)
     _save(fig, path)
 
 
@@ -252,28 +179,18 @@ def fig_diagnostics(data, meta, p, path, name):
 
 
 def fig_verification(study, path):
-    """Manufactured-solution order, tolerance study and where each starting guess ends up."""
-    fig, axes = plt.subplots(1, 3, figsize=(WIDE, 60 * MM), layout="constrained")
-    m = study["V3_mms"]
-    h = m["L"] / (np.array(m["meshes"]) - 1)
-    e = np.array(m["nodal_max_errors"])
-    axes[0].loglog(h, e, color=OI["blue"], marker="o", ms=4)
-    axes[0].loglog(h, e[-1] * (h / h[-1]) ** 4, color="k", ls=(0, (1, 1)), lw=0.8)
-    axes[0].text(h[1], e[-1] * (h[1] / h[-1]) ** 4 / 3, "slope 4", fontsize=7)
-    axes[0].set_xscale("log", base=2)
-    axes[0].set_xticks(h, [f"{v:.3g}" for v in h])
-    axes[0].minorticks_off()
-    axes[0].set(xlabel="mesh step h", ylabel="max nodal error", title="manufactured solution")
+    """Tolerance study and where each starting guess ends up."""
+    fig, axes = plt.subplots(1, 2, figsize=(WIDE, 60 * MM), layout="constrained")
     for key, col, mk in (("branch_A", OI["blue"], "o"), ("branch_B", OI["grey"], "s")):
         ok = [r for r in study.get(key, {}).get("tol_ladder", []) if r["status"] == 0]
         if len(ok) > 1:
             ref = ok[-1]["wall"]
-            axes[1].loglog([r["tol"] for r in ok[:-1]],
+            axes[0].loglog([r["tol"] for r in ok[:-1]],
                            [max(1e-16, max(abs(r["wall"][k] - ref[k]) / max(abs(ref[k]), 1e-8) for k in ref))
                             for r in ok[:-1]], color=col, marker=mk, ms=4, label=key.replace("_", " "))
-    axes[1].axhline(study["settings"]["agreement_rel"], color="k", ls="--", lw=0.8)
-    axes[1].set(xlabel="solver tol", ylabel="wall change vs tightest tol", title="tolerance study, L = 10")
-    axes[1].legend(frameon=False)
+    axes[0].axhline(study["settings"]["agreement_rel"], color="k", ls="--", lw=0.8)
+    axes[0].set(xlabel="solver tol", ylabel="wall change vs tightest tol", title="tolerance study, L = 10")
+    axes[0].legend(frameon=False)
     scan = study["branch_scan"]
     pts = {"A": [], "B": [], "failed": []}
     for name in ("A", "B"):
@@ -287,10 +204,10 @@ def fig_verification(study, path):
     for key, col, mk in (("A", OI["blue"], "o"), ("B", OI["vermillion"], "s"), ("failed", "k", "x")):
         if pts[key]:
             xs, ys = zip(*pts[key])
-            axes[2].scatter(xs, ys, color=col, marker=mk, s=14, label=f"{key} ({len(xs)})")
-    axes[2].set_yscale("log", base=2)
-    axes[2].set(xlabel=r"guess $\theta(0)$", ylabel="guess decay rate", title="where each start converges")
-    axes[2].legend(frameon=False, fontsize=7, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.22))
+            axes[1].scatter(xs, ys, color=col, marker=mk, s=14, label=f"{key} ({len(xs)})")
+    axes[1].set_yscale("log", base=2)
+    axes[1].set(xlabel=r"guess $\theta(0)$", ylabel="guess decay rate", title="where each start converges")
+    axes[1].legend(frameon=False, fontsize=7, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.22))
     fig.suptitle("Reference verification")
     _letters(axes)
     _save(fig, path)
@@ -307,18 +224,8 @@ Analysis: docs/reference-solver/SPEC_reference_solutions.md section 8.5.
   open circles at eta = 0, 1, ..., {L:g} are the independent Runge-Kutta shooting solution. Each panel prints
   the wall value and wall slope.
   - Look for: a circle off its line (the two methods disagree), a field that does not settle at the far end.
-- **fig2_benchmarks**: the same code on limits of Eqs. 14 and 16 that have known answers. These are code checks;
-  the locked values are not changed.
-  - (a) Curved sheet (only the curvature terms of Eq. 14 kept): skin friction against the published table of
-    Abbas et al. (2013). At L = 10 the code gives the published value at every kappa to within one unit
-    of the fifth decimal (largest difference {abbas_dev:.1e}; at kappa = 1000 the table's 1.00079 is the
-    code's 1.0007993 cut to five decimals). At L = 80 the values are lower (by {abbas_shift:.1e} at kappa = 5),
-    so the published table carries a domain-length error.
-  - (b) Flat-sheet limit (kappa = 1e6): f' and theta/theta(0) for five Prandtl numbers against the exact
-    solutions (lines), largest wall-slope difference {flat_dev:.1e} (relative); and f' with Darcy drag and
-    slip at the locked Da and N1 against its exact solution, f''(0) difference {sd_dev:.1e} (relative).
-  - (c) Distance to the flat exact solution against kappa: slope -1, so the curvature terms vanish at the
-    rate the equations predict.
+- **fig2** is no longer made: it showed the published-limit checks at other parameter values, removed on
+  2026-11-24 (AGENTS.md section 3). The other figure names are kept.
 - **fig3_checks**: checks on the saved branch A reference, using the saved arrays only.
   - (a) Slope of each saved curve (quintic spline) against the next saved curve. For f''', g', theta', phi',
     chi' the target is the highest derivative that the equations demand, so this also checks that the
@@ -333,8 +240,8 @@ Analysis: docs/reference-solver/SPEC_reference_solutions.md section 8.5.
 - **S1_branches**: branch A against branch B (dashed), which does not decay at infinity (m = {mB:.4f}).
 - **S2_far_field**: |theta|, |phi|, |chi| on log-log axes for each L. Dotted line: predicted slope
   -m = -{mA:.3f}. Asymptotic tails lie on one line; the old cut bends down to zero at L; chi depends on L.
-- **S3_verification**: (a) manufactured-solution error against mesh step, slope-4 guide; (b) change of the
-  wall values against solver tolerance at L = 10; (c) the branch reached from each of the 48 starting guesses.
+- **S3_verification**: (a) change of the wall values against solver tolerance at L = 10; (b) the branch
+  reached from each of the 48 starting guesses.
 - **S4_checks_branchB**: fig3 for branch B.
 - Per branch folder, **solver_diagnostics**: mesh spacing, residual per interval against tol, and the theta''
   coefficient, which must stay away from zero.
@@ -353,7 +260,6 @@ def make_all(out_root, study, exported):
     sup = figs / "supplementary"
     sup.mkdir(parents=True)
     loaded = {name: load_reference(folder) for name, folder, _ in exported}
-    bench = json.loads((out_root / "benchmarks.json").read_text())
     with plt.rc_context(STYLE):
         for name, folder, _ in exported:
             data, meta = loaded[name]
@@ -363,8 +269,6 @@ def make_all(out_root, study, exported):
         fig_profiles(A[0], figs / "fig1_profiles", f"Branch A reference on $0 \\leq \\eta \\leq {A[1]['L']:g}$")
         fig_profiles(A[0], figs / "fig1b_profiles_wall", "Branch A reference, wall layer $0 \\leq \\eta \\leq 1$",
                      xmax=1.0)
-        with np.load(out_root / "benchmarks.npz") as prof:
-            fig_benchmarks(bench, dict(prof), figs / "fig2_benchmarks")
         slopes = fig_checks(A[0], A[1], figs / "fig3_checks", "A")
         fig_wall_vs_L(study, figs / "fig4_wall_vs_L")
         if B:
@@ -373,14 +277,9 @@ def make_all(out_root, study, exported):
         with np.load(out_root / "l_study.npz") as lst:
             fig_far_field(dict(lst), A[1]["checks"]["far_decay_exponent_m"], p["kappa"], sup / "S2_far_field")
         fig_verification(study, sup / "S3_verification")
-    ab = bench["abbas"]
     (figs / "captions.md").write_text(CAPTIONS.format(
         L=A[1]["L"], mA=A[1]["checks"]["far_decay_exponent_m"],
         mB=B[1]["checks"]["far_decay_exponent_m"] if B else float("nan"),
-        abbas_dev=max(abs(r["L10"] - r["published"]) for r in ab),
-        abbas_shift=ab[0]["L10"] - ab[0]["L80"],
-        flat_dev=max(abs(r["code"] / r["exact"] - 1) for r in bench["flat"]),
-        sd_dev=abs(bench["slip_darcy"]["code_f2_0"] / bench["slip_darcy"]["exact_f2_0"] - 1),
         slope_max=max(slopes.values())))
 
 
@@ -410,17 +309,9 @@ def study_markdown(study):
         f"- Physical case SHA-256: `{study['case_sha256']}`",
         f"- Agreement bar: relative {s['agreement_rel']:g} on every wall value",
         "",
-        "## V3 manufactured solution",
+        "## Branch scan",
         "",
-        "| Mesh nodes | Nodal max error | Observed order |",
-        "|---:|---:|---:|",
     ]
-    m = study["V3_mms"]
-    for i, (n, e) in enumerate(zip(m["meshes"], m["nodal_max_errors"])):
-        order = f"{m['observed_orders'][i - 1]:.2f}" if i else ""
-        lines.append(f"| {n} | {e:.3e} | {order} |")
-    lines += ["", f"Mesh kept fixed: {m['mesh_kept_fixed']}. Pass (last order at least "
-              f"{s['mms']['min_order']}): {m['pass']}.", "", "## Branch scan", ""]
     bs = study["branch_scan"]
     lines.append(f"{sum(b['count'] for b in bs['branches'])} of "
                  f"{len(s['branch_scan']['rates']) * len(s['branch_scan']['theta0'])} guesses converged at "

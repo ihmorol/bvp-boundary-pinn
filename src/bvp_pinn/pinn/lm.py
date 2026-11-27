@@ -1,19 +1,35 @@
-"""Levenberg-Marquardt on the network weights (cfg["refine"] = "lm").
+"""Levenberg-Marquardt on the network weights (a refine stage: "lm" in cfg["refine"]).
 
-In exact mode all 12 boundary conditions are built in, so the loss is a plain sum of squares,
-loss = r . r, with r the (scaled) residuals of Eqs. 14 to 18 at the training points divided by
-sqrt(N). Levenberg-Marquardt uses that structure: with J = dr/dw, each step solves
+The refine stage minimizes the training objective with the loss weights w frozen
+(train.weighted, for the full problem):
+
+    loss = w0 * (1/N) * sum over points of sum_k R_k^2      equation term (scaled residuals)
+         + sum_i w_i * B_i^2                                 soft boundary terms (soft, linear modes)
+         + w_I * mean of the squared interface jumps         B1 only
+
+That is a plain sum of squares, loss = r . r, with the rows
+
+    point rows    sqrt(w0 / N) * R_k(eta_j)                  5 per point
+    global rows   sqrt(w_i) * B_i  and  sqrt(w_I / n_J) * jump_j
+
+Levenberg-Marquardt uses that structure: with J = dr/dw, each step solves
 
     (J'J + mu I) dw = -J'r
 
 and mu is lowered after a good step and raised after a bad one (Nielsen's rule: Madsen,
 Nielsen and Tingleff, "Methods for non-linear least squares problems", 2004, section 3.2).
-J'J is the Gauss-Newton matrix, which for a linear model is exactly the Hessian that sets the
-convergence rate (Acta Numerica 2024, section 7.5.3). The squeezing-flow paper (2026, local
-copy) uses the same polish after its global search.
+J'J is the Gauss-Newton matrix (Acta Numerica 2024, section 7.5.3). The squeezing-flow paper
+(2026, local copy) uses the same polish after its global search.
 
-Cost on our network (about 5 200 weights, 1 000 points, 5 equations): J is about 200 MB and
-J'J about 220 MB in float64; one Cholesky factorization per trial step.
+Structure. A point row depends only on the network that owns the point, because the
+constraint layer reads only that network's own ends. So J'J = D + C'C, where D has one block
+J_k'J_k per network and C holds the few global rows (36 interface jumps for B1 with four
+windows; the soft boundary errors in soft and linear modes; none for one network in exact
+mode). Each trial step factors the blocks of D + mu I one at a time and adds C'C through the
+Woodbury identity. B1 therefore costs four block factorizations, not one of four times the size.
+
+Cost on the 40 x 4 network (about 5 200 weights per network): each block J_k'J_k is about
+220 MB in float64; the point Jacobian is built per point (vmap of jacrev) in chunks.
 """
 from __future__ import annotations
 
@@ -23,13 +39,14 @@ import torch
 from torch import nn
 from torch.func import functional_call, jacrev, vmap
 
-from .losses import residual_scale
+from .constraints import SOFT_BCS
+from .losses import boundary_errors, interface_jumps, residual_scale
 from .model import states
 from .physics import residuals
 
 
-class _Residuals(nn.Module):
-    """Scaled residuals of Eqs. 14 to 18 at the given points, as an (N, 5) tensor."""
+class _PointResiduals(nn.Module):
+    """Scaled residuals of Eqs. 14 to 18 of one network at the given points, as (N, 5)."""
 
     def __init__(self, net, p, scale):
         super().__init__()
@@ -42,77 +59,147 @@ class _Residuals(nn.Module):
         return r if s is None else r * s
 
 
-def minimize(model, p, cfg, eta, max_iter, log=None, chunk=100):
-    """LM on model[0] (one network, exact mode). Returns a status dict.
+class _GlobalRows(nn.Module):
+    """Weighted soft boundary errors and B1 interface jumps, as one flat tensor (may be empty)."""
 
-    The Jacobian is built per point: each residual row depends on its own point and on the
-    two ends (through the constraint layer), so vmap over points of a per-point jacrev gives
-    the full matrix in one batched pass. chunk is the number of points per batch (memory).
+    def __init__(self, model, p, cfg, interface, w):
+        super().__init__()
+        self.model, self.p, self.L = model, p, cfg["L"]
+        self.soft = SOFT_BCS[cfg["bc_mode"]]
+        self.interface = interface
+        self.root_soft = w[1:1 + len(self.soft)].sqrt()
+        self.root_if = w[1 + len(self.soft)].sqrt() if interface else None
+
+    def forward(self):
+        rows = []
+        if self.soft:
+            rows.append(self.root_soft * boundary_errors(self.model, self.p, self.L)[self.soft])
+        if self.interface:
+            jumps = interface_jumps(self.model)
+            rows.append(self.root_if * jumps / math.sqrt(jumps.numel()))
+        return torch.cat(rows) if rows else torch.zeros(0)
+
+
+def minimize(model, p, cfg, stage, w, max_iter, log=None, chunk=100):
+    """LM on all networks of model, for the stage's points, with the weights w frozen.
+
+    stage is train.full_problem(cfg, points): {"groups": [(network index, points)], "interface": bool}.
+    Returns a status dict. chunk is the number of points per Jacobian batch (memory).
     """
-    if cfg["bc_mode"] != "exact" or len(model) != 1:
-        raise ValueError("refine=lm needs one network in exact mode (loss = sum of squares)")
-    net = model[0]
-    res = _Residuals(net, p, cfg.get("residual_scale"))
-    eta = eta.detach().clone()
-    root_n = math.sqrt(eta.shape[0])
-    names = [k for k, v in net.named_parameters() if v.requires_grad]
-    w = {k: v.detach().clone() for k, v in net.named_parameters() if v.requires_grad}
-    sizes = [w[k].numel() for k in names]
+    w = torch.as_tensor(w).detach()
+    nets = list(model)
+    groups = {k: eta.detach().clone() for k, eta in stage["groups"] if eta.shape[0]}
+    root = math.sqrt(float(w[0]) / sum(e.shape[0] for e in groups.values()))
+    names = [[n for n, v in net.named_parameters() if v.requires_grad] for net in nets]
+    params = [{n: v.detach().clone() for n, v in net.named_parameters() if v.requires_grad} for net in nets]
+    sizes = [sum(params[k][n].numel() for n in names[k]) for k in range(len(nets))]
+    point_res = [_PointResiduals(net, p, cfg.get("residual_scale")) for net in nets]
+    glob = _GlobalRows(model, p, cfg, bool(stage.get("interface")), w)
 
-    def call(params, e):
-        return functional_call(res, {f"net.{k}": v for k, v in params.items()}, (e,))
+    def point_rows(ps, k, eta):
+        out = functional_call(point_res[k], {f"net.{n}": v for n, v in ps[k].items()}, (eta,))
+        return out.reshape(-1) * root
 
-    def r_of(params):
-        return call(params, eta).reshape(-1) / root_n
+    def global_rows(ps):
+        flat = {f"model.{k}.{n}": v for k, d in enumerate(ps) for n, v in d.items()}
+        return functional_call(glob, flat, ())
 
-    def r_point(params, e):  # e has shape (1,): one point
-        return call(params, e.reshape(1, 1)).reshape(5)
+    def r_of(ps):
+        with torch.no_grad():
+            return [point_rows(ps, k, e) for k, e in groups.items()], global_rows(ps)
 
-    point_jac = vmap(jacrev(r_point), in_dims=(None, 0), chunk_size=chunk)
+    def block_jacobian(ps, k, eta):
+        def one(pk, e):  # e has shape (1,): one point
+            out = functional_call(point_res[k], {f"net.{n}": v for n, v in pk.items()}, (e.reshape(1, 1),))
+            return out.reshape(5)
+        J = vmap(jacrev(one), in_dims=(None, 0), chunk_size=chunk)(ps[k], eta)
+        return torch.cat([J[n].reshape(eta.shape[0] * 5, -1) for n in names[k]], 1) * root
 
-    def jac(params):
-        J = point_jac(params, eta)  # name -> (N, 5, *shape)
-        return torch.cat([J[k].reshape(eta.shape[0] * 5, -1) for k in names], 1) / root_n
+    def global_jacobian(ps, n_rows):
+        J = jacrev(global_rows)(ps)
+        return torch.cat([J[k][n].reshape(n_rows, -1) for k in range(len(nets)) for n in names[k]], 1)
 
-    def flat(d):
-        return torch.cat([d[k].reshape(-1) for k in names])
+    def normal_equations(ps, r_points, r_global):
+        """Blocks A_k = J_k'J_k, the gradient g = J'r, and the global rows C (or None)."""
+        A, g = [], []
+        r_by_net = dict(zip(groups, r_points))
+        for k in range(len(nets)):
+            if k in groups:
+                Jk = block_jacobian(ps, k, groups[k])
+                A.append(Jk.T @ Jk)
+                g.append(Jk.T @ r_by_net[k])
+                del Jk
+            else:
+                A.append(torch.zeros(sizes[k], sizes[k]))
+                g.append(torch.zeros(sizes[k]))
+        g = torch.cat(g)
+        C = None
+        if r_global.numel():
+            C = global_jacobian(ps, r_global.numel())
+            g = g + C.T @ r_global
+        return A, g, C
+
+    def solve(A, g, C, mu):
+        """h with (blockdiag(A) + mu I + C'C) h = -g, or None if a block is not positive definite."""
+        ys, Zs, off = [], [], 0
+        for Ak, n in zip(A, sizes):
+            Ak.diagonal().add_(mu)
+            Lk, info = torch.linalg.cholesky_ex(Ak)
+            Ak.diagonal().sub_(mu)
+            if info != 0:
+                return None
+            ys.append(-torch.cholesky_solve(g[off:off + n].reshape(-1, 1), Lk).reshape(-1))
+            if C is not None:
+                Zs.append(torch.cholesky_solve(C[:, off:off + n].T.contiguous(), Lk))
+            off += n
+            del Lk
+        y = torch.cat(ys)
+        if C is None:
+            return y
+        Z = torch.cat(Zs, 0)  # (D + mu I)^-1 C'
+        S = torch.eye(C.shape[0]) + C @ Z
+        return y - Z @ torch.linalg.solve(S, C @ y)  # Woodbury
+
+    def flat(ps):
+        return torch.cat([ps[k][n].reshape(-1) for k in range(len(nets)) for n in names[k]])
 
     def unflat(x):
-        out, i = {}, 0
-        for k, n in zip(names, sizes):
-            out[k] = x[i:i + n].view_as(w[k])
-            i += n
+        out, i = [], 0
+        for k in range(len(nets)):
+            d = {}
+            for n in names[k]:
+                m = params[k][n].numel()
+                d[n] = x[i:i + m].view_as(params[k][n])
+                i += m
+            out.append(d)
         return out
 
-    with torch.no_grad():
-        r = r_of(w)
-    f = float(r @ r)
-    mu, nu, accepted, stop = None, 2.0, 0, "max_iter"
-    k = 0
+    def value(r_points, r_global):
+        return float(sum(r @ r for r in r_points) + r_global @ r_global)
+
+    r_points, r_global = r_of(params)
+    f = value(r_points, r_global)
+    mu, nu, accepted, stop, k = None, 2.0, 0, "max_iter", 0
     for k in range(1, max_iter + 1):
-        J = jac(w)
-        g = J.T @ r
-        A = J.T @ J
-        del J
+        A, g, C = normal_equations(params, r_points, r_global)
         if mu is None:
-            mu = 1e-3 * float(A.diagonal().max())
-        x = flat(w)
+            diag = torch.cat([Ak.diagonal() for Ak in A])
+            if C is not None:
+                diag = diag + C.pow(2).sum(0)
+            mu = 1e-3 * float(diag.max())
+        x = flat(params)
         while True:
-            A.diagonal().add_(mu)
-            L, info = torch.linalg.cholesky_ex(A)
-            A.diagonal().sub_(mu)
-            if info == 0:
-                step = -torch.cholesky_solve(g.reshape(-1, 1), L).reshape(-1)
-                trial = unflat(x + step)
-                with torch.no_grad():
-                    r_new = r_of(trial)
-                f_new = float(r_new @ r_new)
-                predicted = float(step @ (mu * step - g))  # f - model value, > 0 for a descent step
+            h = solve(A, g, C, mu)
+            gain, f_new = -1.0, float("nan")
+            if h is not None:
+                trial = unflat(x + h)
+                rp_new, rg_new = r_of(trial)
+                f_new = value(rp_new, rg_new)
+                predicted = float(h @ (mu * h - g))  # f - model value, > 0 for a descent step
                 gain = (f - f_new) / predicted if predicted > 0 else -1.0
-            else:
-                gain = -1.0
             if gain > 0 and math.isfinite(f_new):
-                w, r, f = {n: t.clone() for n, t in trial.items()}, r_new, f_new
+                params = [{n: t.clone() for n, t in d.items()} for d in trial]
+                r_points, r_global, f = rp_new, rg_new, f_new
                 mu *= max(1 / 3, 1 - (2 * gain - 1) ** 3)
                 nu = 2.0
                 accepted += 1
@@ -122,6 +209,7 @@ def minimize(model, p, cfg, eta, max_iter, log=None, chunk=100):
             if mu > 1e20:
                 stop = "mu too large"
                 break
+        del A, C
         if log is not None:
             log({"phase": "lm", "step": k, "loss": f, "mu": mu})
         if stop != "max_iter":
@@ -130,7 +218,8 @@ def minimize(model, p, cfg, eta, max_iter, log=None, chunk=100):
             stop = "converged"
             break
     with torch.no_grad():
-        for n, v in net.named_parameters():
-            if n in w:
-                v.copy_(w[n])
+        for net, d in zip(nets, params):
+            for n, v in net.named_parameters():
+                if n in d:
+                    v.copy_(d[n])
     return {"lm_iterations": k, "lm_accepted_steps": accepted, "lm_stop": stop, "lm_final_loss": f, "lm_mu": mu}

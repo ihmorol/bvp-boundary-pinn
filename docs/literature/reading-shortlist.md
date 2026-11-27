@@ -2,6 +2,8 @@
 
 The 25 saved papers are already summarized in `analysis.md` files with page references, and [papers-tldr.md](papers-tldr.md) gives the two-minute version. A full human read is worth it only for the papers below. Everything else: rely on the analysis files and dip in when a decision needs the detail.
 
+**Arm names (note of 2026-11-24):** B4, B5 and B6 in this file are the variants of the archived 2026-11-16 strategy (B4 gradient-based weights, B5 a twelve-output first-order network, B6 exact endpoint conditions). They are not the current arms. The current arms are B0 to B3 of [PINN_PLAN.md](../pinn/PINN_PLAN.md); the weighting and exact-condition ideas became shared settings ([IMPLEMENTATION_NOTES.md](../pinn/IMPLEMENTATION_NOTES.md) section 5.1).
+
 ## Tier 1: read seriously, in this order
 
 | # | Paper | Why | What to read |

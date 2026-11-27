@@ -69,7 +69,7 @@ In [the reference calculation sheet](equations.md#highest-derivative-system-for-
 
 No automatic changes or tuning of the locked target are allowed. Any change needs an explicit user or supervisor update, with its date and source recorded. Do not replace a supplied number to enforce a conditional definition. The earlier proposals and Pr=6.8 are superseded, not fallback defaults.
 
-Eqs. 14 to 19 stay unchanged. The numerical/training proposal in [training-proposal.json](../../configs/training-proposal.json) also stays unchanged, including its eight null settings. These are numerical/training choices, not missing physical coefficients.
+Eqs. 14 to 19 stay unchanged. Numerical and training settings are our choices, kept apart from these values: [configs/reference.json](../../configs/reference.json) for the reference and [configs/pinn.json](../../configs/pinn.json) for the PINN, each with dated notes. They are not physical coefficients.
 
 ## Coefficient sizes for the locked target
 
@@ -83,15 +83,15 @@ The following arithmetic uses the locked values above, not a computed solution. 
 
 These are coefficient sizes, not predicted solution values. They explain why an allowed number can still make the numerical problem difficult. They do not prove that the case has no solution.
 
-With theta_w=0.2, `A=1+(theta_w-1)*theta` becomes `1-0.8*theta`. The effective coefficient of theta'' in Eq. 16 is `(1+0.5*A^3)/8.8`, using the received Nr=0.5 and Pr=8.8. Theta is still unknown. Check this coefficient along any future computed solution; do not assume regularity from the parameter values alone.
+With theta_w=0.2, `A=1+(theta_w-1)*theta` becomes `1-0.8*theta`. The effective coefficient of theta'' in Eq. 16 is `(1+0.5*A^3)/8.8`, using the received Nr=0.5 and Pr=8.8. It must stay away from zero along the solution; the check is below.
 
-## Two cases, kept separate
+## One case only
 
-**Target:** the locked 22-field case above. It is numerically complete. It is not yet a validated physical result.
+**Target:** the locked 22-field case above. Every reference solve and every PINN run uses it.
 
-**Optional debug starting case:** kappa=1, b=1, Da=1 and theta_w=1.5, with the other target coefficients unchanged. These overrides are researcher-proposed numerical choices, not supervisor-supplied values. Keep them in a separate case that never mutates the locked target. A debug result cannot replace or validate the target result.
+**Retired debug case (2026-11-23):** the case file still holds an `auxiliary_debug_case` (kappa=1, b=1, Da=1, theta_w=1.5), proposed on 2026-11-12 as a numerical stepping stone. It is not used. AGENTS.md section 3 says we never solve or train through other parameter values; only the way the fixed problem is imposed and solved may change. The block stays in the file because the file is locked and its hash is part of every reference folder. The code reads only the `physical_parameters` block, refuses the file if its hash changes, and refuses any value set other than the locked one (`config.load_case`, `config.check_locked`).
 
-Do not choose theta_w=1 merely because it is a rounded number: the printed boundary condition divides by theta_w-1. A stable algebraic limit can be studied later, but it does not automatically define the full physical normalization. Any continuation from the debug case towards the target must keep this issue explicit.
+Effective coefficient check: along the computed branch A, theta stays in [0.068, 0.250], so `(1+0.5*A^3)/8.8` stays at or above 0.1427, well away from zero ([reference audit](../reviews/REFERENCE_AUDIT_2026-11-23.md), check 2).
 
 ## Open definitions, not missing numbers
 
@@ -149,8 +149,8 @@ The crossed-out line near the radiation entries was not a reliable numerical ins
 
 ## Machine-readable record
 
-[physical-case-pending.json](../../configs/physical-case-pending.json) now holds the numerically complete, locked physical case with status `parameters_complete_validation_pending`. Its filename is retained only for link compatibility; it no longer means that physical numbers are missing. The record keeps the receipt, mappings, derived Da, excluded H/Prm and proposed debug overrides separate. No physical coefficient is null.
+[physical-case-pending.json](../../configs/physical-case-pending.json) now holds the numerically complete, locked physical case with status `parameters_complete_validation_pending`. Its filename is retained only for link compatibility; it no longer means that physical numbers are missing. The record keeps the receipt, mappings, derived Da, excluded H/Prm and the retired debug block separate. No physical coefficient is null. Its status string `parameters_complete_validation_pending` is part of the locked file and its hash, so it is left as it is; the state of the work is in [strategy.md](../plans/strategy.md) section 2.
 
 The record checker compares the equation coefficients with the dated receipt and its mappings. A SHA-256 checksum guards the received values against unrecorded changes. Any authorized future update must update the dated record and checksum together; it cannot silently replace the locked target.
 
-The classical reference was built on 2026-11-19 ([reference study](../../reference/study.md)). No PINN training or evaluation has occurred. The next gate is software validation, followed by reference, training and evaluation as set out in [strategy.md](../plans/strategy.md). Denominator and regularity checks remain required. The record checker checks record consistency; it is not proof of solver correctness or convergence.
+Where the work stands is in [strategy.md](../plans/strategy.md) section 2 and the [status log](../status-log.md). The record checker checks record consistency; it is not proof of solver correctness or convergence.

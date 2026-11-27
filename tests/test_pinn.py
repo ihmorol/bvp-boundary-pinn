@@ -90,13 +90,25 @@ def test_interface_is_zero_for_identical_window_networks():
 
 
 def test_training_code_never_reads_the_reference():
-    """Gate G5: only evaluate.py may load reference data."""
+    """Gate G5: no file of the training and selection package reads reference data or imports evaluation."""
+    import ast
+    import re
     folder = Path(model.__file__).parent
-    for path in folder.glob("*.py"):
-        if path.name in ("evaluate.py", "plots.py"):
-            continue
+    files = list(folder.glob("*.py"))
+    assert len(files) >= 15
+    for path in files:
         text = path.read_text()
-        assert "load_reference" not in text and "reference import io" not in text, path.name
+        # load_reference_settings reads configs/reference.json (our numerical settings), not reference data
+        assert not re.search(r"load_reference(?!_settings)", text) and "locked-branch" not in text, path.name
+        for node in ast.walk(ast.parse(text)):
+            if isinstance(node, ast.ImportFrom):
+                names = [f"{node.module or ''}.{a.name}" for a in node.names]
+            elif isinstance(node, ast.Import):
+                names = [a.name for a in node.names]
+            else:
+                continue
+            for name in names:
+                assert "evaluation" not in name and "reference.io" not in name, (path.name, name)
 
 
 @pytest.mark.parametrize("mode", ["soft", "linear", "exact"])
@@ -189,7 +201,7 @@ def test_levenberg_marquardt_lowers_the_exact_mode_loss():
     eta = torch.linspace(0.0, 19.9, 40).reshape(-1, 1)
     before = losses.equation_mse(nets, [(0, eta)], P, "log").sum().item()
     rows = []
-    info = lm.minimize(nets, P, cfg, eta, 4, log=rows.append, chunk=40)
+    info = lm.minimize(nets, P, cfg, {"groups": [(0, eta)]}, torch.ones(1), 4, log=rows.append, chunk=40)
     after = losses.equation_mse(nets, [(0, eta)], P, "log").sum().item()
     assert info["lm_accepted_steps"] >= 1 and after < before
     assert info["lm_final_loss"] == pytest.approx(after, rel=1e-10)
@@ -227,3 +239,113 @@ def test_tail_fit_finds_a_constant_tail():
     for const in (0.0, c):
         out = selfcheck.tail_fit(torch.nn.ModuleList([Tail(const)]), 20.0, P, m_, m_)
         assert out["tail_C1_theta"] == pytest.approx(const, abs=1e-9)
+
+
+def tiny(structure, mode, **extra):
+    """A small config of the given structure and boundary mode, for fast tests."""
+    cfg = {"structure": structure, "windows": [0.0, 0.5, 2.0, 20.0], "L": 20.0, "width": 6, "depth": 2,
+           "input_map": "log", "map_scale": 0.1, "bc_mode": mode, "tfc_decay": 0.5, "start": "smooth",
+           "zero_last": False, "residual_scale": "log", "replay": "physics", "replay_weight": 1.0}
+    return {**cfg, **extra}
+
+
+@pytest.mark.parametrize("structure,mode", [("windows", "exact"), ("windows", "soft"), ("single", "linear")])
+def test_levenberg_marquardt_works_on_the_training_objective(structure, mode):
+    """lm.minimize starts from exactly the frozen-weight training loss of train.weighted, for every arm
+    shape and boundary mode (B1 window networks with the interface term, soft boundary terms), and lowers it."""
+    from bvp_pinn.pinn import lm, train
+    cfg = tiny(structure, mode)
+    torch.manual_seed(6)
+    nets = model.build(cfg, P)
+    eta = torch.linspace(0.0, 19.9, 60).reshape(-1, 1)
+    stage = train.full_problem(cfg, eta)
+    terms = train.loss_parts(nets, P, cfg, stage)[0]
+    w = 0.5 + torch.rand(len(terms))  # frozen weights, not all 1
+    loss = train.weighted(terms, torch.zeros(()), w, cfg).item()
+    info0 = lm.minimize(nets, P, cfg, stage, w, 0)
+    assert info0["lm_final_loss"] == pytest.approx(loss, rel=1e-10)
+    info = lm.minimize(nets, P, cfg, stage, w, 3, chunk=30)
+    after = train.weighted(train.loss_parts(nets, P, cfg, stage)[0], torch.zeros(()), w, cfg).item()
+    assert info["lm_accepted_steps"] >= 1 and after < loss
+    assert info["lm_final_loss"] == pytest.approx(after, rel=1e-9)
+
+
+def test_config_checks_and_one_refine_chain_for_every_arm():
+    from bvp_pinn.pinn import runs
+    chains = {runs.resolve(arm)["refine"] for arm in ("B0", "B1", "B2", "B3")}
+    assert chains == {"lbfgs:log+lm:balanced"}  # every arm ends on the same objective and optimizer
+    with pytest.raises(ValueError):
+        runs.resolve("B1", L=30.0)  # the last window edge would no longer be L
+    with pytest.raises(ValueError):
+        runs.resolve("B0", refine="lbfgs+newton")
+    with pytest.raises(ValueError):
+        runs.resolve("B0", refine="lm:plain")
+    assert runs.parse_set(["adam_steps=10", "lr=1e-3", "refine=lm"]) == {"adam_steps": 10, "lr": 1e-3, "refine": "lm"}
+
+
+def test_acceptance_rule():
+    from bvp_pinn.pinn.estimate import judge
+    rule = {"score_max": 1e-3, "tail_share_max": 0.05, "boundary_max": 1e-8}
+    good = {"result": "finished", "self_check": {"decaying_far_field": True, "m": 0.24, "mp": 0.2,
+                                                "tail_share": 0.001, "max_boundary_abs": 1e-14}}
+    assert judge(good, {"score": 4e-5}, rule)["accepted"] is True
+    assert judge(good, {"score": 2e-3}, rule)["accepted"] is False
+    assert judge(good, {"score": None, "error": "no g++"}, rule)["accepted"] is None
+    flat_tail = {**good, "self_check": {**good["self_check"], "tail_share": 0.6}}
+    assert judge(flat_tail, {"score": 1e-5}, rule)["accepted"] is False
+    no_decay = {**good, "self_check": {**good["self_check"], "decaying_far_field": False, "m": -0.2}}
+    out = judge(no_decay, {"score": None, "error": "x"}, rule)
+    assert out["accepted"] is False and len(out["reasons"]) == 2
+    assert judge({"result": "non-finite loss in Adam stage 0"}, {"score": 1e-5}, rule)["accepted"] is False
+    assert judge(good, {"score": float("nan")}, rule)["accepted"] is False  # a NaN score never passes
+
+
+def test_a_crashed_run_is_recorded_and_not_repeated(tmp_path, monkeypatch):
+    """A run that raises writes meta.json with its error, so a resumed campaign skips it and
+    evaluation lists it as a failure instead of trying to load a model that was never saved."""
+    import json
+    from bvp_pinn.pinn import run as run_mod
+    from bvp_pinn.pinn.runs import is_finished
+
+    def boom(*args, **kwargs):
+        raise MemoryError("out of memory in a test")
+
+    monkeypatch.setattr(run_mod, "train", boom)
+    with pytest.raises(MemoryError):
+        run_mod.run("B0", 0, dry_run=True, runs_root=tmp_path, assess=False)
+    torch.set_default_device("cpu")
+    (folder,) = tmp_path.iterdir()
+    assert is_finished(folder) and not (folder / "model.pt").exists()
+    assert json.loads((folder / "meta.json").read_text())["result"].startswith("error: MemoryError")
+
+
+def test_campaign_refuses_overrides_outside_a_dry_run():
+    from bvp_pinn.pinn import campaign
+    with pytest.raises(SystemExit):
+        campaign.main(["--arms", "B0", "--seeds", "0", "--list", "--set", "adam_steps=10"])
+
+
+def test_every_arm_trains_end_to_end(tmp_path):
+    """The whole pipeline of each arm with tiny settings: stages, Adam, the full refine chain
+    (L-BFGS, then Levenberg-Marquardt, also for B1's window networks) and a complete run folder."""
+    import json
+    from bvp_pinn.pinn.run import run
+    small = {"adam_steps": 8, "lbfgs_iters": 2, "lm_iters": 1, "n_points": 48, "n_monitor": 24, "log_every": 4,
+             "width": 6, "depth": 2}
+    for arm in ("B0", "B1", "B2", "B3"):
+        folder = run(arm, 0, runs_root=tmp_path, assess=False, **small)
+        meta = json.loads((folder / "meta.json").read_text())
+        assert meta["result"] == "finished", arm
+        assert [s["refine"] for s in meta["refine_stages"]] == ["lbfgs", "lm"], arm
+        assert meta["refine_stages"][1]["lm_iterations"] == 1, arm
+        for name in ("config.json", "history.csv", "model.pt", "points.npz", "stage0.pt"):
+            assert (folder / name).exists(), (arm, name)
+    torch.set_default_device("cpu")
+    # The acceptance rule on a finished run, from a fresh process state (default dtype float32).
+    from bvp_pinn.pinn.estimate import assess_run
+    torch.set_default_dtype(torch.float32)
+    verdict = assess_run(folder)
+    assert torch.get_default_dtype() == torch.float64
+    est = json.loads((folder / "error_estimate.json").read_text())
+    assert est["score"] is not None and verdict["accepted"] is not None  # the estimate ran
+    assert json.loads((folder / "selection.json").read_text()) == json.loads(json.dumps(verdict))

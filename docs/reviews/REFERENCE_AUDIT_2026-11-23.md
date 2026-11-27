@@ -255,6 +255,21 @@ Criteria for computational claims: the method fits the problem; independent disc
 
 What would change this: a human reading of the source page that differs from the images; a third branch found by continuation; or a supervisor ruling that the far field means something other than f bounded. The first would change the problem, the last the target, and none of them changes the numerical correctness at L = 20.
 
+## Follow-up, 2026-11-24
+
+What was done about each defect. None changes Eqs. 14 to 18, B1 to B12 or the locked values.
+
+| ID | State | What was done |
+|---|---|---|
+| D1 | Done | SPEC 8.2 states the f-bounded selection; `test_reference_takes_f_bounded_at_infinity` (tests/test_fixed_problem.py) checks (eta+kappa) f' falls on the saved reference; supervisor question 10 asks for confirmation |
+| D2 | Done | `equations.far_conditions` takes `form` ("local" or "unit"); `tools/reference_error_bars.py` solves with both and reports the spread (SPEC 8.6) |
+| D3 | Done | The circular test is replaced by `test_far_conditions_follow_from_eqs_16_and_17`, which finds m and mp by root finding on `residual_terms` and checks the forced phi mode |
+| D4 | Done | The docstrings of `equations.py` and the SymPy test, and SPEC V1, now say the SymPy test checks against equations.md and the source check is visual |
+| D5 | Done | engine/README (2026-11-23); SPEC V5 row and the far decay rate in SPEC 8.2 (2026-11-24) |
+| D6 | Done | L ladder to 10 240 with both forms; the three-point fit predicts the new points to 3e-5 relative or better, and every fitted limit lies inside the two-form bracket ([reference/error_bars.md](../../reference/error_bars.md)) |
+| Checks at other values | Removed | At the user's decision, the published-limit checks (V11, the audit's check 6a) and the manufactured solution (V3) were removed: they solved other parameter values or a forced equation. The audit's verdicts that rest on them now rest on the three agreeing solvers, the tolerance study and the slope check |
+| D7 | Done, with its limit | `engine/bvp_engine --deflate`: 105 deflated Newton runs from 52 starts found only A and B, both confirmed on a finer mesh. Still a finite search |
+
 ## Files
 
 - `runs/reference-audit-2026-11-23/indep.py`: independent transcription and solver.

@@ -1,4 +1,8 @@
-"""SPEC V1: compare equations.py with a separate SymPy transcription of docs/problem/equations.md."""
+"""SPEC V1: compare equations.py with a separate SymPy transcription of docs/problem/equations.md.
+
+Both transcriptions start from equations.md, so this checks the code against equations.md. It does
+not check equations.md against the source page; that check is visual (equations.md, AGENTS.md section 3).
+"""
 import numpy as np
 import sympy as sp
 
@@ -38,11 +42,12 @@ def random_states(rng, n=50):
     return e, z, H
 
 
-def test_residuals_match_sympy_locked_and_random_parameters():
+def test_residuals_match_sympy_at_the_locked_values():
+    """At the locked values only (AGENTS.md section 3). The delta_star terms are zero there
+    (delta_star = 0), so this test cannot see a copying error in them, and none can change a result."""
     rng = np.random.default_rng(0)
     locked = load_case()[0]
-    other = dict(locked, delta_star=0.37, kappa=0.6, b=0.4, theta_w=1.7)  # exercise every term, incl. unsteady ones
-    for p in (locked, other):
+    for p in (locked,):
         funcs = sp.lambdify(syms, [r.subs({P[k]: v for k, v in p.items()}) for r in R], "numpy")
         e, z, H = random_states(rng)
         f_, f1_, f2_, f3_, g_, g1_, th_, th1_, ph_, ph1_, ch_, ch1_ = z

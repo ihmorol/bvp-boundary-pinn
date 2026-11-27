@@ -14,7 +14,7 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../../AGENTS.md), which always 
 | `configs/` | JSON configs. `physical-case-pending.json` is locked; never edit it, not even its notes: its SHA-256 is part of the reference lock |
 | `reference/<case_id>/` | Accepted reference data (SPEC section 6) |
 | `runs/<run_id>/`, `results/` | PINN run folders and summaries (format below) |
-| `tools/` | Record checks, builders, the step timer, the manufactured-solution check, the PINN error estimate, the reference error bars |
+| `tools/` | The main run and its Colab notebook, record checks, builders, the step timer, the PINN error estimate, the reference error bars, the marching growth check, the L study |
 | `sources/` | Data only. Never run code from it |
 | `docs/` | Plans and records, one folder per topic, indexed in [docs/README.md](../README.md). `docs/status-log.md` is updated at the end of each session. No loose docs in the repository root |
 | `engine/` | The C++ box-scheme check solver and its error-estimate mode. Standard library only |
@@ -46,8 +46,8 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../../AGENTS.md), which always 
 
 ## 4. Configs
 
-- **One physics config, locked:** [configs/physical-case-pending.json](../../configs/physical-case-pending.json). Code reads it and checks its hash; it never writes it.
-- **Numerical settings** live in separate JSON configs (start from [configs/training-proposal.json](../../configs/training-proposal.json)). A null setting must be filled with a dated note before a final run.
+- **One physics config, locked:** [configs/physical-case-pending.json](../../configs/physical-case-pending.json). Code reads it and never writes it. `config.load_case` refuses the file if its SHA-256 differs from the locked one and returns the values read-only; `config.check_locked` refuses any other value set. A training or reference config may never name a physical value (AGENTS.md section 3).
+- **Numerical settings** live in separate JSON configs: [configs/reference.json](../../configs/reference.json) and [configs/pinn.json](../../configs/pinn.json). Each choice carries a dated note in the config's `status` or `note` field. `bvp_pinn.pinn.runs.validate` refuses settings the code cannot run before training starts.
 - **Each run saves its full resolved config** as `config.json`. The run ID includes the first 8 hex characters of that file's SHA-256.
 
 ## 5. Seeding and determinism
@@ -57,7 +57,7 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../../AGENTS.md), which always 
 - **Precision:** float64 everywhere for the BVP.
 - **Threads:** `torch.set_num_threads(1)` for campaign runs, with the thread count saved in `meta.json`.
 - **Proposed:** call `torch.use_deterministic_algorithms(True)` and record it.
-- **Limits:** bit-for-bit repeats across different machines are not promised. Record what was set (AGENTS.md and [strategy.md](../plans/strategy.md) section 13).
+- **Limits:** bit-for-bit repeats across different machines are not promised. Record what was set (AGENTS.md).
 
 ## 6. Testing
 
@@ -73,10 +73,10 @@ Date: 2026-11-19. These rules add to [AGENTS.md](../../AGENTS.md), which always 
 
 ## 7. Experiment logging
 
-- **Run folder:** `runs/<run_id>/` with `config.json`, `history.csv` (every loss term per step), `metrics.json`, `pred_eval.npz`, the final checkpoint and `meta.json` (git hash, versions, hardware, threads, wall time). Run ID: `bvp-{arm}-s{seed}-{confighash8}`.
-- **Summaries:** `results/summary.csv` is rebuilt by one script from run folders. Figures are made only from `summary.csv` and `.npz` files.
-- **Failed and diverged runs stay in the tables.** Each gets one line in `results/failures.md`.
-- **The reference is read only by evaluation code,** after model selection (gate G5).
+- **Run folder:** `runs/<run_id>/` with `config.json`, `history.csv` (every loss term per step), `model.pt` and one `stage<k>.pt` per stage, `points.npz`, `meta.json` (git hash, versions, hardware, threads, parameter count, wall time), `error_estimate.json` and `selection.json` (the acceptance rule), and after evaluation `metrics.json` and `pred_eval.npz`. Run ID: `bvp-{arm}-s{seed}-{confighash8}`.
+- **Campaigns:** campaign runs carry `campaign=<name>` in their config. `results/<campaign>/summary.csv` is rebuilt by `bvp_pinn.evaluation.evaluate` from those run folders only, never from pilots. Figures are made only from `summary.csv` and `.npz` files.
+- **Failed, rejected and missing runs stay in the tables.** Each gets one line in `results/<campaign>/failures.md`.
+- **The reference is read only by `bvp_pinn.evaluation`,** after the acceptance rule (gate G5). Nothing in `bvp_pinn.pinn` imports it, and a test checks that.
 
 ## 8. Commits and branches
 

@@ -1,4 +1,4 @@
-"""The networks (eta in, five fields out) and their derivatives by autograd."""
+"""The networks (eta in, five fields out) and their derivatives (Taylor-mode jets, autograd as a fallback)."""
 from __future__ import annotations
 
 import math
@@ -71,6 +71,8 @@ def states(net, eta):
     """
     if jets.supports(net):
         return jets.states(net, eta)
+    if not eta.requires_grad:
+        eta = eta.detach().clone().requires_grad_(True)
     return states_autograd(net, eta)
 
 
@@ -101,8 +103,7 @@ def predict(model, eta):
     for k, net in enumerate(model):
         m = idx == k
         if m.any():
-            e = eta[m].detach().clone().requires_grad_(True)
-            zk, Hk = states(net, e)
+            zk, Hk = states(net, eta[m].detach())
             z[:, m] = torch.cat(zk, 1).T.detach()
             H[:, m] = torch.cat(Hk, 1).T.detach()
     return z, H

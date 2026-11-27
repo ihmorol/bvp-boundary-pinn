@@ -20,7 +20,8 @@ def is_finite_number(value):
 
 
 case = json.loads((ROOT / "configs/physical-case-pending.json").read_text())
-training = json.loads((ROOT / "configs/training-proposal.json").read_text())
+pinn = json.loads((ROOT / "configs/pinn.json").read_text())
+reference_settings = json.loads((ROOT / "configs/reference.json").read_text())
 p = case["physical_parameters"]
 errors = []
 if set(p) != REQUIRED:
@@ -83,17 +84,20 @@ if is_finite_number(p.get("ell")) and not 0 <= p["ell"] <= 1:
     errors.append("ell is outside the recorded interval.")
 if is_finite_number(p.get("fw")) and not -1 <= p["fw"] <= 1:
     errors.append("fw is outside the recorded interval.")
-if training["loss"]["equation_components"] != 5 or training["loss"]["boundary_components"] != 12:
-    errors.append("The loss component counts are incorrect.")
-for name in ["initial_equation_weights", "initial_boundary_weights"]:
-    expected = 5 if name == "initial_equation_weights" else 12
-    values = training["loss"][name]
-    if len(values) != expected or any(v <= 0 for v in values):
-        errors.append(f"Invalid positive {name}.")
-if training["reference"]["used_as_training_labels"]:
-    errors.append("Baseline reference cannot be used as training labels.")
-if training["model"]["output_fields"] != ["f", "g", "theta", "phi", "chi"]:
-    errors.append("Output order does not match the equation sheet.")
+# The PINN config (configs/pinn.json): same domain as the reference, the boundary mode frozen by
+# pilot P2a, every campaign arm defined, five paired seeds (gate G6), a complete acceptance rule.
+common = pinn["common"]
+if common["L"] != reference_settings["L_reference"]:
+    errors.append("The PINN domain end L must equal the reference L_reference.")
+if common["windows"][0] != 0 or common["windows"][-1] != common["L"]:
+    errors.append("The PINN window edges must run from 0 to L.")
+if common["bc_mode"] != "exact":
+    errors.append("bc_mode was frozen to exact by pilot P2a (IMPLEMENTATION_NOTES section 7).")
+if not set(pinn["campaign"]["arms"]) <= set(pinn["arms"]) or len(set(pinn["campaign"]["seeds"])) != 5:
+    errors.append("The campaign needs defined arms and five paired seeds (gate G6).")
+rule = pinn.get("selection", {})
+if not all(is_finite_number(rule.get(k)) and rule[k] > 0 for k in ("score_max", "tail_share_max", "boundary_max")):
+    errors.append("The acceptance rule in configs/pinn.json is incomplete.")
 # Every working doc: README, AGENTS and docs/ with its subfolders. docs/archive keeps
 # superseded files as they were, so it is left out of these checks.
 DOCS = [path for path in sorted((ROOT / "docs").rglob("*.md")) if "archive" not in path.relative_to(ROOT / "docs").parts]
@@ -143,5 +147,5 @@ if missing:
     print("PHYSICAL CASE BLOCKED: missing " + ", ".join(missing))
 else:
     print("PHYSICAL PARAMETERS COMPLETE: 22 equation coefficients from the locked supervisor record, with Da derived from M.")
-print("Numerical settings and acceptance scales remain proposals. Definition questions closed by the supervisor on 2026-11-19: values are used as given.")
-print("SOFTWARE VALIDATION PENDING: no solver, reference simulation or training test was run.")
+print("Numerical settings and the acceptance rule are our choices, with dated notes in configs/. Definition questions closed by the supervisor on 2026-11-19: values are used as given.")
+print("This tool checks records only. Software checks: uv run pytest. What has run: docs/status-log.md.")

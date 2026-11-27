@@ -26,15 +26,24 @@ Error estimate for a PINN, without the reference (added 2026-11-23):
 engine/bvp_engine --estimate <pinn.csv> <out.csv>
 ```
 
-`pinn.csv` has a header and the columns eta and the 12 states, on any mesh from 0 to L. The engine builds the box-scheme residual and Jacobian at that state and takes one Newton step. The step is the estimated error (PINN minus solution), written per node to `out.csv`. `tools/pinn_error_estimate.py` does this for a run folder. Self-test (`--self-test` in that tool): a known theta change of 1e-3 added to the reference is recovered to 99.9 % at the wall.
+`pinn.csv` has a header and the columns eta and the 12 states, on any mesh from 0 to L. The engine builds the box-scheme residual and Jacobian at that state and takes one Newton step. The step is the estimated error (PINN minus solution), written per node to `out.csv`. Every PINN run calls this after training through `bvp_pinn.pinn.estimate`, which also builds the engine with g++ if it is missing or older than its source; the acceptance rule uses the result. `tools/pinn_error_estimate.py` does the same for older run folders. Self-test (`--self-test` in that tool): a known theta change of 1e-3 added to the reference is recovered to 99.9 % at the wall.
 
-Outputs go to `engine/out/` (not committed, except `engine_convergence.csv`, which `tools/reference_error_bars.py` reads):
+Branch search by deflation (added 2026-11-24, reference audit D7):
+
+```bash
+engine/bvp_engine --deflate 20
+```
+
+Newton on the box scheme (401 nodes) from 52 smooth starts, each time with every root found so far deflated: Newton runs on M(z) R(z) with M = product over roots of (|z - r|^-2 + 1), so it cannot return to a known root (Farrell, Birkisson and Funke, SIAM J. Sci. Comput. 37, 2015). No parameter value changes. Each new root is re-solved on 801 nodes to check that it is not a mesh artifact. Result on 2026-11-24: 105 Newton runs, two solutions, branches A and B, both confirmed; about 20 s. Starts where plain Newton fails still get the deflated passes. Table: `engine/out/engine_branches.csv`.
+
+Outputs go to `engine/out/` (not committed, except `engine_convergence.csv`, which `tools/reference_error_bars.py` reads, and `engine_branches.csv`):
 
 | File | What it holds |
 |---|---|
 | engine_solution.csv | Richardson value on 3201 nodes: eta, the 12 states, the 5 highest derivatives |
 | engine_box_finest.csv | Plain box-scheme solution on 6401 nodes |
 | engine_convergence.csv | Wall values and change per mesh level |
+| engine_branches.csv | Every solution the deflation search found, with wall values, decay power m and the 801-node check |
 | compare.png | Profiles, PINN against the engine, and the PINN error |
 
 ## Method
@@ -59,10 +68,11 @@ Far-field conditions are the same as the reference: B7 to B9 and B12 at eta = L,
 | Total run time, five mesh levels | 0.48 s, 53 MB |
 | Newton steps per level | 5 at the first level from the smooth guess, then 2 to 3 |
 
-The start is the smooth guess with rate 1 and theta(0) = 0.3, which reaches branch A in the reference scan. Another start may reach branch B; check theta(0) (A: 0.2502, B: 0.5924 with the asymptotic far conditions at L = 20; 0.7423 was the old zero-at-L = 10 value).
+The start is the smooth guess with rate 1 and theta(0) = 0.3, which reaches branch A in the reference scan. Another start may reach branch B; check theta(0) (A: 0.2502, B: 0.5924 with the asymptotic far conditions at L = 20).
 
 ## Sources
 
 - Box scheme: H. B. Keller's box method, as used for boundary-layer equations in the Cebeci and Bradshaw texts. Named from memory; not re-opened on 2026-11-22.
 - Richardson extrapolation for a second-order scheme: textbook method; the 2.00 order above is our own measurement.
 - Far conditions: Lentini and Keller 1980, SIAM J. Numer. Anal., doi 10.1137/0717049 (checked in the 2026-11-19 session).
+- Deflation: P. E. Farrell, A. Birkisson and S. W. Funke, "Deflation techniques for finding distinct solutions of nonlinear partial differential equations", SIAM J. Sci. Comput. 37(4), 2015. Named from memory; not re-opened on 2026-11-24.

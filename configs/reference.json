@@ -46,27 +46,10 @@
     ]
   },
   "branch_scan_note": "Smooth decaying guesses that satisfy B1, B2, B3, B5 and B6 at eta=0. Every converged solution is kept and grouped into branches by its wall values.",
-  "continuation_path": [
-    1.0,
-    0.5,
-    0.2
-  ],
-  "continuation_note": "Only if no guess converges: kappa=b=Da follow this path, theta_w stays 0.2, everything else locked. Reference-only aid; intermediate solutions are never reported.",
-  "mms": {
-    "L": 5.0,
-    "meshes": [
-      81,
-      161,
-      321,
-      641
-    ],
-    "min_order": 3.6
-  },
-  "mms_note": "Fixed uniform meshes with tol=bc_tol=1e-12 and max_nodes equal to the mesh size, so solve_bvp cannot refine the mesh but Newton still converges on it. Order from the nodal max error. At 1281 nodes the error reaches a floor near 1e-10, so that mesh is not used for the order.",
   "eval_points": 4001,
   "eval_first_step": 0.0005,
   "L_reference": 20,
-  "L_reference_note": "Smallest L whose f, g, theta, phi wall values agree with the next L to 1e-4 relative under asymptotic far conditions (study 2026-11-19). chi has no L-independent limit, so chi is defined by chi(L)=0 at this L.",
+  "L_reference_note": "Our choice; kept by the user on 2026-11-26 (docs/plans/L_STUDY.md). From L = 20 to 40 the wall values of f, g and theta change by at most 7e-5 relative, phi(0) by 3.9e-4 (reference/study.json, check V5, which therefore fails its 1e-4 bar). Distance of the L = 20 values from the eta -> infinity limit: 1.6e-4 to 3.3e-4 relative, phi(0) 1.8e-3 (reference/l_choice.md). PINN and reference both solve the L = 20 problem, so this L error is reported beside the PINN error, not inside it. chi has no L-independent limit, so chi is defined by chi(L)=0 at this L. Corrected 2026-11-26: the earlier note said every f, g, theta, phi wall value agreed with the next L to 1e-4.",
   "far_field": "asymptotic",
   "far_field_note": "theta(inf)=0 and phi(inf)=0 are imposed at eta=L as asymptotic conditions (Lentini and Keller 1980, doi:10.1137/0717049), derived in equations.far_conditions. f1, f2, g keep zero values at L (they decay exponentially). chi keeps chi(L)=0 because Eq. 18 as printed has no decaying far-field solution for chi. Set to 'dirichlet' for the old truncation.",
   "rk": {
@@ -75,5 +58,6 @@
     "rtol": 1e-11,
     "rtol_check": 1e-09
   },
-  "rk_note": "Second, independent reference (check V10): multiple shooting with SciPy's DOP853 Runge-Kutta on 40 wall-clustered segments, Newton on the joins and boundary conditions, started from the smooth guess only. rtol_check is a looser second solve that estimates the integrator's own error."
+  "rk_note": "Second, independent reference (check V10): multiple shooting with SciPy's DOP853 Runge-Kutta on 40 wall-clustered segments, Newton on the joins and boundary conditions, started from the smooth guess only. rtol_check is a looser second solve that estimates the integrator's own error.",
+  "fixed_problem_note": "Every solve uses Eqs. 14 to 18, B1 to B12 and the 22 locked supervisor values. There is no continuation through other parameter values, no check at other values and no forced equation (removed 2026-11-24): if a solve fails, the answer is more starting guesses or a longer L, never another value (AGENTS.md section 3)."
 }

@@ -48,23 +48,6 @@
       ]
     },
     "branch_scan_note": "Smooth decaying guesses that satisfy B1, B2, B3, B5 and B6 at eta=0. Every converged solution is kept and grouped into branches by its wall values.",
-    "continuation_path": [
-      1.0,
-      0.5,
-      0.2
-    ],
-    "continuation_note": "Only if no guess converges: kappa=b=Da follow this path, theta_w stays 0.2, everything else locked. Reference-only aid; intermediate solutions are never reported.",
-    "mms": {
-      "L": 5.0,
-      "meshes": [
-        81,
-        161,
-        321,
-        641
-      ],
-      "min_order": 3.6
-    },
-    "mms_note": "Fixed uniform meshes with tol=bc_tol=1e-12 and max_nodes equal to the mesh size, so solve_bvp cannot refine the mesh but Newton still converges on it. Order from the nodal max error. At 1281 nodes the error reaches a floor near 1e-10, so that mesh is not used for the order.",
     "eval_points": 4001,
     "eval_first_step": 0.0005,
     "L_reference": 20,
@@ -84,28 +67,6 @@
     "dirty": true
   },
   "created": "2026-11-19T22:30:17",
-  "V3_mms": {
-    "L": 5.0,
-    "meshes": [
-      81,
-      161,
-      321,
-      641
-    ],
-    "nodal_max_errors": [
-      8.056963611280388e-07,
-      7.736702056782008e-08,
-      5.4469719845684494e-09,
-      4.392675667652668e-10
-    ],
-    "observed_orders": [
-      3.3804456183914926,
-      3.8281923641146025,
-      3.6322825596086923
-    ],
-    "mesh_kept_fixed": true,
-    "pass": true
-  },
   "branch_scan": {
     "L": 10,
     "tol": 1e-05,
@@ -1040,10 +1001,5 @@
     },
     "folder": "reference/locked-branchB-L20-tol1e-08"
   },
-  "V11_benchmarks": {
-    "abbas_max_rel_dev_L10": 9.312172773778826e-06,
-    "flat_max_rel_dev": 4.781376512497104e-07,
-    "slip_darcy_rel_dev": 4.5335743381613725e-08
-  },
-  "V11_pass": true
+  "edited_2026_11_24": "Hand edit, no solving: removed V3_mms, V11_benchmarks, V11_pass and the matching settings, because those checks solved other parameter values or a forced equation (AGENTS.md section 3). Every other number is from the 2026-11-19 run. G3_fixed_L_pass no longer includes V3; it was true with V3 and stays true without it."
 }

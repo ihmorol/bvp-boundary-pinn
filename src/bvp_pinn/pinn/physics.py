@@ -1,7 +1,9 @@
 """Eqs. 14 to 19 on PyTorch tensors.
 
 No second copy of the equations: this calls the same functions as the classical reference
-(reference/equations.py), which tests/test_equations_sympy.py checks against SymPy.
+(reference/equations.py), which tests/test_equations_sympy.py checks against SymPy. There is no
+way to add a term or a source here: every loss, optimizer and check solves Eqs. 14 to 18 with
+B1 to B12 as given (AGENTS.md section 3).
 """
 from __future__ import annotations
 

@@ -379,10 +379,10 @@ B4 is used in its stable algebraic form from [equations.md](../problem/equations
 |---|---|---|
 | `R(H) - R(0) = M*H` at random states | The split in section 5 matches the original equations exactly | `tests/test_equations_algebra.py` |
 | NumPy residuals against SymPy | The residual code matches an independent transcription | `tests/test_equations_sympy.py` |
-| Manufactured solution, observed order 3.38 to 3.83 | The whole first-order system and solver work together | SPEC check V3 |
+| Runge-Kutta shooting against solve_bvp, and the C++ box scheme | Three solvers of the same first-order system agree to about 1e-10 at the locked case | SPEC check V10; `tests/test_reference_verify.py`, `tests/test_fixed_problem.py` |
 | All twelve boundary errors below 1e-15 at the solution | The boundary function and solve are consistent | SPEC check V7 |
 
-All of these pass as of 2026-11-19.
+All of these pass. The manufactured-solution check (old V3) was removed on 2026-11-24: it solved a forced equation (AGENTS.md section 3).
 
 ## 10. Summary
 

@@ -47,19 +47,52 @@ def test_smooth_guess_satisfies_wall_conditions_except_b4():
     np.testing.assert_allclose(np.gradient(y[0], x), y[1], atol=1e-3)
 
 
-def test_far_conditions_vanish_on_decaying_modes():
-    """theta = C q^-m and phi = E q^-mp + P q^-m (the far-field solutions) satisfy both conditions."""
-    L, fL, C, E = 20.0, 0.19, 0.3, -0.2
-    q = L + P["kappa"]
-    th = C * q ** -1.0  # placeholder to get A; m then fixed below and theta rebuilt with it
-    for _ in range(50):  # m depends on A(theta_L); iterate to the fixed point
-        A = 1 + (P["theta_w"] - 1) * th
-        m = P["Pr"] * P["kappa"] * fL / (1 + P["Nr"] * A**3)
-        th = C * q**-m
-    mp = P["Le"] * P["Pr"] * P["kappa"] * fL
-    Pc = -(P["Nt"] / P["Nb"]) * C * m / (m - mp)
+def test_far_conditions_follow_from_eqs_16_and_17():
+    """Reference audit D3: the decay powers in far_conditions come from Eqs. 16 and 17 themselves.
+
+    Far out (f = f_L, f' = f'' = 0, g = chi = 0), the linear part of residual_terms is applied to a
+    power q^-k: the source part (theta = phi = 0) is subtracted and the amplitude is tiny, so the
+    quadratic terms drop out. k is then found by root finding on R16 (phi = 0) and on R17
+    (theta = 0), and compared with the m and mp that far_conditions uses. Finally the particular
+    phi mode P q^-m forced by theta is solved from R17, and far_conditions must vanish on it.
+    None of this uses the m formula, so the test is not circular.
+    """
+    from scipy.optimize import brentq
+    L, fL, amp, eta = 20.0, 0.19, 1e-6, 1e4
+    q = eta + P["kappa"]
+
+    def lin(th, ph):  # (theta, th1, th2) and (phi, ph1, ph2) -> linear part of (R16, R17) at eta
+        def R(t, f_):
+            z = np.zeros(12)
+            z[0], z[6], z[7], z[8], z[9] = fL, t[0], t[1], f_[0], f_[1]
+            out = eq.residual_terms(eta, z, [0.0, 0.0, t[2], f_[2], 0.0], P)
+            return np.array([out[2], out[3]])
+        return R(th, ph) - R((0, 0, 0), (0, 0, 0))
+
+    def mode(k, c):  # c q^-k and its first two derivatives
+        return c * q**-k, -k * c * q ** (-k - 1), k * (k + 1) * c * q ** (-k - 2)
+
+    m = brentq(lambda k: lin(mode(k, amp), (0, 0, 0))[0] / (amp * q ** (-k - 2)), 0.01, 2.0)
+    mp = brentq(lambda k: lin((0, 0, 0), mode(k, amp))[1] / (amp * q ** (-k - 2)), 0.01, 2.0)
+
+    qL, th_L = L + P["kappa"], 1e-9  # tiny theta at L, so A(theta_L) = 1 as in the expansion above
     zb = np.zeros(12)
-    zb[0], zb[6], zb[7] = fL, th, -m * th / q
-    zb[8] = E * q**-mp + Pc * q**-m
-    zb[9] = -mp * E * q ** (-mp - 1) - m * Pc * q ** (-m - 1)
-    np.testing.assert_allclose(eq.far_conditions(zb, L, P), 0, atol=1e-14)
+    zb[0], zb[6] = fL, th_L
+    m_code = eq.far_conditions(zb, L, P)[0] * qL / th_L       # B10 = theta' + m theta / q with theta' = 0
+    zb[6], zb[8] = 0.0, 1e-9
+    mp_code = eq.far_conditions(zb, L, P)[1] * qL / 1e-9      # B11 with theta = phi' = 0
+    np.testing.assert_allclose([m_code, mp_code], [m, mp], rtol=1e-5)
+
+    th = mode(m, amp)  # theta forces a phi part P q^-m; R17 is linear in P
+    r0, r1 = lin(th, (0, 0, 0))[1], lin(th, mode(m, 1.0))[1]
+    Pc = -r0 / (r1 - r0)
+    E = 0.3 * amp
+    phi = [a + b for a, b in zip(mode(mp, E), mode(m, Pc))]
+    assert abs(lin(th, phi)[1]) < 1e-6 * abs(r0)  # theta and phi together solve Eq. 17
+    zb = np.zeros(12)
+    zb[0] = fL
+    zb[6], zb[7] = amp * qL**-m, -m * amp * qL ** (-m - 1)
+    zb[8] = E * qL**-mp + Pc * qL**-m
+    zb[9] = -mp * E * qL ** (-mp - 1) - m * Pc * qL ** (-m - 1)
+    b10, b11 = eq.far_conditions(zb, L, P)
+    assert abs(b10) < 1e-6 * abs(zb[7]) and abs(b11) < 1e-6 * abs(zb[9])

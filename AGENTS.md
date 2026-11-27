@@ -30,7 +30,8 @@ Write like a proper human. Keep it easy to read on the first pass.
 
 ## 3. Research rules
 
-- Eqs. 14 to 19 are the confirmed working equations. Eqs. 14 to 18, the boundary conditions B1 to B12 and the locked values are fixed as the supervisor gave them. Never change them, never propose changing them, and never train through other parameter values. Only the way they are imposed and solved may change, and every result is checked on the original equations.
+- Eqs. 14 to 19 are the confirmed working equations. Three things are fixed and not negotiable: the equations (Eqs. 14 to 18), the boundary conditions B1 to B12, and the 22 locked supervisor values. Never change them, never propose changing them, and never solve or train through other parameter values: no debug case, no continuation, no warm start from another value, in the reference or the PINN. This holds for every run, tool and use case. Only the way they are imposed and solved may change, and every result is checked on the original equations.
+- The code enforces this; never weaken these guards. `config.load_case` refuses a case file whose SHA-256 differs from the locked one and returns read-only values; `config.check_locked` runs before the reference study and every PINN training run; the PINN config check refuses any setting that names a physical value and any L other than the reference's. No code adds a term or a source to the equations, and no check solves at other values (the published-limit benchmarks and the manufactured-solution checks were removed on 2026-11-24). `tests/test_fixed_problem.py` checks each guard, and that the C++ engine solves the same equations and conditions.
 - Missing parameter values stay null in configs/. Do not fill them from papers unless the user or the supervisor says so.
 - Conditional calculations stay conditional until the supervisor confirms the definition they depend on.
 - Check a new transcription against the enlarged source page before coding it.
