@@ -122,7 +122,8 @@ def evaluate_run(folder, refs, p):
         wall_est = json.loads(est.read_text()).get("wall_estimated_error") or {}
         metrics["error_estimate"] = {k: {"estimated": wall_est[k], "true": wall[k]["pinn"] - wall[k]["reference"]}
                                      for k in WALL if k in wall_est}
-    np.savez(Path(folder) / "pred_eval.npz", eta=eta, z=z, H=H)
+    # R: the five residual rows on the grid, for the pointwise residual figure (FB6)
+    np.savez(Path(folder) / "pred_eval.npz", eta=eta, z=z, H=H, R=res.detach().numpy().T)
     return metrics
 
 
@@ -177,7 +178,9 @@ def summary_row(folder, metrics):
     selection = read_json(folder / "selection.json")
     estimate = read_json(folder / "error_estimate.json")
     f = metrics["fields"]
-    lm_steps = sum(s.get("lm_iterations", 0) for s in meta.get("refine_stages", []))
+    stages = meta.get("refine_stages", [])
+    lm_steps = sum(s.get("lm_iterations", 0) for s in stages)
+    stage_seconds = lambda name: sum(s.get("refine_seconds", 0.0) for s in stages if s.get("refine") == name)
     row = {"run_id": folder.name, "arm": cfg["arm"], "seed": cfg["seed"], "campaign": cfg.get("campaign", ""),
            "result": meta.get("result"), "accepted": selection.get("accepted"),
            "reasons": "; ".join(selection.get("reasons", [])), "estimate_score": estimate.get("score"),
@@ -196,7 +199,7 @@ def summary_row(folder, metrics):
                 "wall_seconds": meta.get("wall_seconds"), "adam_seconds": meta.get("adam_seconds"),
                 "refine_seconds": meta.get("refine_seconds"), "refine_accepted": meta.get("refine_accepted",
                                                                                           meta.get("lbfgs_accepted")),
-                "lm_steps": lm_steps})
+                "lm_steps": lm_steps, "lbfgs_seconds": stage_seconds("lbfgs"), "lm_seconds": stage_seconds("lm")})
     return row
 
 

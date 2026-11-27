@@ -94,14 +94,25 @@ Computed against the reference on its evaluation grid ([SPEC_reference_solutions
 
 | ID | Content |
 |---|---|
+Since 2026-11-27 every figure follows a figure of the closest papers in our literature review; the mapping, figure by figure, is in [RESULT_FIGURES.md](RESULT_FIGURES.md).
+
+| ID | Content |
+|---|---|
 | TB1 | Reference study: wall values against tolerance and L (from gate G3) |
-| FB1 | Five profiles from B0 and the best retention arm, against the reference |
-| FB2 | Pointwise error against eta on a log scale, with a near-wall inset |
+| FB1, FB1b | f′, f″, g, θ, φ, χ: reference as a line, each arm's median seed as markers; whole domain and wall layer |
+| FB2 | Pointwise absolute error of the same fields, log scale, one line per arm |
 | FB3 | Final residual per equation and error per boundary condition, per arm |
-| FB4 | Training curves of each loss term, seed 0, per arm |
+| FB4 | Convergence history of seed 0 per arm against wall time, Adam, L-BFGS and LM marked |
 | FB5 | Error per window after each stage, B2 and B3 |
-| TB2 | Wall values, all arms against reference, median and range over seeds |
+| FB6 | Pointwise residual of each equation on the evaluation grid |
+| FB7 | Every seed of every arm for four metrics, paired seeds joined (rule G6) |
+| FB8 | Histogram of the training points |
+| TB2 | Wall values, all arms against reference, median and range over seeds, with relative errors |
+| TB3 | Accuracy after Adam and final, paired-seed counts |
+| TB4 | Relative L2 and largest absolute error per field |
+| TB5 | Absolute error at report points over the seeds |
 | FX1 (BVP part) | Error against wall time: PINN arms and solve_bvp |
+| FX2 | Time per run split into Adam, L-BFGS and LM |
 | TX1 (BVP part) | Cost table |
 
 ## 7. Questions the results must answer

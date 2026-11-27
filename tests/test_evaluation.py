@@ -73,3 +73,30 @@ def test_resumed_campaign_judges_a_run_that_lost_its_verdict(tmp_path, monkeypat
     verdict = json.loads((folder / "selection.json").read_text())
     assert verdict["accepted"] is False  # 40 Adam steps cannot pass the rule
     assert not list(folder.glob("*.tmp"))  # atomic writes leave no temporary files
+
+
+def test_campaign_figures_and_tables_are_built(tmp_path):
+    """Two tiny runs of a test campaign go through evaluate and plots: every figure of the literature-
+    based set (FB1 to FB8, FX1, FX2), captions.md and the tables TB2 to TB5 and TX1 are written."""
+    import os
+    import subprocess
+    import sys
+    from bvp_pinn.config import ROOT
+    from bvp_pinn.pinn.run import run
+    runs, results = tmp_path / "runs", tmp_path / "results"
+    for arm in ("B0", "B2"):
+        run(arm, 0, dry_run=True, runs_root=runs, assess=False, campaign="TEST")
+    torch.set_default_device("cpu")
+    env = {**os.environ, "BVP_RUNS_DIR": str(runs), "BVP_RESULTS_DIR": str(results), "PYTHONPATH": str(ROOT / "src")}
+    for mod in ("evaluate", "plots"):
+        subprocess.run([sys.executable, "-m", f"bvp_pinn.evaluation.{mod}", "--campaign", "TEST"], cwd=ROOT, env=env,
+                       check=True, capture_output=True)
+    out = results / "TEST"
+    figures = {p.stem for p in (out / "figures").glob("*.png")}
+    assert figures == {"FB1_profiles", "FB1b_profiles_wall", "FB2_errors", "FB3_residuals", "FB4_training",
+                       "FB5_windows", "FB6_pointwise_residual", "FB7_seed_spread", "FB8_points",
+                       "FX1_error_vs_time", "FX2_time_split"}
+    for name in ("wall_values.md", "accuracy.md", "fields.md", "nodes.md", "cost.md", "figures/captions.md"):
+        assert (out / name).stat().st_size > 0, name
+    with np.load(next(runs.glob("bvp-B0-*")) / "pred_eval.npz") as pred:
+        assert pred["R"].shape == (5, pred["eta"].size)  # pointwise residuals for FB6
