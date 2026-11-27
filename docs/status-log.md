@@ -2,6 +2,12 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-28 (session: two runs at once, the session limit, a second Colab account)
+
+- The first Colab session of the main run (free T4) ended when the daily GPU allowance ran out. B0 seeds 0 to 4 had finished (about 43 minutes each); B1 seed 0 was 50 minutes into Adam and starts again from zero. The GPU used 2 to 3 GB of 15 GB.
+- Changed only scheduling, bookkeeping and the notebook; no file that decides how a run trains or is judged (no training-code change since 2895060). Two runs at once on a GPU, each in its own process; a run out of GPU memory beside others trains again alone instead of being recorded as failed; `SESSION_HOURS` starts only runs expected to finish; `schedule.json` records how many runs trained at once, shown in TX1, FX1, FX2; a later session may use a newer commit if the training code is the same; usage lines every ten minutes; notebook `MUST_RESUME` and `DISCONNECT_AT_END`, and steps for a second Google account. Details and an honest gain estimate (1.2 to 1.8 times, not measured on a GPU): [PARALLEL_RUNS_2026-11-28.md](reviews/PARALLEL_RUNS_2026-11-28.md).
+- New [tests/test_campaign.py](../tests/test_campaign.py): a run trained beside another equals the same run alone, bit for bit; the session limit; out of memory beside others; the training-code check. These six pass. The full suite and a local rehearsal of the resume were started and stopped with the session; the user asked to run everything else on Colab only. The new scheduling has not run on a GPU yet: the dry run of the next Colab session tries it first.
+
 ## 2026-11-27 (session: step explainers and result figures from the literature)
 
 - Wrote [methodology/steps/](methodology/steps/README.md): one file per step of the detailed methodology (1 to 72), plus a glossary and files for the reduced equations and the 12 conditions. Each says what the step does, explains its terms and equations (with worked numbers, such as B4 giving θ′(0) = −1.25944 from θ(0) = 0.25019), names the code by file and line, and says whether it is ready. The index answers what is ready and whether the code can run on Colab (yes, pushed as 64c2e48; not yet run on a real Colab GPU). Steps 47 to 72 and the index were written in a forked session.

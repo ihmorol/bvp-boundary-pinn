@@ -177,6 +177,7 @@ def summary_row(folder, metrics):
     meta = read_json(folder / "meta.json")
     selection = read_json(folder / "selection.json")
     estimate = read_json(folder / "error_estimate.json")
+    schedule = read_json(folder / "schedule.json")  # written by the campaign; missing for pilots
     f = metrics["fields"]
     stages = meta.get("refine_stages", [])
     lm_steps = sum(s.get("lm_iterations", 0) for s in stages)
@@ -199,7 +200,10 @@ def summary_row(folder, metrics):
                 "wall_seconds": meta.get("wall_seconds"), "adam_seconds": meta.get("adam_seconds"),
                 "refine_seconds": meta.get("refine_seconds"), "refine_accepted": meta.get("refine_accepted",
                                                                                           meta.get("lbfgs_accepted")),
-                "lm_steps": lm_steps, "lbfgs_seconds": stage_seconds("lbfgs"), "lm_seconds": stage_seconds("lm")})
+                "lm_steps": lm_steps, "lbfgs_seconds": stage_seconds("lbfgs"), "lm_seconds": stage_seconds("lm"),
+                # runs training on the same machine at the same time, at most: times with more than 1 are longer
+                # than the run would take alone
+                "runs_at_once": schedule.get("max_runs_at_once")})
     return row
 
 

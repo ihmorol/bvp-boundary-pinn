@@ -7,7 +7,7 @@
 ## What the Drive folder holds at the end
 | Folder or file | Content |
 |---|---|
-| `steps/` | one marker per finished step; `start.json` with the pinned commit and settings fingerprint |
+| `steps/` | one marker per finished step; `start.json` with the first session's commit and settings fingerprint (later sessions must have the same training code, [step 64](64-pins.md)) |
 | `logs/` | the full output of every step |
 | `environment-*.json` | machine, packages, GPU and settings of every session |
 | `configs/` | the three config files the run used |

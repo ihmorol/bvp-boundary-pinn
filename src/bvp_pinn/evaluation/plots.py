@@ -317,7 +317,8 @@ def fig_time_split(rows, path):
             ax.barh(k, v, left=left, color=col, edgecolor="white", label=label if k == 0 else None)
             left += v
         ax.text(left, k, f"  {left:.0f} min", va="center", fontsize=7)
-    ax.set_yticks(range(len(arms)), arms)
+    # runs that shared the machine take longer than alone; the label says how many trained at once
+    ax.set_yticks(range(len(arms)), [f"{arm}\n{at_once([r for r in rows if r['arm'] == arm])} at once" for arm in arms])
     ax.invert_yaxis()
     ax.set(xlabel=f"median minutes per run ({devices(rows)})")
     fig.legend(loc="outside lower center", ncol=3, frameon=False)
@@ -331,7 +332,8 @@ def fig_cost(rows, timing, path):
     for arm, (col, _, mk) in ARMS.items():
         pts = [(r["wall_seconds"], r["wall_rel_max"]) for r in rows if r["arm"] == arm]
         if pts:
-            ax.scatter(*zip(*pts), color=col, marker=mk, s=16, label=f"{arm} (one dot per seed)")
+            at = at_once([r for r in rows if r["arm"] == arm])
+            ax.scatter(*zip(*pts), color=col, marker=mk, s=16, label=f"{arm} (one dot per seed, {at} at once)")
     if timing:
         ok = [r for r in timing["rows"] if r.get("wall_rel_max") is not None]
         ax.scatter([r["median_seconds"] for r in ok], [r["wall_rel_max"] for r in ok], color="k", marker="x",
@@ -350,6 +352,12 @@ def devices(rows):
     """The devices the runs trained on, as text, for labels."""
     names = {(r.get("device") or "unknown") + (f" ({r['gpu']})" if r.get("gpu") else "") for r in rows}
     return ", ".join(sorted(names)) or "unknown"
+
+
+def at_once(rows):
+    """The runs-at-once values of these runs, as text: "1", "1, 2" or "unknown"."""
+    values = sorted({str(r.get("runs_at_once") or "unknown") for r in rows})
+    return ", ".join(values)
 
 
 def accuracy_table(rows, out):
@@ -483,8 +491,8 @@ are locked, so there is no parameter sweep.
 | FB6 | absolute residual of each equation along η, training points as ticks | Falkner-Skan 2026 Fig. 3b; overfitting 2026 Fig. 3 |
 | FB7 | every seed of every arm for four metrics, paired seeds joined, medians | squeezing flow 2026 Figs. 20 to 22; PINNacle 2024 (spread over seeds); Falkner-Skan 2026 Fig. 5b |
 | FB8 | histogram of the training points over η, window edges | micropolar 2026 Fig. 4 |
-| FX1 | largest wall error against wall time, PINN runs and solve_bvp | PINN against FEM 2024 Figs. 2 and 4 |
-| FX2 | median minutes per run split into Adam, L-BFGS, Levenberg-Marquardt | micropolar 2026 Fig. 6 |
+| FX1 | largest wall error against wall time, PINN runs and solve_bvp; legend gives the runs at once per arm | PINN against FEM 2024 Figs. 2 and 4 |
+| FX2 | median minutes per run split into Adam, L-BFGS, Levenberg-Marquardt; label gives the runs at once (more than 1: times longer than alone) | micropolar 2026 Fig. 6 |
 | TB2 | wall values per arm against reference A, with relative errors | micropolar 2026 Table 1; stretching cylinder 2026 Table 7 |
 | TB3 | accuracy after Adam and final, paired-seed counts for rule G6 | PINNacle 2024 (mean and spread, failures kept) |
 | TB4 | relative L2 and largest absolute error per field | stretching cylinder 2026 Tables 2 to 6; Falkner-Skan 2026 Table 2 |
@@ -495,8 +503,8 @@ are locked, so there is no parameter sweep.
 
 def cost_table(rows, timing, out):
     """TX1: cost per arm (medians over seeds) and the solve_bvp time to reach each arm's median error."""
-    lines = ["| Arm | Runs | Accepted | Device | Wall s | Adam s | Refine s | LM steps | Parameters | Threads | "
-             "Median wall error | solve_bvp s to the same error |", "|---|---:|---:|---|" + "---:|" * 8]
+    lines = ["| Arm | Runs | Accepted | Device | Runs at once | Wall s | Adam s | Refine s | LM steps | Parameters | "
+             "Threads | Median wall error | solve_bvp s to the same error |", "|---|---:|---:|---|---|" + "---:|" * 8]
     for arm in ARMS:
         rs = [r for r in rows if r["arm"] == arm]
         if not rs:
@@ -504,13 +512,15 @@ def cost_table(rows, timing, out):
         med = {k: float(np.nanmedian([r[k] for r in rs])) for k in NUMBERS}
         reach = time_to_reach(timing, med["wall_rel_max"]) if timing else None
         lines.append(f"| {arm} | {len(rs)} | {sum(r['accepted'] == 'True' for r in rs)} | {devices(rs)} | "
-                     f"{med['wall_seconds']:.0f} | "
+                     f"{at_once(rs)} | {med['wall_seconds']:.0f} | "
                      f"{med['adam_seconds']:.0f} | {med['refine_seconds']:.0f} | {med['lm_steps']:.0f} | "
                      f"{med['parameters']:.0f} | {med['threads']:.0f} | {med['wall_rel_max']:.2e} | "
                      f"{'not built' if timing is None else ('n/a' if reach is None else f'{reach:.3f}')} |")
     note = ("solve_bvp times come from classical_timing.json (median of its repeats, one CPU thread). "
             "PINN times are on the device in the Device column. Compare only times measured on the same machine, "
-            "and say which device each side used.")
+            "and say which device each side used. Runs at once: the most runs that trained on the same machine at "
+            "the same time as a run (schedule.json); with more than 1 the runs shared the CPUs and the GPU, so their "
+            "times are longer than one run alone takes. Compare times only between runs with the same value.")
     (out / "cost.md").write_text("# TX1: cost per arm, median over seeds\n\n" + "\n".join(lines) + f"\n\n{note}\n")
 
 

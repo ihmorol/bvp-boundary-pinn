@@ -60,7 +60,7 @@ All are written to `results/<campaign>/` and listed with their sources in `figur
 | TB3 | `accuracy.md` | Accuracy after Adam and final, and the paired-seed counts for rule G6 | PINNacle (mean and spread, failures kept) | `accuracy_table`, [line 355](../../src/bvp_pinn/evaluation/plots.py#L355) |
 | TB4 | `fields.md` | Relative L2 and largest absolute error of f, f′, f″, g, θ, φ, χ per arm | Cylinder Tables 2 to 6; Falkner-Skan Table 2 | `field_table`, [line 428](../../src/bvp_pinn/evaluation/plots.py#L428) |
 | TB5 | `nodes.md` | Absolute error of f′, θ, φ at η = 0, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20: mean and range over seeds | Squeezing Tables 4 to 7 | `node_table`, [line 450](../../src/bvp_pinn/evaluation/plots.py#L450) |
-| TX1 | `cost.md` | Cost per arm and the solve_bvp time to reach the same error | PINN against FEM | `cost_table`, [line 496](../../src/bvp_pinn/evaluation/plots.py#L496) |
+| TX1 | `cost.md` | Cost per arm, the runs that trained at once (since 2026-11-28; times with more than 1 are longer than alone), and the solve_bvp time to reach the same error | PINN against FEM | `cost_table`, [line 504](../../src/bvp_pinn/evaluation/plots.py#L504) |
 
 What changed in the code for this: `evaluate.py` now saves the five residual rows on the grid (`R` in `pred_eval.npz`, [evaluate.py:126](../../src/bvp_pinn/evaluation/evaluate.py#L126)) and the L-BFGS and LM seconds of each run in `summary.csv`. The test `test_campaign_figures_and_tables_are_built` in [tests/test_evaluation.py](../../tests/test_evaluation.py) builds the whole set from two tiny runs.
 

@@ -7,10 +7,13 @@
 ## What it holds
 | Setting | Default | Meaning |
 |---|---|---|
-| `DRIVE_FOLDER` | bvp-boundary-pinn/main-run-P4 | where everything is kept, inside My Drive; reuse it to resume |
+| `DRIVE_FOLDER` | bvp-boundary-pinn/main-run-P4 | where everything is kept, inside My Drive; reuse it to resume (from another Google account: a shortcut to the shared folder, [step 61](61-gpu-and-drive.md)) |
+| `MUST_RESUME` | True | stop if the folder holds no earlier session, so a missing shortcut cannot start the campaign over |
 | `REPO_URL`, `REPO_BRANCH` | the GitHub repository, impl/campaign-readiness | the code |
-| `REPO_COMMIT` | empty | empty: the commit of the first session in this Drive folder |
-| `DEVICE`, `JOBS` | auto | GPU if present; runs at once |
+| `REPO_COMMIT` | empty | empty: the branch tip; the main run refuses it if its training code differs from the first session's commit ([step 64](64-pins.md)) |
+| `DEVICE`, `JOBS` | auto | GPU if present; runs at once (auto: 2 on a GPU) |
+| `SESSION_HOURS` | 4.5 | no run starts unless it is expected to end within this many hours of the session start ([step 70](70-campaign.md)); None: no limit |
+| `DISCONNECT_AT_END` | True | give the runtime back when the main run stops, so idle time is not counted |
 | `ARMS`, `SEEDS`, `CAMPAIGN_NAME` | None | None: what configs/pinn.json says (B0 to B3, seeds 0 to 4, "P4") |
 | `PINN_SETTINGS` | the committed values | points, network size, Adam, L-BFGS and LM budgets, window edges |
 | `RUN_TESTS`, `SMOKE_TEST`, `MEASURE_TIMING` | True | the checks of steps 66, 68, 69 |
@@ -21,7 +24,7 @@ The physical values cannot be set here: a setting that names one is refused ([st
 
 ## In the code
 - The settings cell of [tools/colab_main_run.ipynb](../../../tools/colab_main_run.ipynb).
-- `PINN_SETTINGS` is written into the "common" block of configs/pinn.json by `apply_pinn_settings` ([tools/main_run.py:118](../../../tools/main_run.py#L118)), which then checks every arm. If the values equal the committed ones, nothing changes.
+- `PINN_SETTINGS` is written into the "common" block of configs/pinn.json by `apply_pinn_settings` ([tools/main_run.py:138](../../../tools/main_run.py#L138)), which then checks every arm. If the values equal the committed ones, nothing changes.
 
 ## Ready?
 Yes. The training values are still pilot values (open decision).
