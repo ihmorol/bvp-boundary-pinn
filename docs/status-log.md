@@ -2,6 +2,12 @@
 
 Newest first. One entry per working session. Keep it short and factual.
 
+## 2026-11-27 (session: step explainers and result figures from the literature)
+
+- Wrote [methodology/steps/](methodology/steps/README.md): one file per step of the detailed methodology (1 to 72), plus a glossary and files for the reduced equations and the 12 conditions. Each says what the step does, explains its terms and equations (with worked numbers, such as B4 giving θ′(0) = −1.25944 from θ(0) = 0.25019), names the code by file and line, and says whether it is ready. The index answers what is ready and whether the code can run on Colab (yes, pushed as 64c2e48; not yet run on a real Colab GPU). Steps 47 to 72 and the index were written in a forked session.
+- Read the figures of the closest papers (micropolar, squeezing flow, hard-constrained Falkner-Skan and stretching cylinder, all 2026; PINNacle and PINN against FEM, 2024; the overfitting paper, 2026) from their pages, and rebuilt the result figures to follow them: reference line with PINN markers (FB1, FB1b), pointwise error per arm (FB2), phase-marked convergence (FB4), pointwise residual (FB6), every seed with paired seeds joined (FB7), training-point histogram (FB8), time split (FX2), per-field errors (TB4), errors at report points over seeds (TB5), relative wall errors in TB2. Parameter-effect figures are left out (locked values). Mapping and reasons: [RESULT_FIGURES.md](pinn/RESULT_FIGURES.md). Evaluation now saves the residual rows on the grid. One new test builds the whole set; built and inspected on the two accepted B0 pilot runs and the 20 dry runs.
+- Nothing committed.
+
 ## 2026-11-26, later (session: main run readiness and the Colab run)
 
 - Read the whole repository as a fresh start and checked it against the research goal. Eqs. 14 to 19 rendered from the source draft (images 44 to 49) match the code term by term. Reference, PINN and evaluation share one transcription, one parameter source, one L and one state order. The boundary conditions match the decision of [BOUNDARY_CONDITIONS_2026-11-26.md](reviews/BOUNDARY_CONDITIONS_2026-11-26.md): all 12 exact; not changed.

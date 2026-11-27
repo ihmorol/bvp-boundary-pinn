@@ -55,6 +55,8 @@ The four stages are the gates of [strategy.md](../plans/strategy.md). A later st
 
 ## Detailed methodology, six pages
 
+**Step by step:** [steps/](steps/README.md) has one file per step, 1 to 72: what it does, the words and equations it uses, where the code does it, and whether it is ready. Start with its [glossary](steps/glossary.md).
+
 Every step the code takes, numbered 1 to 72, at the same page size and in the same style. The equations are the reduced forms with the locked values put in ([simplified-equations.md](../problem/simplified-equations.md)); on 2026-11-26 each was checked against `src/bvp_pinn/reference/equations.py` at random states (largest difference 3e-16). One PDF: [bvp-methodology-detailed.pdf](figures/bvp-methodology-detailed.pdf); single pages (PDF, SVG, HTML, PNG) are in [figures/detailed/](figures/detailed/).
 
 | Page | Steps | What it shows | Code |
