@@ -10,6 +10,7 @@
 3. torch 2.15.0: on a GPU the PyPI build (with CUDA 13.2); on CPU the `+cpu` build of the lock file.
 4. CUDA 13.2 needs a recent NVIDIA driver. If this torch cannot use the GPU, it installs the PyTorch build that Colab itself ships for that GPU and records it. If no build can use the GPU, it stops and says to set `DEVICE = "cpu"`.
 5. Writes `installed.json`, so a rerun on the same machine skips all of this.
+6. Runs every command of this environment, and later the main run, with Colab's `PYTHONPATH` and `MPLBACKEND` removed and `MPLBACKEND=Agg`. Colab sets them for its own Python 3.13 kernel; inherited, its inline matplotlib backend stops `import matplotlib` here (seen on Colab on 2026-11-27), and its `PYTHONPATH` could pull in Colab's own packages. The output of each command is shown in the notebook, because Colab hides what subprocesses print.
 
 ## Words used here
 | Term | Meaning |

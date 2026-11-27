@@ -78,7 +78,8 @@ class Pipeline:
         for sub in ("steps", "logs", "runs", "results"):
             (self.out / sub).mkdir(parents=True, exist_ok=True)
         self.py = sys.executable
-        self.env = {**os.environ, "PYTHONPATH": str(ROOT / "src"), "PYTHONUNBUFFERED": "1"}
+        # MPLBACKEND: a notebook's inline backend (Colab sets one) is not installed here and stops matplotlib
+        self.env = {**os.environ, "PYTHONPATH": str(ROOT / "src"), "PYTHONUNBUFFERED": "1", "MPLBACKEND": "Agg"}
         for var in ("BVP_RUNS_DIR", "BVP_RESULTS_DIR"):
             self.env.pop(var, None)  # tests and the reference never see the campaign folders
 
